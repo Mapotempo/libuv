@@ -23,7 +23,7 @@ module Libuv
         begin
             # bias the library discovery to a path inside the gem first, then
             # to the usual system paths
-            path_to_internal_libuv = File.dirname(__FILE__) + '/../ext'
+            path_to_internal_libuv = File.dirname(__FILE__) + '/../../../ext'
             LIBUV_PATHS = [
             path_to_internal_libuv, '/usr/local/lib', '/opt/local/lib', '/usr/lib64'
             ].map{|path| "#{path}/libuv.#{FFI::Platform::LIBSUFFIX}"}
@@ -247,11 +247,11 @@ module Libuv
 
 
         def self.create_handle(type)
-            LIBC.malloc(UV.handle_size(type))
+            LIBC.malloc(Ext.handle_size(type))
         end
 
         def self.create_request(type)
-            LIBC.malloc(UV.req_size(type))
+            LIBC.malloc(Ext.req_size(type))
         end
     end
 end

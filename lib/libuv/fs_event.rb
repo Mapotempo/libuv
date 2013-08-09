@@ -15,7 +15,11 @@ module Libuv
 
 
         def on_fs_event(handle, filename, events, status)
-            @fs_event_block.call(check_result(status), filename, EVENTS[events])
+            begin
+                @fs_event_block.call(check_result(status), filename, EVENTS[events])
+            rescue Exception => e
+                # TODO:: log errors, don't want to crash the loop thread
+            end
         end
 
         public :callback

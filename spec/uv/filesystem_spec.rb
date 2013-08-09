@@ -1,9 +1,9 @@
 require 'spec_helper'
 
-describe UV::Filesystem do
+describe Libuv::Filesystem do
   let(:loop) { double() }
   let(:loop_pointer) { double() }
-  subject { UV::Filesystem.new(loop) }
+  subject { Libuv::Filesystem.new(loop) }
 
   before(:each) do
     loop.stub(:to_ptr) { loop_pointer }
@@ -15,15 +15,11 @@ describe UV::Filesystem do
     let(:flags) { File::CREAT | File::EXCL | File::APPEND }
     let(:open_request) { double() }
 
-    it "requires a block" do
-      expect { subject.open(path, flags, mode) }.to raise_error(ArgumentError)
-    end
+    it "calls Libuv::Ext.fs_open" do
+      Libuv::Ext.should_receive(:create_request).with(:uv_fs).and_return(open_request)
+      Libuv::Ext.should_receive(:fs_open).with(loop_pointer, open_request, path, flags, mode, subject.method(:on_open))
 
-    it "calls UV.fs_open" do
-      UV.should_receive(:create_request).with(:uv_fs).and_return(open_request)
-      UV.should_receive(:fs_open).with(loop_pointer, open_request, path, flags, mode, subject.method(:on_open))
-
-      subject.open(path, flags, mode) { |e, file| }
+      subject.open(path, flags, mode)
     end
   end
 
@@ -31,15 +27,11 @@ describe UV::Filesystem do
     let(:path) { "/tmp/file" }
     let(:unlink_request) { double() }
 
-    it "requires a block" do
-      expect { subject.unlink(path) }.to raise_error(ArgumentError)
-    end
+    it "calls Libuv::Ext.fs_unlink" do
+      Libuv::Ext.should_receive(:create_request).with(:uv_fs).and_return(unlink_request)
+      Libuv::Ext.should_receive(:fs_unlink).with(loop_pointer, unlink_request, path, subject.method(:on_unlink))
 
-    it "calls UV.fs_unlink" do
-      UV.should_receive(:create_request).with(:uv_fs).and_return(unlink_request)
-      UV.should_receive(:fs_unlink).with(loop_pointer, unlink_request, path, subject.method(:on_unlink))
-
-      subject.unlink(path) { |e| }
+      subject.unlink(path)
     end
   end
 
@@ -48,15 +40,11 @@ describe UV::Filesystem do
     let(:mode) { 0777 }
     let(:mkdir_request) { double() }
 
-    it "requires a block" do
-      expect { subject.mkdir(path) }.to raise_error(ArgumentError)
-    end
+    it "calls Libuv::Ext.fs_mkdir" do
+      Libuv::Ext.should_receive(:create_request).with(:uv_fs).and_return(mkdir_request)
+      Libuv::Ext.should_receive(:fs_mkdir).with(loop_pointer, mkdir_request, path, mode, subject.method(:on_mkdir))
 
-    it "calls UV.fs_mkdir" do
-      UV.should_receive(:create_request).with(:uv_fs).and_return(mkdir_request)
-      UV.should_receive(:fs_mkdir).with(loop_pointer, mkdir_request, path, mode, subject.method(:on_mkdir))
-
-      subject.mkdir(path, mode) { |e| }
+      subject.mkdir(path, mode)
     end
   end
 
@@ -64,15 +52,11 @@ describe UV::Filesystem do
     let(:path) { "/tmp/dir" }
     let(:rmdir_request) { double() }
 
-    it "requires a block" do
-      expect { subject.rmdir(path) }.to raise_error(ArgumentError)
-    end
+    it "calls Libuv::Ext.fs_rmdir" do
+      Libuv::Ext.should_receive(:create_request).with(:uv_fs).and_return(rmdir_request)
+      Libuv::Ext.should_receive(:fs_rmdir).with(loop_pointer, rmdir_request, path, subject.method(:on_rmdir))
 
-    it "calls UV.fs_rmdir" do
-      UV.should_receive(:create_request).with(:uv_fs).and_return(rmdir_request)
-      UV.should_receive(:fs_rmdir).with(loop_pointer, rmdir_request, path, subject.method(:on_rmdir))
-
-      subject.rmdir(path) { |e| }
+      subject.rmdir(path)
     end
   end
 
@@ -80,15 +64,11 @@ describe UV::Filesystem do
     let(:path) { '/tmp' }
     let(:readdir_request) { double() }
 
-    it "requires a block" do
-      expect { subject.readdir(path) }.to raise_error(ArgumentError)
-    end
+    it "calls Libuv::Ext.fs_readdir" do
+      Libuv::Ext.should_receive(:create_request).with(:uv_fs).and_return(readdir_request)
+      Libuv::Ext.should_receive(:fs_readdir).with(loop_pointer, readdir_request, path, 0, subject.method(:on_readdir))
 
-    it "calls UV.fs_readdir" do
-      UV.should_receive(:create_request).with(:uv_fs).and_return(readdir_request)
-      UV.should_receive(:fs_readdir).with(loop_pointer, readdir_request, path, 0, subject.method(:on_readdir))
-
-      subject.readdir(path) { |e, files| }
+      subject.readdir(path)
     end
   end
 
@@ -96,15 +76,11 @@ describe UV::Filesystem do
     let(:path) { '/tmp/filename' }
     let(:stat_request) { double() }
 
-    it "requires a block" do
-      expect { subject.stat(path) }.to raise_error(ArgumentError)
-    end
+    it "calls Libuv::Ext.fs_stat" do
+      Libuv::Ext.should_receive(:create_request).with(:uv_fs).and_return(stat_request)
+      Libuv::Ext.should_receive(:fs_stat).with(loop_pointer, stat_request, path, subject.method(:on_stat))
 
-    it "calls UV.fs_stat" do
-      UV.should_receive(:create_request).with(:uv_fs).and_return(stat_request)
-      UV.should_receive(:fs_stat).with(loop_pointer, stat_request, path, subject.method(:on_stat))
-
-      subject.stat(path) { |e, stat| }
+      subject.stat(path)
     end
   end
 
@@ -113,15 +89,11 @@ describe UV::Filesystem do
     let(:new_path) { '/tmp/new_file' }
     let(:rename_request) { double() }
 
-    it "requires a block" do
-      expect { subject.rename(old_path, new_path) }.to raise_error(ArgumentError)
-    end
+    it "calls Libuv::Ext.fs_rename" do
+      Libuv::Ext.should_receive(:create_request).with(:uv_fs).and_return(rename_request)
+      Libuv::Ext.should_receive(:fs_rename).with(loop_pointer, rename_request, old_path, new_path, subject.method(:on_rename))
 
-    it "calls UV.fs_rename" do
-      UV.should_receive(:create_request).with(:uv_fs).and_return(rename_request)
-      UV.should_receive(:fs_rename).with(loop_pointer, rename_request, old_path, new_path, subject.method(:on_rename))
-
-      subject.rename(old_path, new_path) { |e| }
+      subject.rename(old_path, new_path)
     end
   end
 
@@ -130,15 +102,11 @@ describe UV::Filesystem do
     let(:mode) { 0755 }
     let(:chmod_request) { double() }
 
-    it "requires a block" do
-      expect { subject.chmod(path, mode) }.to raise_error(ArgumentError)
-    end
+    it "calls Libuv::Ext.fs_chmod" do
+      Libuv::Ext.should_receive(:create_request).with(:uv_fs).and_return(chmod_request)
+      Libuv::Ext.should_receive(:fs_chmod).with(loop_pointer, chmod_request, path, mode, subject.method(:on_chmod))
 
-    it "calls UV.fs_chmod" do
-      UV.should_receive(:create_request).with(:uv_fs).and_return(chmod_request)
-      UV.should_receive(:fs_chmod).with(loop_pointer, chmod_request, path, mode, subject.method(:on_chmod))
-
-      subject.chmod(path, mode) { |e| }
+      subject.chmod(path, mode)
     end
   end
 
@@ -148,15 +116,11 @@ describe UV::Filesystem do
     let(:mtime) { 400497753 }  # 1982-09-10 11:22:33
     let(:utime_request) { double() }
 
-    it "requires a block" do
-      expect { subject.utime(path, atime, mtime) }.to raise_error(ArgumentError)
-    end
+    it "calls Libuv::Ext.fs_utime" do
+      Libuv::Ext.should_receive(:create_request).with(:uv_fs).and_return(utime_request)
+      Libuv::Ext.should_receive(:fs_utime).with(loop_pointer, utime_request, path, atime, mtime, subject.method(:on_utime))
 
-    it "calls UV.fs_utime" do
-      UV.should_receive(:create_request).with(:uv_fs).and_return(utime_request)
-      UV.should_receive(:fs_utime).with(loop_pointer, utime_request, path, atime, mtime, subject.method(:on_utime))
-
-      subject.utime(path, atime, mtime) { |e| }
+      subject.utime(path, atime, mtime)
     end
   end
 
@@ -164,15 +128,11 @@ describe UV::Filesystem do
     let(:path) { '/tmp/filename' }
     let(:lstat_request) { double() }
 
-    it "requires a block" do
-      expect { subject.lstat(path) }.to raise_error(ArgumentError)
-    end
+    it "calls Libuv::Ext.fs_lstat" do
+      Libuv::Ext.should_receive(:create_request).with(:uv_fs).and_return(lstat_request)
+      Libuv::Ext.should_receive(:fs_lstat).with(loop_pointer, lstat_request, path, subject.method(:on_lstat))
 
-    it "calls UV.fs_lstat" do
-      UV.should_receive(:create_request).with(:uv_fs).and_return(lstat_request)
-      UV.should_receive(:fs_lstat).with(loop_pointer, lstat_request, path, subject.method(:on_lstat))
-
-      subject.lstat(path) { |e, stat| }
+      subject.lstat(path)
     end
   end
 
@@ -181,15 +141,11 @@ describe UV::Filesystem do
     let(:new_path) { '/tmp/new_file' }
     let(:link_request) { double() }
 
-    it "requires a block" do
-      expect { subject.link(old_path, new_path) }.to raise_error(ArgumentError)
-    end
+    it "calls Libuv::Ext.fs_link" do
+      Libuv::Ext.should_receive(:create_request).with(:uv_fs).and_return(link_request)
+      Libuv::Ext.should_receive(:fs_link).with(loop_pointer, link_request, old_path, new_path, subject.method(:on_link))
 
-    it "calls UV.fs_link" do
-      UV.should_receive(:create_request).with(:uv_fs).and_return(link_request)
-      UV.should_receive(:fs_link).with(loop_pointer, link_request, old_path, new_path, subject.method(:on_link))
-
-      subject.link(old_path, new_path) { |e| }
+      subject.link(old_path, new_path)
     end
   end
 
@@ -198,15 +154,11 @@ describe UV::Filesystem do
     let(:new_path) { '/tmp/new_file' }
     let(:symlink_request) { double() }
 
-    it "requires a block" do
-      expect { subject.symlink(old_path, new_path) }.to raise_error(ArgumentError)
-    end
+    it "calls Libuv::Ext.fs_link" do
+      Libuv::Ext.should_receive(:create_request).with(:uv_fs).and_return(symlink_request)
+      Libuv::Ext.should_receive(:fs_symlink).with(loop_pointer, symlink_request, old_path, new_path, 0, subject.method(:on_symlink))
 
-    it "calls UV.fs_link" do
-      UV.should_receive(:create_request).with(:uv_fs).and_return(symlink_request)
-      UV.should_receive(:fs_symlink).with(loop_pointer, symlink_request, old_path, new_path, 0, subject.method(:on_symlink))
-
-      subject.symlink(old_path, new_path) { |e| }
+      subject.symlink(old_path, new_path)
     end
   end
 
@@ -214,15 +166,11 @@ describe UV::Filesystem do
     let(:path) { '/tmp/symlink' }
     let(:readlink_request) { double() }
 
-    it "requires a block" do
-      expect { subject.readlink(path) }.to raise_error(ArgumentError)
-    end
+    it "calls Libuv::Ext.fs_readlink" do
+      Libuv::Ext.should_receive(:create_request).with(:uv_fs).and_return(readlink_request)
+      Libuv::Ext.should_receive(:fs_readlink).with(loop_pointer, readlink_request, path, subject.method(:on_readlink))
 
-    it "calls UV.fs_readlink" do
-      UV.should_receive(:create_request).with(:uv_fs).and_return(readlink_request)
-      UV.should_receive(:fs_readlink).with(loop_pointer, readlink_request, path, subject.method(:on_readlink))
-
-      subject.readlink(path) { |e, path| }
+      subject.readlink(path)
     end
   end
 
@@ -232,15 +180,11 @@ describe UV::Filesystem do
     let(:gid) { 0 }
     let(:chown_request) { double() }
 
-    it "requires a block" do
-      expect { subject.chown(path, uid, gid) }.to raise_error(ArgumentError)
-    end
+    it "calls Libuv::Ext.fs_chown" do
+      Libuv::Ext.should_receive(:create_request).with(:uv_fs).and_return(chown_request)
+      Libuv::Ext.should_receive(:fs_chown).with(loop_pointer, chown_request, path, uid, gid, subject.method(:on_chown))
 
-    it "calls UV.fs_chown" do
-      UV.should_receive(:create_request).with(:uv_fs).and_return(chown_request)
-      UV.should_receive(:fs_chown).with(loop_pointer, chown_request, path, uid, gid, subject.method(:on_chown))
-
-      subject.chown(path, uid, gid) { |e| }
+      subject.chown(path, uid, gid)
     end
   end
 end

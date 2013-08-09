@@ -1,28 +1,24 @@
 require 'spec_helper'
 
-describe UV::Check do
+describe Libuv::Check do
   let(:handle_name) { :check }
   let(:loop) { double() }
   let(:pointer) { double() }
-  subject { UV::Check.new(loop, pointer) }
+  subject { Libuv::Check.new(loop, pointer) }
 
   it_behaves_like 'a handle'
 
   describe "#start" do
-    it "requires a block" do
-      expect { subject.start }.to raise_error(ArgumentError)
-    end
+    it "calls Libuv::Ext.check_start" do
+      Libuv::Ext.should_receive(:check_start).with(pointer, subject.method(:on_check))
 
-    it "calls UV.check_start" do
-      UV.should_receive(:check_start).with(pointer, subject.method(:on_check))
-
-      subject.start { |e| }
+      subject.start
     end
   end
 
   describe "#stop" do
-    it "calls UV.check_stop" do
-      UV.should_receive(:check_stop).with(pointer)
+    it "calls Libuv::Ext.check_stop" do
+      Libuv::Ext.should_receive(:check_stop).with(pointer)
 
       subject.stop
     end

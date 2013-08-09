@@ -1,40 +1,40 @@
 require 'spec_helper'
 
-describe UV::Loop do
+describe Libuv::Loop do
   let(:loop_pointer) { double() }
 
   describe ".default" do
-    it "calls UV.loop_default internally" do
-      UV.should_receive(:default_loop).once.and_return(loop_pointer)
-      FFI::AutoPointer.should_receive(:new).once.with(loop_pointer, UV.method(:loop_delete))
-      UV::Loop.default
+    it "calls Libuv::Ext.loop_default internally" do
+      Libuv::Ext.should_receive(:default_loop).once.and_return(loop_pointer)
+      FFI::AutoPointer.should_receive(:new).once.with(loop_pointer, Libuv::Ext.method(:loop_delete))
+      Libuv::Loop.default
     end
   end
 
   describe ".new" do
-    it "calls UV.loop_new" do
-      UV.should_receive(:loop_new).once.and_return(loop_pointer)
-      FFI::AutoPointer.should_receive(:new).once.with(loop_pointer, UV.method(:loop_delete))
-      UV::Loop.new
+    it "calls Libuv::Ext.loop_new" do
+      Libuv::Ext.should_receive(:loop_new).once.and_return(loop_pointer)
+      FFI::AutoPointer.should_receive(:new).once.with(loop_pointer, Libuv::Ext.method(:loop_delete))
+      Libuv::Loop.new
     end
   end
 
   subject do
-    FFI::AutoPointer.should_receive(:new).once.with(loop_pointer, UV.method(:loop_delete)).and_return(loop_pointer)
-    UV::Loop.create(loop_pointer)
+    FFI::AutoPointer.should_receive(:new).once.with(loop_pointer, Libuv::Ext.method(:loop_delete)).and_return(loop_pointer)
+    Libuv::Loop.create(loop_pointer)
   end
 
   describe "#run" do
-    it "calls UV.run" do
-      UV.should_receive(:run).with(loop_pointer, :UV_RUN_DEFAULT)
+    it "calls Libuv::Ext.run" do
+      Libuv::Ext.should_receive(:run).with(loop_pointer, :UV_RUN_DEFAULT)
 
       subject.run
     end
   end
 
   describe "#update_time" do
-    it "calls UV.update_time" do
-      UV.should_receive(:update_time).with(loop_pointer)
+    it "calls Libuv::Ext.update_time" do
+      Libuv::Ext.should_receive(:update_time).with(loop_pointer)
 
       subject.update_time
     end
@@ -43,8 +43,8 @@ describe UV::Loop do
   describe "#now" do
     let(:now) { Time.now }
 
-    it "calls UV.now" do
-      UV.should_receive(:now).with(loop_pointer).and_return(now)
+    it "calls Libuv::Ext.now" do
+      Libuv::Ext.should_receive(:now).with(loop_pointer).and_return(now)
 
       subject.now.should == now
     end
@@ -53,11 +53,11 @@ describe UV::Loop do
   describe "#last_error" do
     let(:error) { double() }
 
-    it "calls UV.last_error" do
-      UV.should_receive(:err_name).with(error).and_return("EINVAL")
-      UV.should_receive(:strerror).with(error).and_return("invalid argument")
+    it "calls Libuv::Ext.last_error" do
+      Libuv::Ext.should_receive(:err_name).with(error).and_return("EINVAL")
+      Libuv::Ext.should_receive(:strerror).with(error).and_return("invalid argument")
 
-      subject.lookup_error(error).should == UV::Error::EINVAL.new("invalid argument")
+      subject.lookup_error(error).should == Libuv::Error::EINVAL.new("invalid argument")
     end
   end
 
@@ -65,10 +65,10 @@ describe UV::Loop do
     let(:timer_pointer) { double() }
     let(:timer) { double() }
 
-    it "calls UV.timer_init" do
-      UV.should_receive(:create_handle).with(:uv_timer).and_return(timer_pointer)
-      UV.should_receive(:timer_init).with(loop_pointer, timer_pointer)
-      UV::Timer.should_receive(:new).with(subject, timer_pointer).and_return(timer)
+    it "calls Libuv::Ext.timer_init" do
+      Libuv::Ext.should_receive(:create_handle).with(:uv_timer).and_return(timer_pointer)
+      Libuv::Ext.should_receive(:timer_init).with(loop_pointer, timer_pointer)
+      Libuv::Timer.should_receive(:new).with(subject, timer_pointer).and_return(timer)
 
       subject.timer.should == timer
     end
@@ -78,10 +78,10 @@ describe UV::Loop do
     let(:tcp_pointer) { double() }
     let(:tcp) { double() }
 
-    it "calls UV.tcp_init" do
-      UV.should_receive(:create_handle).with(:uv_tcp).and_return(tcp_pointer)
-      UV.should_receive(:tcp_init).with(loop_pointer, tcp_pointer)
-      UV::TCP.should_receive(:new).with(subject, tcp_pointer).and_return(tcp)
+    it "calls Libuv::Ext.tcp_init" do
+      Libuv::Ext.should_receive(:create_handle).with(:uv_tcp).and_return(tcp_pointer)
+      Libuv::Ext.should_receive(:tcp_init).with(loop_pointer, tcp_pointer)
+      Libuv::TCP.should_receive(:new).with(subject, tcp_pointer).and_return(tcp)
 
       subject.tcp.should == tcp
     end
@@ -93,21 +93,21 @@ describe UV::Loop do
     let(:fileno) { 6555 }
 
     before(:each) do
-      UV.should_receive(:create_handle).with(:uv_tty).and_return(tty_pointer)
-      UV::TTY.should_receive(:new).with(subject, tty_pointer).and_return(tty)
+      Libuv::Ext.should_receive(:create_handle).with(:uv_tty).and_return(tty_pointer)
+      Libuv::TTY.should_receive(:new).with(subject, tty_pointer).and_return(tty)
     end
 
     context "readable" do
-      it "calls UV.tty_init" do
-        UV.should_receive(:tty_init).with(loop_pointer, tty_pointer, fileno, 1)
+      it "calls Libuv::Ext.tty_init" do
+        Libuv::Ext.should_receive(:tty_init).with(loop_pointer, tty_pointer, fileno, 1)
 
         subject.tty(fileno, true).should == tty
       end
     end
 
     context "not readable" do
-      it "calls UV.tty_init" do
-        UV.should_receive(:tty_init).with(loop_pointer, tty_pointer, fileno, 0)
+      it "calls Libuv::Ext.tty_init" do
+        Libuv::Ext.should_receive(:tty_init).with(loop_pointer, tty_pointer, fileno, 0)
 
         subject.tty(fileno, false).should == tty
       end
@@ -119,21 +119,21 @@ describe UV::Loop do
     let(:pipe) { double() }
 
     before(:each) do
-      UV.should_receive(:create_handle).with(:uv_pipe).and_return(pipe_pointer)
-      UV::Pipe.should_receive(:new).with(subject, pipe_pointer).and_return(pipe)
+      Libuv::Ext.should_receive(:create_handle).with(:uv_pipe).and_return(pipe_pointer)
+      Libuv::Pipe.should_receive(:new).with(subject, pipe_pointer).and_return(pipe)
     end
 
     context "with ipc" do
-      it "calls UV.pipe_init" do
-        UV.should_receive(:pipe_init).with(loop_pointer, pipe_pointer, 0)
+      it "calls Libuv::Ext.pipe_init" do
+        Libuv::Ext.should_receive(:pipe_init).with(loop_pointer, pipe_pointer, 0)
 
         subject.pipe.should == pipe
       end
     end
 
     context "without ipc" do
-      it "calls UV.pipe_init" do
-        UV.should_receive(:pipe_init).with(loop_pointer, pipe_pointer, 1)
+      it "calls Libuv::Ext.pipe_init" do
+        Libuv::Ext.should_receive(:pipe_init).with(loop_pointer, pipe_pointer, 1)
 
         subject.pipe(true).should == pipe
       end
@@ -144,10 +144,10 @@ describe UV::Loop do
     let(:prepare_pointer) { double() }
     let(:prepare) { double() }
 
-    it "calls UV.prepare_init" do
-      UV.should_receive(:create_handle).with(:uv_prepare).and_return(prepare_pointer)
-      UV.should_receive(:prepare_init).with(loop_pointer, prepare_pointer)
-      UV::Prepare.should_receive(:new).with(subject, prepare_pointer).and_return(prepare)
+    it "calls Libuv::Ext.prepare_init" do
+      Libuv::Ext.should_receive(:create_handle).with(:uv_prepare).and_return(prepare_pointer)
+      Libuv::Ext.should_receive(:prepare_init).with(loop_pointer, prepare_pointer)
+      Libuv::Prepare.should_receive(:new).with(subject, prepare_pointer).and_return(prepare)
 
       subject.prepare.should == prepare
     end
@@ -157,10 +157,10 @@ describe UV::Loop do
     let(:check_pointer) { double() }
     let(:check) { double() }
 
-    it "calls UV.check_init" do
-      UV.should_receive(:create_handle).with(:uv_check).and_return(check_pointer)
-      UV.should_receive(:check_init).with(loop_pointer, check_pointer)
-      UV::Check.should_receive(:new).with(subject, check_pointer).and_return(check)
+    it "calls Libuv::Ext.check_init" do
+      Libuv::Ext.should_receive(:create_handle).with(:uv_check).and_return(check_pointer)
+      Libuv::Ext.should_receive(:check_init).with(loop_pointer, check_pointer)
+      Libuv::Check.should_receive(:new).with(subject, check_pointer).and_return(check)
 
       subject.check.should == check
     end
@@ -170,10 +170,10 @@ describe UV::Loop do
     let(:idle_pointer) { double() }
     let(:idle) { double() }
 
-    it "calls UV.idle_init" do
-      UV.should_receive(:create_handle).with(:uv_idle).and_return(idle_pointer)
-      UV.should_receive(:idle_init).with(loop_pointer, idle_pointer)
-      UV::Idle.should_receive(:new).with(subject, idle_pointer).and_return(idle)
+    it "calls Libuv::Ext.idle_init" do
+      Libuv::Ext.should_receive(:create_handle).with(:uv_idle).and_return(idle_pointer)
+      Libuv::Ext.should_receive(:idle_init).with(loop_pointer, idle_pointer)
+      Libuv::Idle.should_receive(:new).with(subject, idle_pointer).and_return(idle)
 
       subject.idle.should == idle
     end
@@ -188,10 +188,10 @@ describe UV::Loop do
       expect { subject.async }.to raise_error(ArgumentError)
     end
 
-    it "calls UV.async_init" do
-      UV.should_receive(:create_handle).with(:uv_async).and_return(async_pointer)
-      UV.should_receive(:async_init).with(loop_pointer, async_pointer, async_callback)
-      UV::Async.should_receive(:new).with(subject, async_pointer).and_return(async)
+    it "calls Libuv::Ext.async_init" do
+      Libuv::Ext.should_receive(:create_handle).with(:uv_async).and_return(async_pointer)
+      Libuv::Ext.should_receive(:async_init).with(loop_pointer, async_pointer, async_callback)
+      Libuv::Async.should_receive(:new).with(subject, async_pointer).and_return(async)
       async.should_receive(:callback).once.with(:on_async).and_return(async_callback)
 
       handle = subject.async { |e| }
@@ -202,8 +202,8 @@ describe UV::Loop do
   describe "#fs" do
     let(:filesystem) { double() }
 
-    it "instantiates UV::Filesystem" do
-      UV::Filesystem.should_receive(:new).once.with(subject).and_return(filesystem)
+    it "instantiates Libuv::Filesystem" do
+      Libuv::Filesystem.should_receive(:new).once.with(subject).and_return(filesystem)
 
       subject.fs.should == filesystem
     end
@@ -219,10 +219,12 @@ describe UV::Loop do
       expect { subject.fs_event(filename) }.to raise_error(ArgumentError)
     end
 
-    it "calls UV.fs_event_init" do
-      UV.should_receive(:create_handle).with(:uv_fs_event).and_return(fs_event_pointer)
-      UV.should_receive(:fs_event_init).with(loop_pointer, fs_event_pointer, filename, fs_event_callback, 0)
-      UV::FSEvent.should_receive(:new).with(subject, fs_event_pointer).and_return(fs_event)
+    it "calls Libuv::Ext.fs_event_init" do
+      Libuv::Ext.should_receive(:create_handle).with(:uv_async)
+      #Libuv::Ext.should_receive(:fs_event_init).with(loop_pointer, fs_event_pointer, filename, fs_event_callback, 0)
+      Libuv::Ext.should_receive(:create_handle).with(:uv_fs_event).and_return(fs_event_pointer)
+      Libuv::Ext.should_receive(:fs_event_init).with(loop_pointer, fs_event_pointer, filename, fs_event_callback, 0)
+      Libuv::FSEvent.should_receive(:new).with(subject, fs_event_pointer).and_return(fs_event)
       fs_event.should_receive(:callback).once.with(:on_fs_event).and_return(fs_event_callback)
 
       handle = subject.fs_event(filename) { |e, filename, type| }

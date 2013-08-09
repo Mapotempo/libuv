@@ -13,9 +13,10 @@ module Libuv
 
             begin
                 check_result! ::Libuv::Ext.queue_work(@loop, @pointer, callback(:on_work), callback(:on_complete))
-            ensure
+            rescue Exception => e
                 ::Libuv::Ext.free(@pointer)
                 @complete = true
+                @defer.reject(e)
             end
         end
 
@@ -40,24 +41,22 @@ module Libuv
         private
 
 
-        def on_complete(req, rc)
+        def on_complete(req, status)
             @complete = true
             ::Libuv::Ext.free(req)
 
-            if status < 0
-                @defer.reject(@loop.lookup_error(rc))
-            elsif @error
+            if @error
                 @defer.reject(@error)
             else
-                @defer.resolve(rc)
+                resolve @defer, status
             end
         end
 
         def on_work(req)
             begin
                 @work.call
-            rescue StandardError => e
-                @error = e   # Catch non-fatal errors for promise resolution
+            rescue Exception => e
+                @error = e   # Catch errors for promise resolution
             end
         end
     end

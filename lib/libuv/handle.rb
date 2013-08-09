@@ -25,14 +25,10 @@ module Libuv
             self
         end
 
-        def close(&block)
-            if not block.nil?
-              @close_block = block
-            end
-
-            ::Libuv::Ext.close(@pointer, callback(:on_close))
-
-            self
+        def close
+            Libuv::Ext.close(@pointer, callback(:on_close))
+            @close_promise = @loop.defer
+            @close_promise.promise
         end
 
         def active?
@@ -62,7 +58,8 @@ module Libuv
             ::Libuv::Ext.free(pointer)
             clear_callbacks
             
-            @close_block.call unless @close_block.nil?
+            @close_promise.resolve(true)
+            @close_promise = nil
         end
     end
 end

@@ -9,7 +9,7 @@ module Libuv
         end
 
         def call
-            check_result ::Libuv::Ext.async_send(handle)
+            check_result! ::Libuv::Ext.async_send(handle)
             self
         end
 
@@ -18,7 +18,11 @@ module Libuv
 
 
         def on_async(handle, status)
-            @async_block.call(check_result(status))
+            begin
+                @async_block.call(check_result(status))
+            rescue Exception => e
+                # TODO:: log errors, don't want to crash the loop thread
+            end
         end
 
         public :callback

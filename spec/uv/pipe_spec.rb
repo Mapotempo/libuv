@@ -1,10 +1,10 @@
 require 'spec_helper'
 
-describe UV::Pipe do
+describe Libuv::Pipe do
   let(:handle_name) { :pipe }
   let(:loop) { double() }
   let(:pointer) { double() }
-  subject { UV::Pipe.new(loop, pointer) }
+  subject { Libuv::Pipe.new(loop, pointer) }
 
   it_behaves_like 'a handle'
   it_behaves_like 'a stream'
@@ -12,8 +12,8 @@ describe UV::Pipe do
   describe "#open" do
     let(:fileno) { 6555 }
 
-    it "calls UV.pipe_open" do
-      UV.should_receive(:pipe_open).with(pointer, fileno)
+    it "calls Libuv::Ext.pipe_open" do
+      Libuv::Ext.should_receive(:pipe_open).with(pointer, fileno)
 
       subject.open(fileno)
     end
@@ -26,8 +26,8 @@ describe UV::Pipe do
       name
     }
 
-    it "calls UV.pipe_bind" do
-      UV.should_receive(:pipe_bind).with(pointer, name)
+    it "calls Libuv::Ext.pipe_bind" do
+      Libuv::Ext.should_receive(:pipe_bind).with(pointer, name)
 
       subject.bind(name)
     end
@@ -41,21 +41,17 @@ describe UV::Pipe do
     }
     let(:connect_request) { double() }
 
-    it "requires a block" do
-      expect{ subject.connect(name) }.to raise_error(ArgumentError)
-    end
+    it "calls Libuv::Ext.pipe_connect" do
+      Libuv::Ext.should_receive(:create_request).with(:uv_connect).and_return(connect_request)
+      Libuv::Ext.should_receive(:pipe_connect).with(connect_request, pointer, name, subject.method(:on_connect))
 
-    it "calls UV.pipe_connect" do
-      UV.should_receive(:create_request).with(:uv_connect).and_return(connect_request)
-      UV.should_receive(:pipe_connect).with(connect_request, pointer, name, subject.method(:on_connect))
-
-      subject.connect(name) { |e| }
+      subject.connect(name)
     end
   end
 
   describe "#pending_instances=" do
-    it "calls UV.pipe_pending_instances" do
-      UV.should_receive(:pipe_pending_instances).with(pointer, 5)
+    it "calls Libuv::Ext.pipe_pending_instances" do
+      Libuv::Ext.should_receive(:pipe_pending_instances).with(pointer, 5)
       subject.pending_instances = 5
     end
   end

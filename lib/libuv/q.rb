@@ -38,7 +38,7 @@ module Libuv
 				wrappedCallback = proc { |val|
 					begin
 						result.resolve(callback.nil? ? val : callback.call(val))
-					rescue => e
+					rescue Exception => e
 						warn "\nUnhandled exception: #{e.message}\n#{e.backtrace.join("\n")}\n"
 						result.reject(e);
 					end
@@ -47,7 +47,7 @@ module Libuv
 				wrappedErrback = proc { |reason|
 					begin
 						result.resolve(errback.nil? ? Q.reject(reason) : errback.call(reason))
-					rescue => e
+					rescue Exception => e
 						warn "Unhandled exception: #{e.message}\n#{e.backtrace.join("\n")}\n"
 						result.reject(e);
 					end
@@ -57,7 +57,7 @@ module Libuv
 				# Schedule as we are touching shared state
 				#	Everything else is locally scoped
 				#
-				EM.schedule do
+				@loop.schedule do
 					pending_array = pending
 					
 					if pending_array.nil?
@@ -101,7 +101,7 @@ module Libuv
 				
 				callback ||= blk
 				
-				EM.next_tick {
+				@loop.next_tick {
 					if @error
 						result.resolve(errback.nil? ? Q.reject(@response) : errback.call(@response))
 					else
@@ -135,7 +135,7 @@ module Libuv
 			#
 			# @param [Object] val constant, message or an object representing the result.
 			def resolve(val = nil)
-				EM.schedule do
+				@loop.schedule do
 					if not @pending.nil?
 						callbacks = @pending
 						@pending = nil

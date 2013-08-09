@@ -3,10 +3,15 @@ module Libuv
         include Handle
 
 
-        def start(&block)
-            @check_block = block
-            check_result! ::Libuv::Ext.check_start(handle, callback(:on_check))
-            self
+        def start
+            begin
+                @check_deferred = @loop.defer
+                check_result! ::Libuv::Ext.check_start(handle, callback(:on_check))
+            rescue Exception => e
+                @check_deferred.reject(e)
+            ensure
+                @check_deferred.promise
+            end
         end
 
         def stop
@@ -19,7 +24,7 @@ module Libuv
 
 
         def on_check(handle, status)
-          @check_block.call(check_result(status))
+            resolve @check_deferred, status
         end
     end
 end

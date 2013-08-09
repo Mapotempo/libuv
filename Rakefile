@@ -7,7 +7,7 @@ require 'cucumber/rake/task'
 require 'rdoc/task'
 require 'ffi'
 require 'rake/clean'
-require 'libuv/tasks'
+require 'libuv/ext/tasks'
 
 task :default => :test
 

@@ -1,10 +1,10 @@
 require 'spec_helper'
 
-describe UV::UDP do
+describe Libuv::UDP do
   let(:handle_name) { :udp }
   let(:loop) { double() }
   let(:pointer) { double() }
-  subject { UV::UDP.new(loop, pointer) }
+  subject { Libuv::UDP.new(loop, pointer) }
 
   it_behaves_like 'a handle'
 
@@ -15,9 +15,9 @@ describe UV::UDP do
     context "ipv4" do
       let(:ip) { "0.0.0.0" }
 
-      it "calls UV.udp_bind" do
-        UV.should_receive(:ip4_addr).with(ip, port).and_return(ip_addr)
-        UV.should_receive(:udp_bind).with(pointer, ip_addr, 0)
+      it "calls Libuv::Ext.udp_bind" do
+        Libuv::Ext.should_receive(:ip4_addr).with(ip, port).and_return(ip_addr)
+        Libuv::Ext.should_receive(:udp_bind).with(pointer, ip_addr, 0)
 
         subject.bind(ip, port)
       end
@@ -26,17 +26,17 @@ describe UV::UDP do
     context "ipv6" do
       let(:ip) { "::" }
 
-      it "calls UV.udp_bind6" do
-        UV.should_receive(:ip6_addr).with(ip, port).and_return(ip_addr)
-        UV.should_receive(:udp_bind6).with(pointer, ip_addr, 0)
+      it "calls Libuv::Ext.udp_bind6" do
+        Libuv::Ext.should_receive(:ip6_addr).with(ip, port).and_return(ip_addr)
+        Libuv::Ext.should_receive(:udp_bind6).with(pointer, ip_addr, 0)
 
         subject.bind(ip, port)
       end
 
 
-      it "calls UV.udp_bind6 with ipv6_only" do
-        UV.should_receive(:ip6_addr).with(ip, port).and_return(ip_addr)
-        UV.should_receive(:udp_bind6).with(pointer, ip_addr, 1)
+      it "calls Libuv::Ext.udp_bind6 with ipv6_only" do
+        Libuv::Ext.should_receive(:ip6_addr).with(ip, port).and_return(ip_addr)
+        Libuv::Ext.should_receive(:udp_bind6).with(pointer, ip_addr, 1)
 
         subject.bind(ip, port, true)
       end
@@ -50,8 +50,8 @@ describe UV::UDP do
     let(:multicast_address) { "239.255.0.1" }
     let(:interface_address) { "" }
 
-    it "calls UV.udp_set_membership" do
-      UV.should_receive(:udp_set_membership).with(pointer, multicast_address, interface_address, :uv_join_group)
+    it "calls Libuv::Ext.udp_set_membership" do
+      Libuv::Ext.should_receive(:udp_set_membership).with(pointer, multicast_address, interface_address, :uv_join_group)
 
       subject.join(multicast_address, interface_address)
     end
@@ -61,8 +61,8 @@ describe UV::UDP do
     let(:multicast_address) { "239.255.0.1" }
     let(:interface_address) { "" }
 
-    it "calls UV.udp_set_membership" do
-      UV.should_receive(:udp_set_membership).with(pointer, multicast_address, interface_address, :uv_leave_group)
+    it "calls Libuv::Ext.udp_set_membership" do
+      Libuv::Ext.should_receive(:udp_set_membership).with(pointer, multicast_address, interface_address, :uv_leave_group)
 
       subject.leave(multicast_address, interface_address)
     end
@@ -73,16 +73,16 @@ describe UV::UDP do
       expect{ subject.start_recv }.to raise_error(ArgumentError)
     end
 
-    it "calls UV.udp_recv_start" do
-      UV.should_receive(:udp_recv_start).with(pointer, subject.method(:on_allocate), subject.method(:on_recv))
+    it "calls Libuv::Ext.udp_recv_start" do
+      Libuv::Ext.should_receive(:udp_recv_start).with(pointer, subject.method(:on_allocate), subject.method(:on_recv))
 
       subject.start_recv { |e, data, ip, port| }
     end
   end
 
   describe "#stop_recv" do
-    it "calls UV.udp_recv_stop" do
-      UV.should_receive(:udp_recv_stop).with(pointer)
+    it "calls Libuv::Ext.udp_recv_stop" do
+      Libuv::Ext.should_receive(:udp_recv_stop).with(pointer)
 
       subject.stop_recv
     end
@@ -97,24 +97,20 @@ describe UV::UDP do
     let(:data) { "some data to send over UDP" }
     let(:size) { data.size }
 
-    it "requires a block" do
-      expect { subject.send(data) }.to raise_error(ArgumentError)
-    end
-
     context "ipv4" do
       let(:ip) { "0.0.0.0" }
 
       before(:each) do
-        UV.should_receive(:ip4_addr).with(ip, port).and_return(ip_addr)
+        Libuv::Ext.should_receive(:ip4_addr).with(ip, port).and_return(ip_addr)
       end
 
-      it "calls UV.udp_send" do
+      it "calls Libuv::Ext.udp_send" do
         FFI::MemoryPointer.should_receive(:from_string).with(data).and_return(buffer_pointer)
-        UV.should_receive(:buf_init).with(buffer_pointer, size).and_return(buffer)
-        UV.should_receive(:create_request).with(:uv_udp_send).and_return(uv_udp_send_request)
-        UV.should_receive(:udp_send).with(uv_udp_send_request, pointer, buffer, 1, ip_addr, subject.method(:on_send))
+        Libuv::Ext.should_receive(:buf_init).with(buffer_pointer, size).and_return(buffer)
+        Libuv::Ext.should_receive(:create_request).with(:uv_udp_send).and_return(uv_udp_send_request)
+        Libuv::Ext.should_receive(:udp_send).with(uv_udp_send_request, pointer, buffer, 1, ip_addr, an_instance_of(FFI::Function))
 
-        subject.send(ip, port, data) { |e| }
+        subject.send(ip, port, data)
       end
     end
 
@@ -122,31 +118,31 @@ describe UV::UDP do
       let(:ip) { "::" }
 
       before(:each) do
-        UV.should_receive(:ip6_addr).with(ip, port).and_return(ip_addr)
+        Libuv::Ext.should_receive(:ip6_addr).with(ip, port).and_return(ip_addr)
       end
 
-      it "calls UV.udp_send6" do
+      it "calls Libuv::Ext.udp_send6" do
         FFI::MemoryPointer.should_receive(:from_string).with(data).and_return(buffer_pointer)
-        UV.should_receive(:buf_init).with(buffer_pointer, size).and_return(buffer)
-        UV.should_receive(:create_request).with(:uv_udp_send).and_return(uv_udp_send_request)
-        UV.should_receive(:udp_send6).with(uv_udp_send_request, pointer, buffer, 1, ip_addr, subject.method(:on_send))
+        Libuv::Ext.should_receive(:buf_init).with(buffer_pointer, size).and_return(buffer)
+        Libuv::Ext.should_receive(:create_request).with(:uv_udp_send).and_return(uv_udp_send_request)
+        Libuv::Ext.should_receive(:udp_send6).with(uv_udp_send_request, pointer, buffer, 1, ip_addr, an_instance_of(FFI::Function))
 
-        subject.send(ip, port, data) { |e| }
+        subject.send(ip, port, data)
       end
     end
   end
 
   describe "#enable_multicast_loop" do
-    it "calls UV.udp_set_multicast_loop" do
-      UV.should_receive(:udp_set_multicast_loop).with(pointer, 1)
+    it "calls Libuv::Ext.udp_set_multicast_loop" do
+      Libuv::Ext.should_receive(:udp_set_multicast_loop).with(pointer, 1)
 
       subject.enable_multicast_loop
     end
   end
 
   describe "#disable_multicast_loop" do
-    it "calls UV.udp_set_multicast_loop" do
-      UV.should_receive(:udp_set_multicast_loop).with(pointer, 0)
+    it "calls Libuv::Ext.udp_set_multicast_loop" do
+      Libuv::Ext.should_receive(:udp_set_multicast_loop).with(pointer, 0)
 
       subject.disable_multicast_loop
     end
@@ -155,24 +151,24 @@ describe UV::UDP do
   describe "#multicast_ttl=" do
     let(:ttl) { 150 }
 
-    it "calls UV.udp_set_multicast_ttl" do
-      UV.should_receive(:udp_set_multicast_ttl).with(pointer, ttl)
+    it "calls Libuv::Ext.udp_set_multicast_ttl" do
+      Libuv::Ext.should_receive(:udp_set_multicast_ttl).with(pointer, ttl)
 
       subject.multicast_ttl = ttl
     end
   end
 
   describe "#enable_broadcast" do
-    it "calls UV.udp_set_broadcast" do
-      UV.should_receive(:udp_set_broadcast).with(pointer, 1)
+    it "calls Libuv::Ext.udp_set_broadcast" do
+      Libuv::Ext.should_receive(:udp_set_broadcast).with(pointer, 1)
 
       subject.enable_broadcast
     end
   end
 
   describe "#disable_broadcast" do
-    it "calls UV.udp_set_broadcast" do
-      UV.should_receive(:udp_set_broadcast).with(pointer, 0)
+    it "calls Libuv::Ext.udp_set_broadcast" do
+      Libuv::Ext.should_receive(:udp_set_broadcast).with(pointer, 0)
 
       subject.disable_broadcast
     end
@@ -181,8 +177,8 @@ describe UV::UDP do
   describe "#ttl=" do
     let(:ttl) { 220 }
 
-    it "calls UV.udp_set_ttl" do
-      UV.should_receive(:udp_set_ttl).with(pointer, ttl)
+    it "calls Libuv::Ext.udp_set_ttl" do
+      Libuv::Ext.should_receive(:udp_set_ttl).with(pointer, ttl)
 
       subject.ttl = ttl
     end

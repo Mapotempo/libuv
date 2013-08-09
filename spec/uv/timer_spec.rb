@@ -1,10 +1,10 @@
 require 'spec_helper'
 
-describe UV::Timer do
+describe Libuv::Timer do
   let(:handle_name) { :timer }
   let(:loop) { double() }
   let(:pointer) { double() }
-  subject { UV::Timer.new(loop, pointer) }
+  subject { Libuv::Timer.new(loop, pointer) }
 
   it_behaves_like 'a handle'
 
@@ -16,24 +16,24 @@ describe UV::Timer do
       expect { subject.start(timeout, repeat) }.to raise_error(ArgumentError)
     end
 
-    it "calls UV.timer_start" do
-      UV.should_receive(:timer_start).with(pointer, subject.method(:on_timer), timeout, repeat)
+    it "calls Libuv::Ext.timer_start" do
+      Libuv::Ext.should_receive(:timer_start).with(pointer, subject.method(:on_timer), timeout, repeat)
 
       subject.start(timeout, repeat) { |e| }
     end
   end
 
   describe "#stop" do
-    it "calls UV.timer_stop" do
-      UV.should_receive(:timer_stop).with(pointer)
+    it "calls Libuv::Ext.timer_stop" do
+      Libuv::Ext.should_receive(:timer_stop).with(pointer)
 
       subject.stop
     end
   end
 
   describe "#again" do
-    it "calls UV.timer_again" do
-      UV.should_receive(:timer_again).with(pointer)
+    it "calls Libuv::Ext.timer_again" do
+      Libuv::Ext.should_receive(:timer_again).with(pointer)
 
       subject.again
     end
@@ -42,8 +42,8 @@ describe UV::Timer do
   describe "#repeat=" do
     let(:repeat) { 50000 }
 
-    it "calls UV.timer_set_repeat" do
-      UV.should_receive(:timer_set_repeat).with(pointer, repeat)
+    it "calls Libuv::Ext.timer_set_repeat" do
+      Libuv::Ext.should_receive(:timer_set_repeat).with(pointer, repeat)
 
       subject.repeat = repeat
     end
@@ -52,8 +52,8 @@ describe UV::Timer do
   describe "#repeat" do
     let(:repeat) { 50000 }
 
-    it "calls UV.timer_get_repeat" do
-      UV.should_receive(:timer_get_repeat).with(pointer).and_return(repeat)
+    it "calls Libuv::Ext.timer_get_repeat" do
+      Libuv::Ext.should_receive(:timer_get_repeat).with(pointer).and_return(repeat)
 
       subject.repeat.should == repeat
     end

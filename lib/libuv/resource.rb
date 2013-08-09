@@ -3,7 +3,7 @@ module Libuv
 
 
         def resolve(deferred, rc)
-            if rc >= 0
+            if rc.nil? || rc >= 0
                 deferred.resolve(rc)
             else
                 deferred.reject(@loop.lookup_error(rc))
@@ -11,8 +11,12 @@ module Libuv
         end
 
         def check_result!(rc)
-            e = @loop.lookup_error(rc) unless rc >= 0
+            e = @loop.lookup_error(rc) unless rc.nil? || rc >= 0
             raise e if e
+        end
+
+        def check_result(rc)
+            @loop.lookup_error(rc) unless rc.nil? || rc >= 0
         end
 
         def to_ptr

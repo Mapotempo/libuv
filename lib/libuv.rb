@@ -2,6 +2,9 @@ require 'forwardable'
 require 'ffi'
 
 module Libuv
+    require 'libuv/ext/ext'
+    require 'libuv/q'
+
     autoload :Resource, 'libuv/resource'
     autoload :Listener, 'libuv/listener'
     autoload :Net, 'libuv/net'

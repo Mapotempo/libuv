@@ -36,6 +36,19 @@ module Libuv
         def initialize(pointer) # :notnew:
             @pointer = pointer
             @loop = self
+
+            @run_queue = Queue.new
+            @on_loop = @loop.async do
+                until @run_queue.empty? do
+                    begin
+                        run = @run_queue.pop true  # pop non-block
+                        run.call
+                    rescue
+                        # TODO:: log error here
+                    end
+                end
+            end
+            @on_loop.unref  # Ignore this async handle when deciding if the loop should stop
         end
 
         # Run the actual event loop. This method will block for the duration of event loop unless
@@ -208,7 +221,7 @@ module Libuv
             async
         end
 
-        # Do some work in the libuv thread pool
+        # Queue some work for processing in the libuv thread pool
         #
         # @return [::Libuv::Work]
         # @raise [ArgumentError] if block is not given
@@ -217,6 +230,30 @@ module Libuv
 
             deferred = @loop.defer
             Work.new(@loop, deferred, block)    # Work is a promise object
+        end
+
+        # Schedule some work to be processed on the event loop
+        #
+        # @return [nil]
+        def schedule(&block)
+            assert_block(block)
+
+            if Thread.current[:uvloop] == @loop
+                block.call
+            else
+                @run_queue << block
+                @on_loop.call
+            end
+        end
+
+        # Schedule some work to be processed in the next iteration of the event loop
+        #
+        # @return [nil]
+        def next_tick(&block)
+            assert_block(block)
+
+            @run_queue << block
+            @on_loop.call
         end
 
         # Get a new Filesystem instance
