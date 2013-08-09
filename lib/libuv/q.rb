@@ -139,7 +139,7 @@ module Libuv
 					if not @pending.nil?
 						callbacks = @pending
 						@pending = nil
-						@value = ref(val)
+						@value = ref(@loop, val)
 						
 						if callbacks.length > 0
 							callbacks.each do |callback|

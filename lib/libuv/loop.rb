@@ -67,7 +67,7 @@ module Libuv
                     yield @loop if block_given?
                     resolve deferred, ::Libuv::Ext.run(@pointer, run_type)  # This is blocking
                 ensure
-                    Thread.current.delete :uvloop
+                    Thread.current[:uvloop] = nil
                 end
             end
 
