@@ -1,3 +1,4 @@
+require 'thread_safe'
 require 'set'
 
 module Libuv
@@ -7,22 +8,29 @@ module Libuv
         private
 
 
+        CALLBACKS = ThreadSafe::Cache.new
+
+
         def callbacks
             @callbacks ||= Set.new
+            #@callbacks ||= begin
+            #    CALLBACKS[@callbacks] = self
+            #    ThreadSafe::Cache.new
+            #end
         end
 
         def callback(name)
-            const_name = "#{name.upcase}_#{object_id}"
-            unless self.class.const_defined?(const_name)
+            const_name = "#{name}_#{object_id}".to_sym
+            unless CALLBACKS[const_name]
                 callbacks << const_name
-                self.class.const_set(const_name, method(name))
+                CALLBACKS[const_name] = method(name)
             end
-            self.class.const_get(const_name)
+            CALLBACKS[const_name]
         end
 
         def clear_callbacks
             callbacks.each do |name|
-                self.class.send(:remove_const, name)
+                CALLBACKS.delete(name)
             end
             callbacks.clear
         end

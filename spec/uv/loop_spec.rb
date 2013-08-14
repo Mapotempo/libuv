@@ -7,6 +7,7 @@ describe Libuv::Loop do
     it "calls Libuv::Ext.loop_default internally" do
       Libuv::Ext.should_receive(:default_loop).once.and_return(loop_pointer)
       FFI::AutoPointer.should_receive(:new).once.with(loop_pointer, Libuv::Ext.method(:loop_delete))
+      Libuv::Ext.should_receive(:loop_delete).once
       Libuv::Loop.default
     end
   end
@@ -15,6 +16,7 @@ describe Libuv::Loop do
     it "calls Libuv::Ext.loop_new" do
       Libuv::Ext.should_receive(:loop_new).once.and_return(loop_pointer)
       FFI::AutoPointer.should_receive(:new).once.with(loop_pointer, Libuv::Ext.method(:loop_delete))
+      Libuv::Ext.should_receive(:loop_delete).once
       Libuv::Loop.new
     end
   end
