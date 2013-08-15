@@ -1,14 +1,6 @@
-require 'atomic'
-require 'thread_safe'
-
-
 module Libuv
     class UDP
         include Handle, Net
-
-
-        SENDBACKS = ThreadSafe::Cache.new
-        @@send_id = Atomic.new(0)
 
 
         def bind(ip, port, ipv6_only = false)
@@ -68,22 +60,17 @@ module Libuv
 
                 @socket = create_socket(IPAddr.new(ip), port)
 
-
-                #
-                # Shared write id across all event loops
-                #
-                callback_id = 0
-                @@send_id.update { |val|
-                    callback_id = val
-                    val + 1
-                }
+                # local as this variable will be avaliable until the handle is closed
+                @sent_callbacks = @sent_callbacks || []
 
                 #
                 # create the curried callback
                 #
                 callback = FFI::Function.new(:void, [:pointer, :int]) do |req, status|
                     ::Libuv::Ext.free(req)
-                    promise = SENDBACKS.delete(callback_id)[0]
+                    # remove the callback from the array
+                    # assumes sends are done in order
+                    promise = @sent_callbacks.shift[0]
                     resolve promise, status
                 end
 
@@ -91,13 +78,13 @@ module Libuv
                 # Save the callback and return the promise
                 #
                 begin
-                    SENDBACKS[callback_id] = [deferred, callback]
+                    @sent_callbacks << [deferred, callback]
                     @socket.send(data, callback)
-                rescue Exeption => e
-                    SENDBACKS.delete(callback_id)
+                rescue Exception => e
+                    @sent_callbacks.pop
                     raise e
                 end
-            rescue Exeption => e
+            rescue Exception => e
                 deferred.reject(e)
             ensure
                 deferred.promise

@@ -1,14 +1,6 @@
-require 'atomic'
-require 'thread_safe'
-
-
 module Libuv
     module Stream
         include Handle
-
-
-        WRITEBACKS = ThreadSafe::Cache.new
-        @@write_id = Atomic.new(0)
 
 
         def listen(backlog)
@@ -52,33 +44,29 @@ module Libuv
                 size         = data.respond_to?(:bytesize) ? data.bytesize : data.size
                 buffer       = ::Libuv::Ext.buf_init(FFI::MemoryPointer.from_string(data), size)
 
-                #
-                # Shared write id across all event loops
-                #
-                callback_id = 0
-                @@write_id.update { |val|
-                    callback_id = val
-                    val + 1
-                }
+                # local as this variable will be avaliable until the handle is closed
+                @write_callbacks = @write_callbacks || []
 
                 #
                 # create the curried callback
                 #
                 callback = FFI::Function.new(:void, [:pointer, :int]) do |req, status|
                     ::Libuv::Ext.free(req)
-                    promise = WRITEBACKS.delete(callback_id)[0]
+                    # remove the callback from the array
+                    # assumes writes are done in order
+                    promise = @write_callbacks.shift[0]
                     resolve promise, status
                 end
 
                 begin
-                    WRITEBACKS[callback_id] = [deferred, callback]
+                    @write_callbacks << [deferred, callback]
                     check_result! ::Libuv::Ext.write(::Libuv::Ext.create_request(:uv_write), handle, buffer, 1, callback)
-                rescue Exeption => e
-                    WRITEBACKS.delete(callback_id)
+                rescue Exception => e
+                    @write_callbacks.pop
                     ::Libuv::Ext.free(req)
                     raise e
                 end
-            rescue Exeption => e
+            rescue Exception => e
                 deferred.reject(e)
             ensure
                 deferred.promise
@@ -89,7 +77,7 @@ module Libuv
             begin
                 @shutdown_deferred = @loop.defer
                 check_result! ::Libuv::Ext.shutdown(::Libuv::Ext.create_request(:uv_shutdown), handle, callback(:on_shutdown))
-            rescue Exeption => e
+            rescue Exception => e
                 @shutdown_deferred.reject(e)
             ensure
                 @shutdown_deferred.promise

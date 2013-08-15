@@ -21,7 +21,6 @@ Gem::Specification.new do |gem|
     gem.add_development_dependency 'aruba', '>= 0.5'
     gem.add_development_dependency 'rake', '>= 10.1'
     gem.add_development_dependency 'yard'
-    gem.add_development_dependency 'atomic'
     gem.add_development_dependency 'thread_safe'
 
     gem.files         = `git ls-files`.split("\n")

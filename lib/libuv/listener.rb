@@ -13,10 +13,6 @@ module Libuv
 
         def callbacks
             @callbacks ||= Set.new
-            #@callbacks ||= begin
-            #    CALLBACKS[@callbacks] = self
-            #    ThreadSafe::Cache.new
-            #end
         end
 
         def callback(name)
