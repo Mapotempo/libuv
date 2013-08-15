@@ -1,50 +1,55 @@
 # uv.rb - libuv FFI bindings for Ruby
 
-[Libuv](https://github.com/cotag/libuv) is a cross platform asynchronous IO implementation that powers NodeJS. It supports sockets, both UDP and TCP, filesystem operations, TTY, Pipes and other asynchronous primitives like timer, check, prepare and idle.
+[Libuv](https://github.com/joyent/libuv) is a cross platform asynchronous IO implementation that powers NodeJS. It supports sockets, both UDP and TCP, filesystem operations, TTY, Pipes and other asynchronous primitives like timer, check, prepare and idle.
 
-Libuv.rb is FFI Ruby bindings for libuv.
+The Libuv gem contains Libuv and a Ruby wrapper.
 
 ## Usage
 
-Create a uv loop or use a default one
+Create a new libuv loop or use a default one
 
 ```ruby
-  require 'uv'
+  require 'libuv'
 
-  loop = UV::Loop.default
+  loop = Libuv::Loop.default
   # or
-  # loop = UV::Loop.new
+  # loop = Libuv::Loop.new
 
-  timer = loop.timer
-  timer.start(50000, 0) do |error|
-    p error if error
-    puts "50 seconds passed"
-    timer.close
+  loop.run do
+    timer = loop.timer
+    timer.start(50000, 0) do |error|
+      p error if error
+      puts "50 seconds passed"
+      timer.close
+      loop.stop
+    end
   end
-
-  loop.run
 ```
 
-Find more examples in examples directory
+Find more examples in examples directory and check out the [yard documentation](http://rubydoc.info/gems/libuv/Libuv/Loop)
 
 ## Installation
 
 ```Shell
-  gem install uvrb
+  gem install libuv
 ```
 
 or
 
 ```shell
-  git clone ...
-  cd ...
+  git clone https://github.com/cotag/libuv.git
+  cd libuv
   bundle install
+  rake compile
 ```
 
 ### Prerequisites
 
-* The installation requires subversion to be installed on your system and available on the PATH
-* Windows users will require a copy of Visual Studio 2010 or later installed. {Express}[http://www.microsoft.com/visualstudio/eng/products/visual-studio-express-products] works fine.
+* The installation requires __subversion__ to be installed on your system and available on the PATH
+* Windows users will require a copy of Visual Studio 2010 or later. [Visual Studio Express](http://www.microsoft.com/visualstudio/eng/products/visual-studio-express-products) works fine.
+
+or if you have a compatible libuv.(so|dylib|dll) on the PATH already, setting the environmental variable `USE_GLOBAL_LIBUV` will prevent compliling the packaged version.
+
 
 ## What's supported
 
@@ -62,3 +67,5 @@ or
 * FSEvent
 * Errors
 * Work queue (thread pool)
+
+

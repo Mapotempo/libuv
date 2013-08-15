@@ -6,24 +6,26 @@ Feature: customise your event loop
   Scenario: prepare loop
     Given a file named "prepare_check_example.rb" with:
       """
-      require 'uvrb'
+      require 'libuv'
 
-      loop = UV::Loop.default
+      loop = Libuv::Loop.default
 
       prepared = false
       checked  = false
+      unless_error = proc { |error|
+        loop.stop
+        abort "the following error occurred '#{error.inspect}'"
+      }
 
       prepare = loop.prepare
-      prepare.start do |e|
+      prepare.start.then unless_error do
         puts "preparing"
-        abort e.inspect if e
         prepared = true
       end
 
       check = loop.check
-      check.start do |e|
+      check.start.then unless_error do
         puts "checking"
-        abort e.inspect if e
         abort "not prepared" unless prepared
         checked = true
       end
@@ -35,10 +37,11 @@ Feature: customise your event loop
 
       stopper = loop.timer
       stopper.start(2000, 0) do |e|
-        timer.close {}
-        prepare.close {}
-        check.close {}
-        stopper.close {}
+        timer.close
+        prepare.close
+        check.close
+        stopper.close
+        loop.stop
       end
 
       loop.run

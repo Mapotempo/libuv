@@ -1,5 +1,6 @@
-if ENV['USE_GLOBAL_LIBUV'].nil?
-
+if ENV.has_key?('USE_GLOBAL_LIBUV')
+	exit(0)
+else
 	require 'rubygems'
 	require 'ffi'
 	require 'rake/clean'
@@ -14,5 +15,4 @@ if ENV['USE_GLOBAL_LIBUV'].nil?
 	task :libuv => ["ext/libuv.#{FFI::Platform::LIBSUFFIX}"]
 
 	CLOBBER.include("ext/libuv.#{FFI::Platform::LIBSUFFIX}")
-
 end

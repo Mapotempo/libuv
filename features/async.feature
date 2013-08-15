@@ -1,15 +1,15 @@
 Feature: wake up another event loop
 
-  UV::Loop cannot be shared by multiple threads. To wake up a control loop in a different
-  thread, use UV::Loop#async, which is thread safe
+  Libuv::Loop cannot be shared by multiple threads. To wake up a control loop in a different
+  thread, use Libuv::Loop#async, which is thread safe
 
   Scenario: wake up an event loop from a different thread
     Given a file named "async_example.rb" with:
       """
-      require 'uvrb'
+      require 'libuv'
 
       count = 0
-      loop  = UV::Loop.default
+      loop  = Libuv::Loop.default
 
       timer = loop.timer
       timer.start(0, 100) do |e|
@@ -20,9 +20,10 @@ Feature: wake up another event loop
       callback = loop.async do |e|
         stopper = loop.timer
         stopper.start(1000, 0) do |e|
-          timer.close {}
-          callback.close {}
-          stopper.close {}
+          timer.close
+          callback.close
+          stopper.close
+          loop.stop
         end
       end
 

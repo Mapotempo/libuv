@@ -12,10 +12,10 @@ Feature: triggering callbacks while nothing else is happening
   Scenario: when you've got nothing better to do...
     Given a file named "idle_example.rb" with:
       """
-      require 'uvrb'
+      require 'libuv'
       
       idle_calls = 0
-      loop       = UV::Loop.default
+      loop       = Libuv::Loop.default
       
       idle = loop.idle
       idle.start do |e|
@@ -31,9 +31,10 @@ Feature: triggering callbacks while nothing else is happening
       stopper = loop.timer
       stopper.start(100, 0) do |e|
         raise e if e
-        idle.close {}
-        timer.close {}
-        stopper.close {}
+        idle.close
+        timer.close
+        stopper.close
+        loop.stop
       end
       
       loop.run
