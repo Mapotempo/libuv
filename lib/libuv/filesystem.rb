@@ -8,9 +8,8 @@ module Libuv
         end
 
         def open(path, flags = 0, mode = 0)
+            @open_deferred = @loop.defer
             begin
-                @open_deferred = @loop.defer
-
                 assert_type(String, path, "path must be a String")
                 assert_type(Integer, flags, "flags must be an Integer")
                 assert_type(Integer, mode, "mode must be an Integer")
@@ -18,108 +17,100 @@ module Libuv
                 check_result! ::Libuv::Ext.fs_open(loop.to_ptr, ::Libuv::Ext.create_request(:uv_fs), path, flags, mode, callback(:on_open))
             rescue Exception => e
                 @open_deferred.reject(e)
-            ensure
-                @open_deferred.promise
             end
+            @open_deferred.promise
         end
 
         def unlink(path)
+            @unlink_deferred = @loop.defer
             begin
-                @unlink_deferred = @loop.defer
                 assert_type(String, path, "path must be a String")
 
                 check_result! ::Libuv::Ext.fs_unlink(loop.to_ptr, ::Libuv::Ext.create_request(:uv_fs), path, callback(:on_unlink))
             rescue Exception => e
                 @unlink_deferred.reject(e)
-            ensure
-                @unlink_deferred.promise
             end
+            @unlink_deferred.promise
         end
 
         def mkdir(path, mode = 0777)
+            @mkdir_deferred = @loop.defer
             begin
-                @mkdir_deferred = @loop.defer
                 assert_type(String, path, "path must be a String")
                 assert_type(Integer, mode, "mode must be an Integer")
 
                 check_result! ::Libuv::Ext.fs_mkdir(loop.to_ptr, ::Libuv::Ext.create_request(:uv_fs), path, mode, callback(:on_mkdir))
             rescue Exception => e
                 @mkdir_deferred.reject(e)
-            ensure
-                @mkdir_deferred.promise
             end
+            @mkdir_deferred.promise
         end
 
         def rmdir(path)
+            @rmdir_deferred = @loop.defer
             begin
-                @rmdir_deferred = @loop.defer
                 assert_type(String, path, "path must be a String")
 
                 check_result! ::Libuv::Ext.fs_rmdir(loop.to_ptr, ::Libuv::Ext.create_request(:uv_fs), path, callback(:on_rmdir))
             rescue Exception => e
                 @rmdir_deferred.reject(e)
-            ensure
-                @rmdir_deferred.promise
             end
+            @rmdir_deferred.promise
         end
 
         def readdir(path)
+            @readdir_deferred = @loop.defer
             begin
-                @readdir_deferred = @loop.defer
                 assert_type(String, path, "path must be a String")
 
                 check_result! ::Libuv::Ext.fs_readdir(loop.to_ptr, ::Libuv::Ext.create_request(:uv_fs), path, 0, callback(:on_readdir))
             rescue Exception => e
                 @readdir_deferred.reject(e)
-            ensure
-                @readdir_deferred.promise
             end
+            @readdir_deferred.promise
         end
 
         def stat(path)
+            @stat_deferred = @loop.defer
             begin
-                @stat_deferred = @loop.defer
                 assert_type(String, path, "path must be a String")
 
                 check_result! ::Libuv::Ext.fs_stat(loop.to_ptr, ::Libuv::Ext.create_request(:uv_fs), path, callback(:on_stat))
             rescue Exception => e
                 @stat_deferred.reject(e)
-            ensure
-                @stat_deferred.promise
             end
+            @stat_deferred.promise
         end
 
         def rename(old_path, new_path)
+            @rename_deferred = @loop.defer
             begin
-                @rename_deferred = @loop.defer
                 assert_type(String, old_path, "old_path must be a String")
                 assert_type(String, new_path, "new_path must be a String")
 
                 check_result! ::Libuv::Ext.fs_rename(loop.to_ptr, ::Libuv::Ext.create_request(:uv_fs), old_path, new_path, callback(:on_rename))
             rescue Exception => e
                 @rename_deferred.reject(e)
-            ensure
-                @rename_deferred.promise
             end
+            @rename_deferred.promise
         end
 
         def chmod(path, mode)
+            @chmod_deferred = @loop.defer
             begin
-                @chmod_deferred = @loop.defer
                 assert_type(String, path, "path must be a String")
                 assert_type(Integer, mode, "mode must be an Integer")
 
                 check_result! ::Libuv::Ext.fs_chmod(loop.to_ptr, ::Libuv::Ext.create_request(:uv_fs), path, mode, callback(:on_chmod))
             rescue Exception => e
                 @chmod_deferred.reject(e)
-            ensure
-                @chmod_deferred.promise
             end
+            @chmod_deferred.promise
         end
 
         def utime(path, atime, mtime)
+            @utime_deferred = @loop.defer
             begin
-                @utime_deferred = @loop.defer
                 assert_type(String, path, "path must be a String")
                 assert_type(Integer, atime, "atime must be an Integer")
                 assert_type(Integer, mtime, "mtime must be an Integer")
@@ -127,68 +118,63 @@ module Libuv
                 check_result! ::Libuv::Ext.fs_utime(loop.to_ptr, ::Libuv::Ext.create_request(:uv_fs), path, atime, mtime, callback(:on_utime))
             rescue Exception => e
                 @utime_deferred.reject(e)
-            ensure
-                @utime_deferred.promise
             end
+            @utime_deferred.promise
         end
 
         def lstat(path)
+            @lstat_deferred = @loop.defer
             begin
-                @lstat_deferred = @loop.defer
                 assert_type(String, path, "path must be a String")
 
                 check_result! ::Libuv::Ext.fs_lstat(loop.to_ptr, ::Libuv::Ext.create_request(:uv_fs), path, callback(:on_lstat))
             rescue Exception => e
                 @lstat_deferred.reject(e)
-            ensure
-                @lstat_deferred.promise
             end
+            @lstat_deferred.promise
         end
 
         def link(old_path, new_path)
+            @link_deferred = @loop.defer
             begin
-                @link_deferred = @loop.defer
                 assert_type(String, old_path, "old_path must be a String")
                 assert_type(String, new_path, "new_path must be a String")
 
                 check_result! ::Libuv::Ext.fs_link(loop.to_ptr, ::Libuv::Ext.create_request(:uv_fs), old_path, new_path, callback(:on_link))
             rescue Exception => e
                 @link_deferred.reject(e)
-            ensure
-                @link_deferred.promise
             end
+            @link_deferred.promise
         end
 
         def symlink(old_path, new_path)
+            @symlink_deferred = @loop.defer
             begin
-                @symlink_deferred = @loop.defer
                 assert_type(String, old_path, "old_path must be a String")
                 assert_type(String, new_path, "new_path must be a String")
 
                 check_result! ::Libuv::Ext.fs_symlink(loop.to_ptr, ::Libuv::Ext.create_request(:uv_fs), old_path, new_path, 0, callback(:on_symlink))
             rescue Exception => e
                 @symlink_deferred.reject(e)
-            ensure
-                @symlink_deferred.promise
             end
+            @symlink_deferred.promise
         end
 
         def readlink(path)
+            @readlink_deferred = @loop.defer
             begin
-                @readlink_deferred = @loop.defer
                 assert_type(String, path, "path must be a String")
 
                 check_result! ::Libuv::Ext.fs_readlink(loop.to_ptr, ::Libuv::Ext.create_request(:uv_fs), path, callback(:on_readlink))
             rescue Exception => e
                 @readlink_deferred.reject(e)
-            ensure
-                @readlink_deferred.promise
             end
+            @readlink_deferred.promise
         end
 
         def chown(path, uid, gid)
+            @chown_deferred = @loop.defer
             begin
-                @chown_deferred = @loop.defer
                 assert_type(String, path, "path must be a String")
                 assert_type(Integer, uid, "uid must be an Integer")
                 assert_type(Integer, gid, "gid must be an Integer")
@@ -196,9 +182,8 @@ module Libuv
                 check_result! ::Libuv::Ext.fs_chown(loop.to_ptr, ::Libuv::Ext.create_request(:uv_fs), path, uid, gid, callback(:on_chown))
             rescue Exception => e
                 @chown_deferred.reject(e)
-            ensure
-                @chown_deferred.promise
             end
+            @chown_deferred.promise
         end
 
 

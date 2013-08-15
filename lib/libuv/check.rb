@@ -4,14 +4,13 @@ module Libuv
 
 
         def start
+            @check_deferred = @loop.defer
             begin
-                @check_deferred = @loop.defer
                 check_result! ::Libuv::Ext.check_start(handle, callback(:on_check))
             rescue Exception => e
                 @check_deferred.reject(e)
-            ensure
-                @check_deferred.promise
             end
+            @check_deferred.promise
         end
 
         def stop

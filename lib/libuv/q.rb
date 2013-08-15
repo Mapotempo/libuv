@@ -46,7 +46,7 @@ module Libuv
 				
 				wrappedErrback = proc { |reason|
 					begin
-						result.resolve(errback.nil? ? Q.reject(reason) : errback.call(reason))
+						result.resolve(errback.nil? ? Q.reject(@loop, reason) : errback.call(reason))
 					rescue Exception => e
 						warn "Unhandled exception: #{e.message}\n#{e.backtrace.join("\n")}\n"
 						result.reject(e);
@@ -61,9 +61,9 @@ module Libuv
 					pending_array = pending
 					
 					if pending_array.nil?
-						value.then(wrappedCallback, wrappedErrback)
+						value.then(wrappedErrback, wrappedCallback)
 					else
-						pending_array << [wrappedCallback, wrappedErrback]
+						pending_array << [wrappedErrback, wrappedCallback]
 					end
 				end
 				
@@ -88,22 +88,23 @@ module Libuv
 		class ResolvedPromise < Promise
 			public_class_method :new
 			
-			def initialize(response, error = false)
+			def initialize(loop, response, error = false)
 				raise ArgumentError if error && response.is_a?(Promise)
 				super()
 				
+				@loop = loop
 				@error = error
 				@response = response
 			end
 			
-			def then(callback = nil, errback = nil, &blk)
-				result = Q.defer
+			def then(errback = nil, callback = nil, &blk)
+				result = Q.defer(@loop)
 				
 				callback ||= blk
 				
 				@loop.next_tick {
 					if @error
-						result.resolve(errback.nil? ? Q.reject(@response) : errback.call(@response))
+						result.resolve(errback.nil? ? Q.reject(@loop, @response) : errback.call(@response))
 					else
 						result.resolve(callback.nil? ? @response : callback.call(@response))
 					end
@@ -199,10 +200,7 @@ module Libuv
 		#   require 'rubygems' # or use Bundler.setup
 		#   require 'em-promise'
 		#
-		#   promiseB = promiseA.then(lambda {|result|
-		#     # success: do something and resolve promiseB with the old or a new result
-		#     return result
-		#   }, lambda {|reason|
+		#   promiseB = promiseA.then(lambda {|reason|
 		#     # error: handle the error if possible and resolve promiseB with newPromiseOrValue,
 		#     #        otherwise forward the rejection to promiseB
 		#     if canHandle(reason)
@@ -210,6 +208,9 @@ module Libuv
 		#       return newPromiseOrValue
 		#     end
 		#     return Q.reject(loop, reason)
+		#   }, lambda {|result|
+		#     # success: do something and resolve promiseB with the old or a new result
+		#     return result
 		#   })
 		#
 		# @param [Object] reason constant, message, exception or an object representing the rejection reason.
@@ -234,18 +235,18 @@ module Libuv
 			
 			if counter > 0
 				promises.each_index do |index|
-					ref(loop, promises[index]).then(proc {|result|
+					ref(loop, promises[index]).then(proc {|reason|
+						if results[index].nil?
+							deferred.reject(reason)
+						end
+						reason
+					}, proc {|result|
 						if results[index].nil?
 							results[index] = result
 							counter -= 1
 							deferred.resolve(results) if counter <= 0
 						end
 						result
-					}, proc {|reason|
-						if results[index].nil?
-							deferred.reject(reason)
-						end
-						reason
 					})
 				end
 			else
@@ -261,7 +262,7 @@ module Libuv
 		
 		def ref(loop, value)
 			return value if value.is_a?(Promise)
-			return ResolvedPromise.new(value, loop)			# A resolved success promise
+			return ResolvedPromise.new(loop, value)			# A resolved success promise
 		end
 		
 		

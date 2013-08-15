@@ -9,19 +9,18 @@ module Libuv
         end
 
         def close
+            @close_deferred = @loop.defer
             begin
-                @close_deferred = @loop.defer
                 check_result! ::Libuv::Ext.fs_close(loop.to_ptr, ::Libuv::Ext.create_request(:uv_fs), @fd, callback(:on_close))
             rescue Exception => e
                 @close_deferred.reject(e)
-            ensure
-                @close_deferred.promise
             end
+            @close_deferred.promise
         end
 
         def read(length, offset = 0)
+            @read_deferred = @loop.defer
             begin
-                @read_deferred = @loop.defer
                 assert_type(Integer, length, "length must be an Integer")
                 assert_type(Integer, offset, "offset must be an Integer")
 
@@ -31,14 +30,13 @@ module Libuv
                 check_result! ::Libuv::Ext.fs_read(loop.to_ptr, ::Libuv::Ext.create_request(:uv_fs), @fd, @read_buffer, @read_buffer_length, offset, callback(:on_read))
             rescue Exception => e
                 @read_deferred.reject(e)
-            ensure
-                @read_deferred.promise
             end
+            @read_deferred.promise
         end
 
         def write(data, offset = 0)
+            @write_deferred = @loop.defer
             begin
-                @write_deferred = @loop.defer
                 assert_type(String, data, "data must be a String")
                 assert_type(Integer, offset, "offset must be an Integer")
 
@@ -48,95 +46,87 @@ module Libuv
                 check_result! ::Libuv::Ext.fs_write(loop.to_ptr, ::Libuv::Ext.create_request(:uv_fs), @fd, @write_buffer, @write_buffer_length, offset, callback(:on_write))
             rescue Exception => e
                 @write_deferred.reject(e)
-            ensure
-                @write_deferred.promise
             end
+            @write_deferred.promise
         end
 
         def stat
+            @stat_deferred = @loop.defer
             begin
-                @stat_deferred = @loop.defer
                 check_result! ::Libuv::Ext.fs_fstat(loop.to_ptr, ::Libuv::Ext.create_request(:uv_fs), @fd, callback(:on_stat))
             rescue Exception => e
                 @stat_deferred.reject(e)
-            ensure
-                @stat_deferred.promise
             end
+            @stat_deferred.promise
         end
 
         def sync
+            @sync_deferred = @loop.defer
             begin
-                @sync_deferred = @loop.defer
                 check_result! ::Libuv::Ext.fs_fsync(loop.to_ptr, ::Libuv::Ext.create_request(:uv_fs), @fd, callback(:on_sync))
             rescue Exception => e
                 @sync_deferred.reject(e)
-            ensure
-                @sync_deferred.promise
             end
+            @sync_deferred.promise
         end
 
         def datasync
+            @datasync_deferred = @loop.defer
             begin
-                @datasync_deferred = @loop.defer
                 check_result! ::Libuv::Ext.fs_fdatasync(loop.to_ptr, ::Libuv::Ext.create_request(:uv_fs), @fd, callback(:on_datasync))
             rescue Exception => e
                 @datasync_deferred.reject(e)
-            ensure
-                @datasync_deferred.promise
             end
+            @datasync_deferred.promise
         end
 
         def truncate(offset)
+            @truncate_deferred = @loop.defer
             begin
-                @truncate_deferred = @loop.defer
                 assert_type(Integer, offset, "offset must be an Integer")
 
                 check_result! ::Libuv::Ext.fs_ftruncate(loop.to_ptr, ::Libuv::Ext.create_request(:uv_fs), @fd, offset, callback(:on_truncate))
             rescue Exception => e
                 @truncate_deferred.reject(e)
-            ensure
-                @truncate_deferred.promise
             end
+            @truncate_deferred.promise
         end
 
         def utime(atime, mtime)
+            @utime_deferred = @loop.defer
             begin
-                @utime_deferred = @loop.defer
                 assert_type(Integer, atime, "atime must be an Integer")
                 assert_type(Integer, mtime, "mtime must be an Integer")
 
                 check_result! ::Libuv::Ext.fs_futime(loop.to_ptr, ::Libuv::Ext.create_request(:uv_fs), @fd, atime, mtime, callback(:on_utime))
             rescue Exception => e
                 @utime_deferred.reject(e)
-            ensure
-                @utime_deferred.promise
             end
+            @utime_deferred.promise
         end
 
         def chmod(mode)
+            @chmod_deferred = @loop.defer
             begin
-                @chmod_deferred = @loop.defer
                 assert_type(Integer, mode, "mode must be an Integer")
                 check_result! ::Libuv::Ext.fs_fchmod(loop.to_ptr, ::Libuv::Ext.create_request(:uv_fs), @fd, mode, callback(:on_chmod))
             rescue Exception => e
                 @chmod_deferred.reject(e)
-            ensure
-                @chmod_deferred.promise
             end
+            @chmod_deferred.promise
         end
 
         def chown(uid, gid)
+            @chown_deferred = @loop.defer
             begin
-                @chown_deferred = @loop.defer
                 assert_type(Integer, uid, "uid must be an Integer")
                 assert_type(Integer, gid, "gid must be an Integer")
 
                 check_result! ::Libuv::Ext.fs_fchown(loop.to_ptr, ::Libuv::Ext.create_request(:uv_fs), @fd, uid, gid, callback(:on_chown))
             rescue Exception => e
                 @chown_deferred.reject(e)
-            ensure
-                @chown_deferred.promise
             end
+            @chown_deferred.promise
         end
 
 

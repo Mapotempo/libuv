@@ -17,8 +17,8 @@ module Libuv
         end
 
         def connect(ip, port)
+            @connect_deferred = @loop.defer
             begin
-                @connect_deferred = @loop.defer
                 assert_type(String, ip, "ip must be a String")
                 assert_type(Integer, port, "port must be an Integer")
 
@@ -26,9 +26,8 @@ module Libuv
                 @socket.connect(callback(:on_connect))
             rescue Exception => e
                 @connect_deferred.reject(e)
-            ensure
-                @connect_deferred.promise
             end
+            @connect_deferred.promise
         end
 
         def sockname

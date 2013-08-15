@@ -82,13 +82,12 @@ module Libuv
                     @socket.send(data, callback)
                 rescue Exception => e
                     @sent_callbacks.pop
-                    raise e
+                    deferred.reject(e)
                 end
             rescue Exception => e
                 deferred.reject(e)
-            ensure
-                deferred.promise
             end
+            deferred.promise
         end
 
         def enable_multicast_loop

@@ -37,8 +37,9 @@ module Libuv
             @pointer = pointer
             @loop = self
 
+            # Create an async call for scheduling work from other threads
             @run_queue = Queue.new
-            @on_loop = @loop.async do
+            @process_queue = @loop.async do
                 until @run_queue.empty? do
                     begin
                         run = @run_queue.pop true  # pop non-block
@@ -48,7 +49,18 @@ module Libuv
                     end
                 end
             end
-            @on_loop.unref  # Ignore this async handle when deciding if the loop should stop
+
+            # Create a next tick timer
+            @next_tick = @loop.timer
+
+            # Create an async call for ending the loop
+            @stop_loop = @loop.async do
+                @process_queue.close
+                @stop_loop.close
+                @next_tick.close
+
+                ::Libuv::Ext.stop(@pointer)
+            end
         end
 
         # Run the actual event loop. This method will block for the duration of event loop unless
@@ -242,7 +254,7 @@ module Libuv
                 block.call
             else
                 @run_queue << block
-                @on_loop.call
+                @process_queue.call
             end
         end
 
@@ -253,7 +265,25 @@ module Libuv
             assert_block(block)
 
             @run_queue << block
-            @on_loop.call
+            if Thread.current[:uvloop] == @loop
+                # Create a next tick timer
+                if not @next_tick_scheduled
+                    @next_tick.start(0) do
+                        @next_tick_scheduled = false
+                        @process_queue.call
+                    end
+                    @next_tick_scheduled = true
+                end
+            else
+                @process_queue.call
+            end
+        end
+
+        # Closes handles opened by the loop class and completes the current loop iteration
+        # 
+        # @return [nil]
+        def stop
+            @stop_loop.call
         end
 
         # Get a new Filesystem instance

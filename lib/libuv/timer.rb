@@ -3,7 +3,7 @@ module Libuv
         include Assertions, Handle
 
 
-        def start(timeout, repeat, &block)
+        def start(timeout, repeat = 0, &block)
             assert_block(block)
             assert_type(Integer, timeout, "timeout must be an Integer")
             assert_type(Integer, repeat, "repeat must be an Integer")

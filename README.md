@@ -1,14 +1,14 @@
-= uv.rb - libuv FFI bindings for Ruby
-{<img src="https://secure.travis-ci.org/avalanche123/uvrb.png?branch=master" alt="Build Status" />}[http://travis-ci.org/avalanche123/uvrb]
+# uv.rb - libuv FFI bindings for Ruby
 
-{Libuv}[https://github.com/joyent/libuv] is a cross platform asynchronous IO implementation that powers NodeJS. It supports sockets, both UDP and TCP, filesystem operations, TTY, Pipes and other asynchronous primitives like timer, check, prepare and idle.
+[Libuv](https://github.com/cotag/libuv) is a cross platform asynchronous IO implementation that powers NodeJS. It supports sockets, both UDP and TCP, filesystem operations, TTY, Pipes and other asynchronous primitives like timer, check, prepare and idle.
 
-UV.rb is FFI Ruby bindings for libuv.
+Libuv.rb is FFI Ruby bindings for libuv.
 
-== Usage
+## Usage
 
 Create a uv loop or use a default one
 
+```ruby
   require 'uv'
 
   loop = UV::Loop.default
@@ -23,25 +23,30 @@ Create a uv loop or use a default one
   end
 
   loop.run
+```
 
 Find more examples in examples directory
 
-== Installation
+## Installation
 
+```Shell
   gem install uvrb
+```
 
 or
 
+```shell
   git clone ...
   cd ...
   bundle install
+```
 
-=== Prerequisites
+### Prerequisites
 
 * The installation requires subversion to be installed on your system and available on the PATH
 * Windows users will require a copy of Visual Studio 2010 or later installed. {Express}[http://www.microsoft.com/visualstudio/eng/products/visual-studio-express-products] works fine.
 
-== What's supported
+## What's supported
 
 * TCP
 * UDP
@@ -52,14 +57,8 @@ or
 * Check
 * Idle
 * Async
-* Filesystem
-* File
+* Filesystem (partially)
+* File (partially)
 * FSEvent
 * Errors
-* work queue
-
-== TODO
-
-* Port rest of libuv - ares, getaddrinfo, process, mutexes and locks
-* Tests tests tests
-* Docs docs docs
+* Work queue (thread pool)

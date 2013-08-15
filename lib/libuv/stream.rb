@@ -4,15 +4,14 @@ module Libuv
 
 
         def listen(backlog)
+            @listen_deferred = @loop.defer
             begin
-                @listen_deferred = @loop.defer
                 assert_type(Integer, backlog, "backlog must be an Integer")
                 check_result! ::Libuv::Ext.listen(handle, Integer(backlog), callback(:on_listen))
             rescue Exception => e
                 @listen_deferred.reject(e)
-            ensure
-                @listen_deferred.promise
             end
+            @listen_deferred.promise
         end
 
         def accept
@@ -58,30 +57,30 @@ module Libuv
                     resolve promise, status
                 end
 
+                req = nil
                 begin
                     @write_callbacks << [deferred, callback]
-                    check_result! ::Libuv::Ext.write(::Libuv::Ext.create_request(:uv_write), handle, buffer, 1, callback)
+                    req = ::Libuv::Ext.create_request(:uv_write)
+                    check_result! ::Libuv::Ext.write(req, handle, buffer, 1, callback)
                 rescue Exception => e
                     @write_callbacks.pop
                     ::Libuv::Ext.free(req)
-                    raise e
+                    deferred.reject(e)
                 end
             rescue Exception => e
                 deferred.reject(e)
-            ensure
-                deferred.promise
             end
+            deferred.promise
         end
 
         def shutdown
+            @shutdown_deferred = @loop.defer
             begin
-                @shutdown_deferred = @loop.defer
                 check_result! ::Libuv::Ext.shutdown(::Libuv::Ext.create_request(:uv_shutdown), handle, callback(:on_shutdown))
             rescue Exception => e
                 @shutdown_deferred.reject(e)
-            ensure
-                @shutdown_deferred.promise
             end
+            @shutdown_deferred.promise
         end
 
         def readable?

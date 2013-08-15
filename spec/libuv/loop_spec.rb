@@ -2,17 +2,38 @@ require 'spec_helper'
 
 describe Libuv::Loop do
   let(:loop_pointer) { double() }
+
   let(:schedule_pointer) { double() }
   let(:schedule_callback) { double() }
   let(:schedule) { double() }
 
+  let(:tick_pointer) { double() }
+  let(:tick) { double() }
+
+  let(:stop_pointer) { double() }
+  let(:stop_callback) { double() }
+  let(:stop) { double() }
+
   subject do
+    # new loop
     FFI::AutoPointer.should_receive(:new).once.with(loop_pointer, Libuv::Ext.method(:loop_delete)).and_return(loop_pointer)
+
+    # schedule work async
     Libuv::Ext.should_receive(:create_handle).and_return(schedule_pointer)
     Libuv::Ext.should_receive(:async_init)
     Libuv::Async.should_receive(:new).and_return(schedule)
     schedule.should_receive(:callback).once.and_return(schedule_callback)
-    schedule.should_receive(:unref).once
+
+    # next_tick timer (doubles as the test for timer, defer spec also tests it)
+    Libuv::Ext.should_receive(:create_handle).and_return(tick_pointer)
+    Libuv::Ext.should_receive(:timer_init)
+    Libuv::Timer.should_receive(:new).and_return(tick)
+
+    # stop async
+    Libuv::Ext.should_receive(:create_handle).and_return(stop_pointer)
+    Libuv::Ext.should_receive(:async_init)
+    Libuv::Async.should_receive(:new).and_return(stop)
+    stop.should_receive(:callback).once.and_return(stop_callback)
 
     Libuv::Loop.create(loop_pointer)
   end
@@ -51,19 +72,6 @@ describe Libuv::Loop do
       Libuv::Ext.should_receive(:strerror).with(error).and_return("invalid argument")
 
       subject.lookup_error(error).should == Libuv::Error::EINVAL.new("invalid argument")
-    end
-  end
-
-  describe "#timer" do
-    let(:timer_pointer) { double() }
-    let(:timer) { double() }
-
-    it "calls Libuv::Ext.timer_init" do
-      Libuv::Ext.should_receive(:create_handle).with(:uv_timer).and_return(timer_pointer)
-      Libuv::Ext.should_receive(:timer_init).with(loop_pointer, timer_pointer)
-      Libuv::Timer.should_receive(:new).with(subject, timer_pointer).and_return(timer)
-
-      subject.timer.should == timer
     end
   end
 
