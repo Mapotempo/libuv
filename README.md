@@ -1,10 +1,10 @@
-# uv.rb - libuv FFI bindings for Ruby
+# Libuv FFI bindings for Ruby
 
 [![Build Status](https://travis-ci.org/cotag/libuv.png?branch=master)](https://travis-ci.org/cotag/libuv)
 
 [Libuv](https://github.com/joyent/libuv) is a cross platform asynchronous IO implementation that powers NodeJS. It supports sockets, both UDP and TCP, filesystem operations, TTY, Pipes and other asynchronous primitives like timer, check, prepare and idle.
 
-The Libuv gem contains Libuv and a Ruby wrapper.
+The Libuv gem contains Libuv and a Ruby wrapper that implements [pipelined promises](http://en.wikipedia.org/wiki/Futures_and_promises#Promise_pipelining) for asynchronous flow control
 
 ## Usage
 
@@ -29,6 +29,7 @@ Create a new libuv loop or use a default one
 ```
 
 Find more examples in examples directory and check out the [yard documentation](http://rubydoc.info/gems/libuv/Libuv/Loop)
+
 
 ## Installation
 

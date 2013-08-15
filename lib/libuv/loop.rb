@@ -65,7 +65,7 @@ module Libuv
         end
 
         # Run the actual event loop. This method will block for the duration of event loop unless
-        #   it run inside an existing event loop, where a new thread will be created for it
+        # it is run inside an existing event loop, where a new thread will be created for it
         #
         # @param run_type [:UV_RUN_DEFAULT, :UV_RUN_ONCE, :UV_RUN_NOWAIT]
         # @yieldparam loop [::Libuv::Loop] Yields the current loop.
@@ -96,12 +96,24 @@ module Libuv
         end
 
 
-        # Creates a deferred result object for where the result of an operation may only be returned
-        #    at some point in the future or is being processed on a different thread
+        # Creates a deferred result object for where the result of an operation may only be returned 
+        # at some point in the future or is being processed on a different thread (thread safe)
         #
         # @return [::Libuv::Q::Deferred]
         def defer
             Q.defer(@loop)
+        end
+
+        # Combines multiple promises into a single promise that is resolved when all of the input
+        # promises are resolved. (thread safe)
+        #
+        # @param [*Promise] Promises a number of promises that will be combined into a single promise
+        # @return [Promise] Returns a single promise that will be resolved with an array of values,
+        #   each value corresponding to the promise at the same index in the `promises` array. If any of
+        #   the promises is resolved with a rejection, this resulting promise will be resolved with the
+        #   same rejection.
+        def all(*promises)
+            Q.all(@loop, *promises)
         end
 
         # forces loop time update, useful for getting more granular times
@@ -246,7 +258,7 @@ module Libuv
             Work.new(@loop, deferred, block)    # Work is a promise object
         end
 
-        # Schedule some work to be processed on the event loop
+        # Schedule some work to be processed on the event loop (thread safe)
         #
         # @return [nil]
         def schedule(&block)
@@ -260,7 +272,7 @@ module Libuv
             end
         end
 
-        # Schedule some work to be processed in the next iteration of the event loop
+        # Schedule some work to be processed in the next iteration of the event loop (thread safe)
         #
         # @return [nil]
         def next_tick(&block)
@@ -281,7 +293,7 @@ module Libuv
             end
         end
 
-        # Closes handles opened by the loop class and completes the current loop iteration
+        # Closes handles opened by the loop class and completes the current loop iteration (thread safe)
         # 
         # @return [nil]
         def stop
