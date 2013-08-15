@@ -1,10 +1,15 @@
 require 'spec_helper'
 
 shared_examples_for 'a stream' do
+  let(:deferred) { double() }
+
   describe "#listen" do
     it "calls Libuv::Ext.listen" do
       backlog = 128
       Libuv::Ext.should_receive(:listen).once.with(pointer, backlog, subject.method(:on_listen))
+      loop.should_receive(:defer).once.and_return(deferred)
+      deferred.should_receive(:promise).once
+
       subject.listen(backlog)
     end
   end
@@ -55,6 +60,8 @@ shared_examples_for 'a stream' do
       Libuv::Ext.should_receive(:buf_init).with(buffer_pointer, size).and_return(buffer)
       Libuv::Ext.should_receive(:create_request).with(:uv_write).and_return(write_request)
       Libuv::Ext.should_receive(:write).with(write_request, pointer, buffer, 1, an_instance_of(FFI::Function))
+      loop.should_receive(:defer).once.and_return(deferred)
+      deferred.should_receive(:promise).once
 
       subject.write(data)
     end
@@ -66,6 +73,8 @@ shared_examples_for 'a stream' do
     it "calls Libuv::Ext.shutdown" do
       Libuv::Ext.should_receive(:create_request).with(:uv_shutdown).and_return(shutdown_request)
       Libuv::Ext.should_receive(:shutdown).with(shutdown_request, pointer, subject.method(:on_shutdown))
+      loop.should_receive(:defer).once.and_return(deferred)
+      deferred.should_receive(:promise).once
 
       subject.shutdown
     end

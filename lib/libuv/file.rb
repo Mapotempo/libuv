@@ -25,7 +25,6 @@ module Libuv
                 assert_type(Integer, length, "length must be an Integer")
                 assert_type(Integer, offset, "offset must be an Integer")
 
-                @read_block         = block
                 @read_buffer_length = length
                 @read_buffer        = FFI::MemoryPointer.new(@read_buffer_length)
 
@@ -43,7 +42,6 @@ module Libuv
                 assert_type(String, data, "data must be a String")
                 assert_type(Integer, offset, "offset must be an Integer")
 
-                @write_block = block
                 @write_buffer_length = data.respond_to?(:bytesize) ? data.bytesize : data.size
                 @write_buffer = FFI::MemoryPointer.from_string(data)
 
@@ -60,9 +58,9 @@ module Libuv
                 @stat_deferred = @loop.defer
                 check_result! ::Libuv::Ext.fs_fstat(loop.to_ptr, ::Libuv::Ext.create_request(:uv_fs), @fd, callback(:on_stat))
             rescue Exception => e
-                @sync_deferred.reject(e)
+                @stat_deferred.reject(e)
             ensure
-                @sync_deferred.promise
+                @stat_deferred.promise
             end
         end
 
@@ -158,6 +156,7 @@ module Libuv
             ::Libuv::Ext.free(req)
             @read_buffer = nil
             @read_buffer_length = nil
+            
             @read_deferred.resolve(data)
             @read_deferred = nil
         end

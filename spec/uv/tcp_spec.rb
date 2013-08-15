@@ -4,6 +4,7 @@ describe Libuv::TCP do
   let(:handle_name) { :tcp }
   let(:loop) { double() }
   let(:pointer) { double() }
+  let(:promise) { double() }
   subject { Libuv::TCP.new(loop, pointer) }
 
   it_behaves_like 'a handle'
@@ -48,6 +49,8 @@ describe Libuv::TCP do
         Libuv::Ext.should_receive(:create_request).with(:uv_connect).and_return(connect_request)
         Libuv::Ext.should_receive(:ip4_addr).with(ip, port).and_return(ip_addr)
         Libuv::Ext.should_receive(:tcp_connect).with(connect_request, pointer, ip_addr, subject.method(:on_connect))
+        loop.should_receive(:defer).once.and_return(promise)
+        promise.should_receive(:promise).once
 
         subject.connect(ip, port) { |e| }
       end
@@ -60,6 +63,8 @@ describe Libuv::TCP do
         Libuv::Ext.should_receive(:create_request).with(:uv_connect).and_return(connect_request)
         Libuv::Ext.should_receive(:ip6_addr).with(ip, port).and_return(ip_addr)
         Libuv::Ext.should_receive(:tcp_connect6).with(connect_request, pointer, ip_addr, subject.method(:on_connect))
+        loop.should_receive(:defer).once.and_return(promise)
+        promise.should_receive(:promise).once
 
         subject.connect(ip, port) { |e| }
       end

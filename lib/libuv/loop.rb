@@ -215,7 +215,7 @@ module Libuv
             assert_block(block)
 
             async_ptr = ::Libuv::Ext.create_handle(:uv_async)
-            async     = Async.new(@loop, async_ptr, &block)
+            async     = ::Libuv::Async.new(@loop, async_ptr, &block)
             check_result! ::Libuv::Ext.async_init(@pointer, async_ptr, async.callback(:on_async))
 
             async

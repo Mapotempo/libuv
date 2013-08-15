@@ -4,6 +4,7 @@ describe Libuv::Pipe do
   let(:handle_name) { :pipe }
   let(:loop) { double() }
   let(:pointer) { double() }
+  let(:promise) { double() }
   subject { Libuv::Pipe.new(loop, pointer) }
 
   it_behaves_like 'a handle'
@@ -44,6 +45,8 @@ describe Libuv::Pipe do
     it "calls Libuv::Ext.pipe_connect" do
       Libuv::Ext.should_receive(:create_request).with(:uv_connect).and_return(connect_request)
       Libuv::Ext.should_receive(:pipe_connect).with(connect_request, pointer, name, subject.method(:on_connect))
+      loop.should_receive(:defer).once.and_return(promise)
+      promise.should_receive(:promise).once
 
       subject.connect(name)
     end

@@ -4,6 +4,7 @@ describe Libuv::UDP do
   let(:handle_name) { :udp }
   let(:loop) { double() }
   let(:pointer) { double() }
+  let(:promise) { double() }
   subject { Libuv::UDP.new(loop, pointer) }
 
   it_behaves_like 'a handle'
@@ -109,6 +110,8 @@ describe Libuv::UDP do
         Libuv::Ext.should_receive(:buf_init).with(buffer_pointer, size).and_return(buffer)
         Libuv::Ext.should_receive(:create_request).with(:uv_udp_send).and_return(uv_udp_send_request)
         Libuv::Ext.should_receive(:udp_send).with(uv_udp_send_request, pointer, buffer, 1, ip_addr, an_instance_of(FFI::Function))
+        loop.should_receive(:defer).once.and_return(promise)
+        promise.should_receive(:promise).once
 
         subject.send(ip, port, data)
       end
@@ -126,6 +129,8 @@ describe Libuv::UDP do
         Libuv::Ext.should_receive(:buf_init).with(buffer_pointer, size).and_return(buffer)
         Libuv::Ext.should_receive(:create_request).with(:uv_udp_send).and_return(uv_udp_send_request)
         Libuv::Ext.should_receive(:udp_send6).with(uv_udp_send_request, pointer, buffer, 1, ip_addr, an_instance_of(FFI::Function))
+        loop.should_receive(:defer).once.and_return(promise)
+        promise.should_receive(:promise).once
 
         subject.send(ip, port, data)
       end

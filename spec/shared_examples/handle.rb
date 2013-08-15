@@ -1,6 +1,8 @@
 require 'spec_helper'
 
 shared_examples_for 'a handle' do
+  let(:deferred) { double() }
+
   describe "#ref" do
     it "calls Libuv::Ext.ref" do
       Libuv::Ext.should_receive(:ref).with(pointer)
@@ -20,6 +22,8 @@ shared_examples_for 'a handle' do
   describe "#close" do
     it "calls Libuv::Ext.close" do
       ::Libuv::Ext.should_receive(:close).once.with(pointer, subject.method(:on_close))
+      loop.should_receive(:defer).once.and_return(deferred)
+      deferred.should_receive(:promise).once
       subject.close
     end
   end

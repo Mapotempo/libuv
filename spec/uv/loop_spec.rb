@@ -2,27 +2,18 @@ require 'spec_helper'
 
 describe Libuv::Loop do
   let(:loop_pointer) { double() }
-
-  describe ".default" do
-    it "calls Libuv::Ext.loop_default internally" do
-      Libuv::Ext.should_receive(:default_loop).once.and_return(loop_pointer)
-      FFI::AutoPointer.should_receive(:new).once.with(loop_pointer, Libuv::Ext.method(:loop_delete))
-      Libuv::Ext.should_receive(:loop_delete).once
-      Libuv::Loop.default
-    end
-  end
-
-  describe ".new" do
-    it "calls Libuv::Ext.loop_new" do
-      Libuv::Ext.should_receive(:loop_new).once.and_return(loop_pointer)
-      FFI::AutoPointer.should_receive(:new).once.with(loop_pointer, Libuv::Ext.method(:loop_delete))
-      Libuv::Ext.should_receive(:loop_delete).once
-      Libuv::Loop.new
-    end
-  end
+  let(:schedule_pointer) { double() }
+  let(:schedule_callback) { double() }
+  let(:schedule) { double() }
 
   subject do
     FFI::AutoPointer.should_receive(:new).once.with(loop_pointer, Libuv::Ext.method(:loop_delete)).and_return(loop_pointer)
+    Libuv::Ext.should_receive(:create_handle).and_return(schedule_pointer)
+    Libuv::Ext.should_receive(:async_init)
+    Libuv::Async.should_receive(:new).and_return(schedule)
+    schedule.should_receive(:callback).once.and_return(schedule_callback)
+    schedule.should_receive(:unref).once
+
     Libuv::Loop.create(loop_pointer)
   end
 
@@ -191,10 +182,11 @@ describe Libuv::Loop do
     end
 
     it "calls Libuv::Ext.async_init" do
+      subject   # as subject calls async we need to init it first
       Libuv::Ext.should_receive(:create_handle).with(:uv_async).and_return(async_pointer)
       Libuv::Ext.should_receive(:async_init).with(loop_pointer, async_pointer, async_callback)
       Libuv::Async.should_receive(:new).with(subject, async_pointer).and_return(async)
-      async.should_receive(:callback).once.with(:on_async).and_return(async_callback)
+      async.should_receive(:callback).once.and_return(async_callback)
 
       handle = subject.async { |e| }
       handle.should == async
@@ -222,8 +214,7 @@ describe Libuv::Loop do
     end
 
     it "calls Libuv::Ext.fs_event_init" do
-      Libuv::Ext.should_receive(:create_handle).with(:uv_async)
-      #Libuv::Ext.should_receive(:fs_event_init).with(loop_pointer, fs_event_pointer, filename, fs_event_callback, 0)
+      subject
       Libuv::Ext.should_receive(:create_handle).with(:uv_fs_event).and_return(fs_event_pointer)
       Libuv::Ext.should_receive(:fs_event_init).with(loop_pointer, fs_event_pointer, filename, fs_event_callback, 0)
       Libuv::FSEvent.should_receive(:new).with(subject, fs_event_pointer).and_return(fs_event)
