@@ -1,8 +1,8 @@
 require 'rubygems'
 require 'bundler/setup'
-require 'uvrb'
+require 'libuv'
 
-loop = UV::Loop.default
+loop = Libuv::Loop.default
 
 stdin = loop.tty($stdin.fileno, true)
 stdin.enable_raw_mode

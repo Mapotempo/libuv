@@ -1,5 +1,7 @@
 # uv.rb - libuv FFI bindings for Ruby
 
+[![Build Status](https://travis-ci.org/cotag/libuv.png?branch=master)](https://travis-ci.org/cotag/libuv)
+
 [Libuv](https://github.com/joyent/libuv) is a cross platform asynchronous IO implementation that powers NodeJS. It supports sockets, both UDP and TCP, filesystem operations, TTY, Pipes and other asynchronous primitives like timer, check, prepare and idle.
 
 The Libuv gem contains Libuv and a Ruby wrapper.
@@ -48,7 +50,9 @@ or
 * The installation requires __subversion__ to be installed on your system and available on the PATH
 * Windows users will require a copy of Visual Studio 2010 or later. [Visual Studio Express](http://www.microsoft.com/visualstudio/eng/products/visual-studio-express-products) works fine.
 
-or if you have a compatible libuv.(so|dylib|dll) on the PATH already, setting the environmental variable `USE_GLOBAL_LIBUV` will prevent compliling the packaged version.
+or
+
+if you have a compatible `libuv.(so | dylib | dll)` on the PATH already, setting the environmental variable `USE_GLOBAL_LIBUV` will prevent compiling the packaged version.
 
 
 ## What's supported

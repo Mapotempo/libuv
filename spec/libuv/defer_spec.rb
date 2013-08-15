@@ -9,8 +9,8 @@ describe Libuv::Q do
 		@promise = @deferred.promise
 		@log = []
 		@default_fail = proc { |reason|
-			fail(reason)
 			@loop.stop
+			fail(reason)
 		}
 	end
 	
@@ -36,7 +36,6 @@ describe Libuv::Q do
 		
 		
 		it "should be able to resolve the callback after it has already been resolved" do
-			deferred2 = @loop.defer
 			@loop.run {
 				@promise.then @default_fail do |result|
 					@log << result

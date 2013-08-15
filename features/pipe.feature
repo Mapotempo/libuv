@@ -100,7 +100,7 @@ Feature: Named pipes
   
       stopper = loop.timer
   
-      stopper.start(3000, 0) do |e|
+      stopper.start(5000, 0) do |e|
         raise e if e
   
         heartbeat.close
@@ -140,5 +140,6 @@ Feature: Named pipes
       loop.run
       """
     When I run `ruby pipe_producer_example.rb` interactively
+    And I wait for 1 seconds
     And I run `ruby pipe_consumer_example.rb`
     Then the output should contain consumed workload

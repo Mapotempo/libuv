@@ -1,10 +1,10 @@
 require 'rubygems'
 require 'bundler/setup'
-require 'uvrb'
+require 'libuv'
 
 start = Time.now
 
-loop = UV::Loop.default
+loop = Libuv::Loop.default
 
 count = 0
 timer = loop.timer
@@ -13,8 +13,9 @@ $stdout << "\r\n"
 timer.start(1, 1) do |status|
   $stdout << "\r#{count}"
   if count >= 10000
-    timer.close do
+    timer.close.then do
       $stdout << "\n"
+      loop.stop
     end
   end
   count += 1

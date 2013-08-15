@@ -39,7 +39,7 @@ module Libuv
 
             # Create an async call for scheduling work from other threads
             @run_queue = Queue.new
-            @process_queue = @loop.async do
+            @queue_proc = proc do
                 until @run_queue.empty? do
                     begin
                         run = @run_queue.pop true  # pop non-block
@@ -49,6 +49,7 @@ module Libuv
                     end
                 end
             end
+            @process_queue = @loop.async &@queue_proc
 
             # Create a next tick timer
             @next_tick = @loop.timer
@@ -77,6 +78,7 @@ module Libuv
                 begin
                     Thread.current[:uvloop] = @loop
                     yield @loop if block_given?
+                    @queue_proc.call    # pre-process any pending procs
                     resolve deferred, ::Libuv::Ext.run(@pointer, run_type)  # This is blocking
                 ensure
                     Thread.current[:uvloop] = nil
@@ -270,7 +272,7 @@ module Libuv
                 if not @next_tick_scheduled
                     @next_tick.start(0) do
                         @next_tick_scheduled = false
-                        @process_queue.call
+                        @queue_proc.call
                     end
                     @next_tick_scheduled = true
                 end
