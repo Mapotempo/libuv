@@ -29,7 +29,7 @@ Feature: triggering callbacks while nothing else is happening
       end
       
       stopper = loop.timer
-      stopper.start(100, 0) do |e|
+      stopper.start(1000, 0) do |e|
         raise e if e
         idle.close
         timer.close
