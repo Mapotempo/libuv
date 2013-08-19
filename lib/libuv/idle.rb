@@ -3,17 +3,29 @@ module Libuv
         include Handle
 
 
-        def start(&block)
-            assert_block(block)
-            
-            @idle_block = block
-            check_result! ::Libuv::Ext.idle_start(handle, callback(:on_idle))
-            self
+        def initialize(loop)
+            idle_ptr = ::Libuv::Ext.create_handle(:uv_idle)
+            super(loop, idle_ptr)
+            result = check_result(::Libuv::Ext.idle_init(loop.handle, idle_ptr))
+            @handle_deferred.reject(result) if result
+        end
+
+        def start
+            begin
+                check_result! ::Libuv::Ext.idle_start(handle, callback(:on_idle))
+            rescue Exception => e
+                @handle_deferred.reject(e)
+            end
+            @handle_promise
         end
 
         def stop
-            check_result! ::Libuv::Ext.idle_stop(handle)
-            self
+            begin
+                check_result! ::Libuv::Ext.idle_stop(handle)
+            rescue Exception => e
+                @handle_deferred.reject(e)
+            end
+            @handle_promise
         end
 
 
@@ -21,10 +33,12 @@ module Libuv
 
 
         def on_idle(handle, status)
-            begin
-                @idle_block.call(check_result(status))
-            rescue Exception => e
-                # TODO:: log errors, don't want to crash the loop thread
+            e = check_result(status)
+
+            if e
+                @handle_deferred.reject(e)
+            else
+                @handle_deferred.notify(self)   # notify when idle
             end
         end
     end

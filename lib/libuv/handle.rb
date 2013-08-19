@@ -5,6 +5,13 @@ module Libuv
 
         def initialize(loop, pointer)
             @loop, @pointer = loop, pointer
+            
+            @handle_deferred = @loop.defer
+            @handle_promise = @handle_deferred.promise
+            @handle_promise.catch do |err|  # Auto close on rejection
+                self.close
+                ::Libuv::Q.reject(@loop, err)
+            end
         end
 
         # Public: Increment internal ref counter for the handle on the loop. Useful for
@@ -27,8 +34,7 @@ module Libuv
 
         def close
             Libuv::Ext.close(@pointer, callback(:on_close))
-            @close_promise = @loop.defer
-            @close_promise.promise
+            @handle_promise
         end
 
         def active?
@@ -58,8 +64,7 @@ module Libuv
             ::Libuv::Ext.free(pointer)
             clear_callbacks
             
-            @close_promise.resolve(true)
-            @close_promise = nil
+            @handle_deferred.resolve(self)
         end
     end
 end

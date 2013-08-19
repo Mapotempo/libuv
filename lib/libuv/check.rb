@@ -3,19 +3,29 @@ module Libuv
         include Handle
 
 
+        def initialize(loop)
+            check_ptr = ::Libuv::Ext.create_handle(:uv_check)
+            super(loop, check_ptr)
+            result = check_result(::Libuv::Ext.check_init(loop.handle, check_ptr))
+            @handle_deferred.reject(result) if result
+        end
+
         def start
-            @check_deferred = @loop.defer
             begin
                 check_result! ::Libuv::Ext.check_start(handle, callback(:on_check))
             rescue Exception => e
-                @check_deferred.reject(e)
+                @handle_deferred.reject(e)
             end
-            @check_deferred.promise
+            @handle_promise
         end
 
         def stop
-            check_result! ::Libuv::Ext.check_stop(handle)
-            self
+            begin
+                check_result! ::Libuv::Ext.check_stop(handle)
+            rescue Exception => e
+                @handle_deferred.reject(e)
+            end
+            @handle_promise
         end
 
 
@@ -23,7 +33,13 @@ module Libuv
 
 
         def on_check(handle, status)
-            resolve @check_deferred, status
+            e = check_result(status)
+
+            if e
+                @handle_deferred.reject(e)
+            else
+                @handle_deferred.notify(self)   # notify when idle
+            end
         end
     end
 end

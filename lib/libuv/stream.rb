@@ -3,34 +3,55 @@ module Libuv
         include Handle
 
 
+        BACKLOG_ERROR = "backlog must be an Integer".freeze
+        WRITE_ERROR = "data must be a String".freeze
+
+
         def listen(backlog)
-            @listen_deferred = @loop.defer
             begin
-                assert_type(Integer, backlog, "backlog must be an Integer")
+                assert_type(Integer, backlog, BACKLOG_ERROR)
                 check_result! ::Libuv::Ext.listen(handle, Integer(backlog), callback(:on_listen))
             rescue Exception => e
-                @listen_deferred.reject(e)
+                @handle_deferred.reject(e)
             end
-            @listen_deferred.promise
+            @handle_promise
         end
 
+        # Accepts a socket
         def accept
             client = loop.send(handle_name)
             check_result! ::Libuv::Ext.accept(handle, client.handle)
-            client
         end
 
-        def start_read(&block)
-            assert_block(block)
-
-            @read_block = block
-            check_result! ::Libuv::Ext.read_start(handle, callback(:on_allocate), callback(:on_read))
+        # Starts reading from the handle
+        def start_read
+            begin
+                check_result! ::Libuv::Ext.read_start(handle, callback(:on_allocate), callback(:on_read))
+            rescue Exception => e
+                @handle_deferred.reject(e)
+            end
 
             self
         end
 
+        # Stops reading from the handle
         def stop_read
-            check_result! ::Libuv::Ext.read_stop(handle)
+            begin
+                check_result! ::Libuv::Ext.read_stop(handle)
+            rescue Exception => e
+                @handle_deferred.reject(e)
+            end
+
+            self
+        end
+
+        # Shutsdown the writes on the handle waiting until the last write is complete before triggering the callback
+        def shutdown
+            begin
+                check_result! ::Libuv::Ext.shutdown(::Libuv::Ext.create_request(:uv_shutdown), handle, callback(:on_shutdown))
+            rescue Exception => e
+                @handle_deferred.reject(e)
+            end
 
             self
         end
@@ -38,7 +59,7 @@ module Libuv
         def write(data)
             deferred = @loop.defer
             begin
-                assert_type(String, data, "data must be a String")
+                assert_type(String, data, WRITE_ERROR)
 
                 size         = data.respond_to?(:bytesize) ? data.bytesize : data.size
                 buffer       = ::Libuv::Ext.buf_init(FFI::MemoryPointer.from_string(data), size)
@@ -66,21 +87,13 @@ module Libuv
                     @write_callbacks.pop
                     ::Libuv::Ext.free(req)
                     deferred.reject(e)
+
+                    @handle_deferred.reject(e)
                 end
             rescue Exception => e
-                deferred.reject(e)
+                deferred.reject(e)  # this write exception may not be fatal
             end
             deferred.promise
-        end
-
-        def shutdown
-            @shutdown_deferred = @loop.defer
-            begin
-                check_result! ::Libuv::Ext.shutdown(::Libuv::Ext.create_request(:uv_shutdown), handle, callback(:on_shutdown))
-            rescue Exception => e
-                @shutdown_deferred.reject(e)
-            end
-            @shutdown_deferred.promise
         end
 
         def readable?
@@ -96,8 +109,13 @@ module Libuv
 
 
         def on_listen(server, status)
-            resolve @listen_deferred, status
-            @listen_deferred = nil
+            e = check_result(status)
+
+            if e
+                @handle_deferred.reject(e)
+            else
+                @handle_deferred.notify(self)   # notify of a new connection
+            end
         end
 
         def on_allocate(client, suggested_size)
@@ -107,17 +125,20 @@ module Libuv
         def on_read(handle, nread, buf)
             e = check_result(nread)
             base = buf[:base]
-            unless e
+
+            if e
+                ::Libuv::Ext.free(base)
+                @handle_deferred.reject(e)
+            else
                 data = base.read_string(nread)
+                ::Libuv::Ext.free(base)
+                @handle_deferred.notify(data)   # stream the data
             end
-            ::Libuv::Ext.free(base)
-            @read_block.call(e, data)
         end
 
         def on_shutdown(req, status)
             ::Libuv::Ext.free(req)
-            resolve @shutdown_deferred, status
-            @shutdown_deferred = nil
+            resolve @handle_deferred, status
         end
     end
 end

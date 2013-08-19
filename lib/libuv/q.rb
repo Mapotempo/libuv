@@ -5,6 +5,72 @@ module Libuv
 		# @abstract
 		class Promise
 			private_class_method :new
+
+
+			# Used by finally method
+			MAKE_PROMISE = proc { |value, resolved, loop|
+				result = Q.defer(loop)
+				if (resolved)
+					result.resolve(value)
+				else
+					result.reject(value)
+				end
+				result.promise
+			}.freeze
+
+
+			#
+			# regardless of when the promise was or will be resolved / rejected, calls
+			# the error callback asynchronously if the promise is rejected.
+			#
+			# @param [Proc, &blk] callbacks error, error_block
+			# @return [Promise] Returns an unresolved promise for chaining
+			def catch(callback = nil, &blk)
+				self.then(nil, callback || blk)
+			end
+
+
+			def progress(callback = nil, &blk)
+				self.then(nil, nil, callback || blk)
+			end
+
+
+			#
+			# allows you to observe either the fulfillment or rejection of a promise, but to do so
+			# without modifying the final value. This is useful to release resources or do some
+			# clean-up that needs to be done whether the promise was rejected or resolved.
+			#
+			# @param [Proc, &blk] callbacks finally, finally_block
+			# @return [Promise] Returns an unresolved promise for chaining
+			def finally(callback = nil, &blk)
+				callback ||= blk
+
+				handleCallback = lambda {|value, isResolved|
+					callbackOutput = nil
+					begin
+						callbackOutput = callback.call
+					rescue Exception => e
+						@loop.log(:error, :q_finally_cb, e)
+						return MAKE_PROMISE.call(e, false, @loop)
+					end
+
+					if callbackOutput.is_a?(Promise)
+						return callbackOutput.then(proc {
+								MAKE_PROMISE.call(value, isResolved, @loop)
+							}, proc { |err|
+								MAKE_PROMISE.call(err, false, @loop)
+							})
+					else
+						return MAKE_PROMISE.call(value, isResolved, @loop)
+					end
+				}
+
+				self.then(proc {|val|
+					handleCallback.call(val, true)
+				}, proc{|err|
+					handleCallback.call(err, false)
+				})
+			end
 		end
 		
 		
@@ -28,9 +94,9 @@ module Libuv
 			# the success or error callbacks asynchronously as soon as the result is available.
 			# The callbacks are called with a single argument, the result or rejection reason.
 			#
-			# @param [Proc, Proc, &blk] callbacks error, success, success_block
+			# @param [Proc, Proc, Proc, &blk] callbacks error, success, progress, success_block
 			# @return [Promise] Returns an unresolved promise for chaining
-			def then(errback = nil, callback = nil, &blk)
+			def then(callback = nil, errback = nil, progback = nil, &blk)
 				result = Q.defer(@loop)
 				
 				callback ||= blk
@@ -39,8 +105,9 @@ module Libuv
 					begin
 						result.resolve(callback.nil? ? val : callback.call(val))
 					rescue Exception => e
-						warn "\nUnhandled exception: #{e.message}\n#{e.backtrace.join("\n")}\n"
-						result.reject(e);
+						#warn "\nUnhandled exception: #{e.message}\n#{e.backtrace.join("\n")}\n"
+						result.reject(e)
+						@loop.log(:error, :q_resolve_cb, e)
 					end
 				}
 				
@@ -48,8 +115,18 @@ module Libuv
 					begin
 						result.resolve(errback.nil? ? Q.reject(@loop, reason) : errback.call(reason))
 					rescue Exception => e
-						warn "Unhandled exception: #{e.message}\n#{e.backtrace.join("\n")}\n"
-						result.reject(e);
+						#warn "Unhandled exception: #{e.message}\n#{e.backtrace.join("\n")}\n"
+						result.reject(e)
+						@loop.log(:error, :q_reject_cb, e)
+					end
+				}
+
+				wrappedProgback = proc { |*progress|
+					begin
+						result.notify(progback.nil? ? progress : progback.call(*progress))
+					rescue Exception => e
+						#warn "Unhandled exception: #{e.message}\n#{e.backtrace.join("\n")}\n"
+						@loop.log(:error, :q_progress_cb, e)
 					end
 				}
 				
@@ -61,9 +138,9 @@ module Libuv
 					pending_array = pending
 					
 					if pending_array.nil?
-						value.then(wrappedErrback, wrappedCallback)
+						value.then(wrappedCallback, wrappedErrback, wrappedProgback)
 					else
-						pending_array << [wrappedErrback, wrappedCallback]
+						pending_array << [wrappedCallback, wrappedErrback, wrappedProgback]
 					end
 				end
 				
@@ -97,7 +174,7 @@ module Libuv
 				@response = response
 			end
 			
-			def then(errback = nil, callback = nil, &blk)
+			def then(callback = nil, errback = nil, progback = nil, &blk)
 				result = Q.defer(@loop)
 				
 				callback ||= blk
@@ -144,7 +221,7 @@ module Libuv
 						
 						if callbacks.length > 0
 							callbacks.each do |callback|
-								@value.then(callback[0], callback[1])
+								@value.then(callback[0], callback[1], callback[2])
 							end
 						end
 					end
@@ -165,6 +242,24 @@ module Libuv
 			#
 			def promise
 				DeferredPromise.new(@loop, self)
+			end
+
+			#
+			# rejects the derived promise with the reason. This is equivalent to resolving it with a rejection
+			# constructed via Q.reject.
+			#
+			# @param [Object] reason constant, message, exception or an object representing the rejection reason.
+			def notify(*args)
+				@loop.schedule do 	# just in case we are on a different event loop
+					if @pending && @pending.length > 0
+						callbacks = @pending
+						@loop.next_tick do
+							callbacks.each do |callback|
+								callback[2].call(*args)
+							end
+						end
+					end
+				end
 			end
 		end
 		
@@ -235,18 +330,80 @@ module Libuv
 			
 			if counter > 0
 				promises.each_index do |index|
-					ref(loop, promises[index]).then(proc {|reason|
-						if results[index].nil?
-							deferred.reject(reason)
-						end
-						reason
-					}, proc {|result|
+					ref(loop, promises[index]).then(proc {|result|
 						if results[index].nil?
 							results[index] = result
 							counter -= 1
 							deferred.resolve(results) if counter <= 0
 						end
 						result
+					}, proc {|reason|
+						if results[index].nil?
+							deferred.reject(reason)
+						end
+						Q.reject(@loop, reason)	# Don't modify result
+					})
+				end
+			else
+				deferred.resolve(results)
+			end
+			
+			return deferred.promise
+		end
+
+
+		#
+		# Combines multiple promises into a single promise that is resolved when any of the input
+		# promises are resolved.
+		#
+		# @param [*Promise] Promises a number of promises that will be combined into a single promise
+		# @return [Promise] Returns a single promise
+		def any(loop, *promises)
+			deferred = Q.defer(loop)
+			if promises.length > 0
+				promises.each_index do |index|
+					ref(loop, promises[index]).then(proc {|result|
+						deferred.resolve(true)
+						result
+					}, proc {|reason|
+						deferred.reject(false)
+						Q.reject(@loop, reason)	# Don't modify result
+					})
+				end
+			else
+				deferred.resolve(true)
+			end
+		end
+
+
+		#
+		# Combines multiple promises into a single promise that is resolved when all of the input
+		# promises are resolved or rejected.
+		#
+		# @param [*Promise] Promises a number of promises that will be combined into a single promise
+		# @return [Promise] Returns a single promise that will be resolved with an array of values,
+		#   each [result, wasResolved] value pair corresponding to a at the same index in the `promises` array.
+		def finally(loop, *promises)
+			deferred = Q.defer(loop)
+			counter = promises.length
+			results = []
+			
+			if counter > 0
+				promises.each_index do |index|
+					ref(loop, promises[index]).then(proc {|result|
+						if results[index].nil?
+							results[index] = [result, false]
+							counter -= 1
+							deferred.resolve(results) if counter <= 0
+						end
+						result
+					}, proc {|reason|
+						if results[index].nil?
+							results[index] = [reason, false]
+							counter -= 1
+							deferred.resolve(results) if counter <= 0
+						end
+						Q.reject(@loop, reason)	# Don't modify result
 					})
 				end
 			else
@@ -266,7 +423,7 @@ module Libuv
 		end
 		
 		
-		module_function :all, :reject, :defer, :ref
+		module_function :all, :reject, :defer, :ref, :any
 		private_class_method :ref
 	end
 

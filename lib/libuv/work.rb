@@ -3,8 +3,8 @@ module Libuv
         include Resource, Listener
 
 
-        def initialize(loop, defer, work)
-            super(loop, defer)
+        def initialize(loop, work)
+            super(loop, loop.defer)
 
             @work = work
             @complete = false

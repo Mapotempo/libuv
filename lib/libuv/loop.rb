@@ -64,22 +64,25 @@ module Libuv
             end
         end
 
+        def handle; @pointer; end
+
         # Run the actual event loop. This method will block for the duration of event loop unless
         # it is run inside an existing event loop, where a new thread will be created for it
         #
         # @param run_type [:UV_RUN_DEFAULT, :UV_RUN_ONCE, :UV_RUN_NOWAIT]
-        # @yieldparam loop [::Libuv::Loop] Yields the current loop.
+        # @yieldparam promise [::Libuv::Loop] Yields a promise that can be used for logging unhandled
+        #   exceptions on the loop.
         # @return [::Libuv::Q::Promise]
         def run(run_type = :UV_RUN_DEFAULT)
-            deferred = @loop.defer
+            @loop_notify = @loop.defer
 
             # Ensure this proc is run on its own thread
             runproc = proc do
                 begin
                     Thread.current[:uvloop] = @loop
-                    yield @loop if block_given?
+                    yield  @loop_notify.promise if block_given?
                     @queue_proc.call    # pre-process any pending procs
-                    resolve deferred, ::Libuv::Ext.run(@pointer, run_type)  # This is blocking
+                    resolve @loop_notify, ::Libuv::Ext.run(@pointer, run_type)  # This is blocking
                 ensure
                     Thread.current[:uvloop] = nil
                 end
@@ -92,7 +95,7 @@ module Libuv
                 Thread.new { runproc.call }
             end
 
-            deferred.promise
+            @loop
         end
 
 
@@ -115,6 +118,28 @@ module Libuv
         def all(*promises)
             Q.all(@loop, *promises)
         end
+
+        #
+        # Combines multiple promises into a single promise that is resolved when any of the input
+        # promises are resolved.
+        #
+        # @param [*Promise] Promises a number of promises that will be combined into a single promise
+        # @return [Promise] Returns a single promise
+        def any(*promises)
+            Q.any(@loop, *promises)
+        end
+
+        #
+        # Combines multiple promises into a single promise that is resolved when all of the input
+        # promises are resolved or rejected.
+        #
+        # @param [*Promise] Promises a number of promises that will be combined into a single promise
+        # @return [Promise] Returns a single promise that will be resolved with an array of values,
+        #   each [result, wasResolved] value pair corresponding to a at the same index in the `promises` array.
+        def finally(*promises)
+            Q.finally(@loop, *promises)
+        end
+        
 
         # forces loop time update, useful for getting more granular times
         # 
@@ -147,10 +172,7 @@ module Libuv
         # 
         # @return [::Libuv::Timer]
         def timer
-            timer_ptr = ::Libuv::Ext.create_handle(:uv_timer)
-            check_result! ::Libuv::Ext.timer_init(@pointer, timer_ptr)
-
-            Timer.new(@loop, timer_ptr)
+            Timer.new(@loop)
         end
 
         # Get a new TCP instance
@@ -207,56 +229,59 @@ module Libuv
         # 
         # @return [::Libuv::Prepare]
         def prepare
-            prepare_ptr = ::Libuv::Ext.create_handle(:uv_prepare)
-            check_result! ::Libuv::Ext.prepare_init(@pointer, prepare_ptr)
-
-            Prepare.new(@loop, prepare_ptr)
+            Prepare.new(@loop)
         end
 
         # Get a new Check handle
         # 
         # @return [::Libuv::Check]
         def check
-            check_ptr = ::Libuv::Ext.create_handle(:uv_check)
-            check_result! ::Libuv::Ext.check_init(@pointer, check_ptr)
-
-            Check.new(@loop, check_ptr)
+            Check.new(@loop)
         end
 
         # Get a new Idle handle
         # 
         # @return [::Libuv::Idle]
         def idle
-            idle_ptr = ::Libuv::Ext.create_handle(:uv_idle)
-            check_result! ::Libuv::Ext.idle_init(@pointer, idle_ptr)
-
-            Idle.new(@loop, idle_ptr)
+            Idle.new(@loop)
         end
 
         # Get a new Async handle
         # 
         # @return [::Libuv::Async]
         # @raise [ArgumentError] if block is not given
-        def async(&block)
-            assert_block(block)
-
-            async_ptr = ::Libuv::Ext.create_handle(:uv_async)
-            async     = ::Libuv::Async.new(@loop, async_ptr, &block)
-            check_result! ::Libuv::Ext.async_init(@pointer, async_ptr, async.callback(:on_async))
-
-            async
+        def async(callback = nil, &block)
+            Async.new(@loop, callback || block)
         end
 
         # Queue some work for processing in the libuv thread pool
         #
         # @return [::Libuv::Work]
         # @raise [ArgumentError] if block is not given
-        def work(&block)
+        def work(callback = nil, &block)
+            Work.new(@loop, callback || block)    # Work is a promise object
+        end
+
+        # Get a new Filesystem instance
+        # 
+        # @return [::Libuv::Filesystem]
+        def fs
+            Filesystem.new(self)
+        end
+
+        # Get a new FSEvent instance
+        # 
+        # @return [::Libuv::FSEvent]
+        def fs_event(path, &block)
             assert_block(block)
 
-            deferred = @loop.defer
-            Work.new(@loop, deferred, block)    # Work is a promise object
+            fs_event_ptr = ::Libuv::Ext.create_handle(:uv_fs_event)
+            fs_event     = FSEvent.new(self, fs_event_ptr, &block)
+            check_result! ::Libuv::Ext.fs_event_init(@pointer, fs_event_ptr, path, fs_event.callback(:on_fs_event), 0)
+
+            fs_event
         end
+
 
         # Schedule some work to be processed on the event loop (thread safe)
         #
@@ -293,31 +318,21 @@ module Libuv
             end
         end
 
+        # Notifies the loop there was an event that should be logged
+        #
+        # @param level [Symbol] the error level (info, warn, error etc)
+        # @param id [Object] some kind of identifying information
+        # @param *args [*args] any additional information
+        # @return [nil]
+        def log(level, id, *args)
+            @loop_notify.notify(level, id, *args)
+        end
+
         # Closes handles opened by the loop class and completes the current loop iteration (thread safe)
         # 
         # @return [nil]
         def stop
             @stop_loop.call
-        end
-
-        # Get a new Filesystem instance
-        # 
-        # @return [::Libuv::Filesystem]
-        def fs
-            Filesystem.new(self)
-        end
-
-        # Get a new FSEvent instance
-        # 
-        # @return [::Libuv::FSEvent]
-        def fs_event(path, &block)
-            assert_block(block)
-
-            fs_event_ptr = ::Libuv::Ext.create_handle(:uv_fs_event)
-            fs_event     = FSEvent.new(self, fs_event_ptr, &block)
-            check_result! ::Libuv::Ext.fs_event_init(@pointer, fs_event_ptr, path, fs_event.callback(:on_fs_event), 0)
-
-            fs_event
         end
     end
 end

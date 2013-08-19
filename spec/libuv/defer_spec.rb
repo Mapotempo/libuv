@@ -10,7 +10,6 @@ describe Libuv::Q do
 		@log = []
 		@default_fail = proc { |reason|
 			@loop.stop
-			fail(reason)
 		}
 	end
 	
@@ -20,26 +19,27 @@ describe Libuv::Q do
 		
 		it "should call the callback in the next turn" do
 			@loop.run {
-				@promise.then @default_fail do |result|
+				@promise.then nil, @default_fail do |result|
 					@log << result
 				end
 				
 				@deferred.resolve(:foo)
 				
 				@loop.next_tick do
-					@log.should == [:foo]
 					@loop.stop
 				end
 			}
+
+			@log.should == [:foo]
 		end
 		
 		
 		
 		it "should be able to resolve the callback after it has already been resolved" do
 			@loop.run {
-				@promise.then @default_fail do |result|
+				@promise.then nil, @default_fail do |result|
 					@log << result
-					@promise.then @default_fail do |result|
+					@promise.then nil, @default_fail do |result|
 						@log << result
 					end
 				end
@@ -48,38 +48,38 @@ describe Libuv::Q do
 				
 				@loop.next_tick do
 					@loop.next_tick do
-						@log.should == [:foo, :foo]
 						@loop.stop
 					end
 				end
 			}
+			@log.should == [:foo, :foo]
 		end
 		
 		
 		
 		it "should fulfill success callbacks in the registration order" do
 			@loop.run {
-				@promise.then @default_fail do |result|
+				@promise.then nil, @default_fail do |result|
 					@log << :first
 				end
 				
-				@promise.then @default_fail do |result|
+				@promise.then nil, @default_fail do |result|
 					@log << :second
 				end
 				
 				@deferred.resolve(:foo)
 				
 				@loop.next_tick do
-					@log.should == [:first, :second]
 					@loop.stop
 				end
 			}
+			@log.should == [:first, :second]
 		end
 		
 		
 		it "should do nothing if a promise was previously resolved" do
 			@loop.run {
-				@promise.then @default_fail do |result|
+				@promise.then nil, @default_fail do |result|
 					@log << result
 					@log.should == [:foo]
 					@deferred.resolve(:bar)
@@ -95,35 +95,36 @@ describe Libuv::Q do
 					@loop.next_tick do
 						@loop.next_tick do
 							@loop.next_tick do
-								@log.should == [:foo]
 								@loop.stop
 							end
 						end
 					end
 				end
 			}
+			@log.should == [:foo]
 		end
 		
 		
 		it "should allow deferred resolution with a new promise" do
 			deferred2 = @loop.defer
 			@loop.run {
-				@promise.then @default_fail do |result|
-					result.should == :foo
+				@promise.then nil, @default_fail do |result|
+					@log << result
 					@loop.stop
 				end
 				
 				@deferred.resolve(deferred2.promise)
 				deferred2.resolve(:foo)
 			}
+			@log.should == [:foo]
 		end
 		
 		
 		it "should not break if a callbacks registers another callback" do
 			@loop.run {
-				@promise.then @default_fail do |result|
+				@promise.then nil, @default_fail do |result|
 					@log << :outer
-					@promise.then @default_fail do |result|
+					@promise.then nil, @default_fail do |result|
 						@log << :inner
 					end
 				end
@@ -132,11 +133,12 @@ describe Libuv::Q do
 				
 				@loop.next_tick do
 					@loop.next_tick do
-						@log.should == [:outer, :inner]
 						@loop.stop
 					end
 				end
 			}
+
+			@log.should == [:outer, :inner]
 		end
 		
 		
@@ -145,16 +147,18 @@ describe Libuv::Q do
 			@loop.run {
 				proc { |name|
 					@loop.work { @deferred.resolve("Hello #{name}") }
-					@promise.then @default_fail do |result|
-						result.should == 'Hello Robin Hood'
+					@promise.then nil, @default_fail do |result|
+						@log << result
 						result += "?"
 						result
 					end
-				}.call('Robin Hood').then @default_fail do |greeting|
-					greeting.should == 'Hello Robin Hood?'
+				}.call('Robin Hood').then nil, @default_fail do |greeting|
+					@log << greeting
 					@loop.stop
 				end
 			}
+
+			@log.should == ['Hello Robin Hood', 'Hello Robin Hood?']
 		end
 	
 	end
@@ -164,30 +168,29 @@ describe Libuv::Q do
 	
 		it "should reject the promise and execute all error callbacks" do
 			@loop.run {
-				@promise.then(proc {|result|
+				@promise.then(@default_fail, proc {|result|
 					@log << :first
-				}, @default_fail)
-				@promise.then(proc {|result|
+				})
+				@promise.then(@default_fail, proc {|result|
 					@log << :second
-				}, @default_fail)
+				})
 				
 				@deferred.reject(:foo)
 				
 				@loop.next_tick do
-					@log.should == [:first, :second]
 					@loop.stop
 				end
 			}
+			@log.should == [:first, :second]
 		end
 		
 		
 		it "should do nothing if a promise was previously rejected" do
 			@loop.run {
-				@promise.then(proc {|result|
+				@promise.then(@default_fail, proc {|result|
 					@log << result
-					@log.should == [:baz]
 					@deferred.resolve(:bar)
-				}, @default_fail)
+				})
 				
 				@deferred.reject(:baz)
 				@deferred.resolve(:foo)
@@ -199,13 +202,13 @@ describe Libuv::Q do
 					@loop.next_tick do
 						@loop.next_tick do
 							@loop.next_tick do
-								@log.should == [:baz]
 								@loop.stop
 							end
 						end
 					end
 				end
 			}
+			@log.should == [:baz]
 		end
 		
 		
@@ -216,12 +219,151 @@ describe Libuv::Q do
 				begin
 					@deferred.reject(deferred2.promise)
 				rescue => e
-					e.is_a?(ArgumentError).should == true
+					@log << e.is_a?(ArgumentError)
 					@loop.stop
 				end
 			}
+
+			@log.should == [true]
 		end
 		
+	end
+
+
+	describe 'notify' do
+		it "should execute all progress callbacks in the registration order" do
+			@loop.run {
+				@promise.progress do |update|
+					@log << :first
+				end
+				
+				@promise.progress do |update|
+					@log << :second
+				end
+				
+				@deferred.notify(:foo)
+				
+				@loop.next_tick do
+					@loop.stop
+				end
+			}
+
+			@log.should == [:first, :second]
+		end
+
+		it "should do nothing if a promise was previously resolved" do
+			@loop.run {
+
+				@promise.progress do |update|
+					@log << update
+				end
+
+				@deferred.resolve(:foo)
+				@deferred.notify(:baz)
+				
+				
+				#
+				# 4 ticks should detect any errors
+				#
+				@loop.next_tick do
+					@loop.next_tick do
+						@loop.next_tick do
+							@loop.next_tick do
+								@loop.stop
+							end
+						end
+					end
+				end
+			}
+
+			@log.should == []
+		end
+
+		it "should do nothing if a promise was previously rejected" do
+			@loop.run {
+
+				@promise.progress do |update|
+					@log << update
+				end
+				@deferred.reject(:foo)
+				@deferred.notify(:baz)
+				
+				
+				
+				#
+				# 4 ticks should detect any errors
+				#
+				@loop.next_tick do
+					@loop.next_tick do
+						@loop.next_tick do
+							@loop.next_tick do
+								@loop.stop
+							end
+						end
+					end
+				end
+			}
+
+			@log.should == []
+		end
+
+
+		it "should not apply any special treatment to promises passed to notify" do
+			@loop.run {
+				deferred2 = @loop.defer
+
+				@promise.progress do |update|
+					@log << update.is_a?(::Libuv::Q::Promise)
+				end
+				@deferred.notify(deferred2.promise)
+
+				@loop.next_tick do
+					@loop.stop
+				end
+			}
+
+			@log.should == [true]
+		end
+
+
+		it "should call the progress callbacks in the next turn" do
+			@loop.run {
+				@promise.progress do |update|
+					@log << :first
+				end
+				
+				@promise.progress do |update|
+					@log << :second
+				end
+				
+				@deferred.notify(:foo)
+				
+				@log << @log.length	# Has notify run in this tick
+				@loop.stop	# Stop will run through the next tick before stopping
+			}
+
+			@log.should == [0, :first, :second]
+		end
+
+		it "should ignore notifications sent out in the same turn before listener registration" do
+			@loop.run {
+				@deferred.notify(:foo)
+
+				@promise.progress do |update|
+					@log << :first
+				end
+				
+				@promise.progress do |update|
+					@log << :second
+				end
+				
+				@loop.next_tick do
+					@loop.stop
+				end
+			}
+
+			@log.should == []
+		end
 	end
 	
 	
@@ -238,10 +380,11 @@ describe Libuv::Q do
 					@deferred.resolve(:foo)
 					
 					@loop.next_tick do
-						@log.should == [:foo]
 						@loop.stop
 					end
 				}
+
+				@log.should == [:foo]
 			end
 			
 			
@@ -254,60 +397,63 @@ describe Libuv::Q do
 					@deferred.reject(:foo)
 					
 					@loop.next_tick do
-						@log.should == []
 						@loop.stop
 					end
 				}
+
+				@log.should == []
 			end
 			
 			
 			it "should allow registration of an errback without a success callback and reject" do
 				@loop.run {
-					@promise.then(proc {|reason|
+					@promise.catch(proc {|reason|
 						@log << reason
 					})
 
 					@deferred.reject(:foo)
 					
 					@loop.next_tick do
-						@log.should == [:foo]
 						@loop.stop
 					end
 				}
+
+				@log.should == [:foo]
 			end
 			
 			
 			it "should allow registration of an errback without a success callback and resolve" do
 				@loop.run {
-					@promise.then(proc {|reason|
+					@promise.catch(proc {|reason|
 						@log << reason
 					})
 
 					@deferred.resolve(:foo)
 					
 					@loop.next_tick do
-						@log.should == []
 						@loop.stop
 					end
 				}
+
+				@log.should == []
 			end
 			
 			
 			it "should resolve all callbacks with the original value" do
 				@loop.run {
-					@promise.then @default_fail do |result|
+					@promise.then nil, @default_fail do |result|
 						@log << result
 						:alt1
 					end
-					@promise.then @default_fail do |result|
+					@promise.then nil, @default_fail do |result|
 						@log << result
 						'ERROR'
 					end
-					@promise.then @default_fail do |result|
+					@promise.then nil, @default_fail do |result|
 						@log << result
 						Libuv::Q.reject(@loop, 'some reason')
 					end
-					@promise.then @default_fail do |result|
+					@promise.then nil, @default_fail do |result|
 						@log << result
 						:alt2
 					end
@@ -315,59 +461,100 @@ describe Libuv::Q do
 					@deferred.resolve(:foo)
 					
 					@loop.next_tick do
-						@log.should == [:foo, :foo, :foo, :foo]
 						@loop.stop
 					end
 				}
+
+				@log.should == [:foo, :foo, :foo, :foo]
+			end
+
+
+			it "should notify all callbacks with the original value" do
+				@loop.run { |loop_promise|
+					@promise.progress do |result|
+						@log << result
+						:alt1
+					end
+					@promise.progress do |result|
+						@log << result
+						'ERROR'
+					end
+					@promise.progress do |result|
+						@log << result
+						Libuv::Q.reject(@loop, 'some reason')
+					end
+					@promise.progress do |result|
+						@log << result
+						:alt2
+					end
+
+					
+					@deferred.notify(:foo)
+					
+					@loop.next_tick do
+						@loop.next_tick do
+							@loop.next_tick do
+								@loop.next_tick do
+									@loop.next_tick do
+										@loop.stop
+									end
+								end
+							end
+						end
+					end
+				}
+
+				@log.should == [:foo, :foo, :foo, :foo]
 			end
 			
 			
 			it "should reject all callbacks with the original reason" do
 				@loop.run {
-					@promise.then(proc {|result|
+					@promise.then(@default_fail, proc {|result|
 						@log << result
 						:alt1
-					}, @default_fail)
-					@promise.then(proc {|result|
+					})
+					@promise.then(@default_fail, proc {|result|
 						@log << result
 						'ERROR'
-					}, @default_fail)
-					@promise.then(proc {|result|
+					})
+					@promise.then(@default_fail, proc {|result|
 						@log << result
 						Libuv::Q.reject(@loop, 'some reason')
-					}, @default_fail)
-					@promise.then(proc {|result|
+					})
+					@promise.then(@default_fail, proc {|result|
 						@log << result
 						:alt2
-					}, @default_fail)
+					})
 					
 					@deferred.reject(:foo)
 					
 					@loop.next_tick do
-						@log.should == [:foo, :foo, :foo, :foo]
 						@loop.stop
 					end
 				}
+
+				@log.should == [:foo, :foo, :foo, :foo]
 			end
 			
 			
 			it "should propagate resolution and rejection between dependent promises" do
 				@loop.run {
-					@promise.then(@default_fail, proc { |result|
+					@promise.then(proc { |result|
 						@log << result
 						:bar
-					}).then(@default_fail, proc { |result|
+					}, @default_fail).then(proc { |result|
 						@log << result
 						raise 'baz'
-					}).then(proc {|result|
+					}, @default_fail).then(@default_fail, proc {|result|
 						@log << result.message
 						raise 'bob'
-					}, @default_fail).then(proc {|result|
+					}).then(@default_fail, proc {|result|
 						@log << result.message
 						:done
-					}, @default_fail).then(@default_fail, proc { |result|
+					}).then(proc { |result|
 						@log << result
-					})
+					}, @default_fail)
 					
 					@deferred.resolve(:foo)
 					
@@ -376,7 +563,6 @@ describe Libuv::Q do
 							@loop.next_tick do
 								@loop.next_tick do
 									@loop.next_tick do
-										@log.should == [:foo, :bar, 'baz', 'bob', :done]
 										@loop.stop
 									end
 								end
@@ -384,6 +570,97 @@ describe Libuv::Q do
 						end
 					end
 				}
+
+				@log.should == [:foo, :bar, 'baz', 'bob', :done]
+			end
+
+
+			it "should propagate notification between dependent promises" do
+				@loop.run { |loop_promise|
+					loop_promise.progress do |type, id, error|
+						@log << id
+					end
+
+
+					@promise.progress(proc { |result|
+						@log << result
+						:bar
+					}).progress(proc { |result|
+						@log << result
+						result
+					}).progress(proc {|result|
+						@log << result
+						result
+					}).progress(proc {|result|
+						@log << result
+						:done
+					}).progress(proc { |result|
+						@log << result
+						result
+					})
+
+					
+					@deferred.notify(:foo)
+					
+					@loop.next_tick do
+						@loop.next_tick do
+							@loop.next_tick do
+								@loop.next_tick do
+									@loop.next_tick do
+										@loop.stop
+									end
+								end
+							end
+						end
+					end
+				}
+
+				@log.should == [:foo, :bar, :bar, :bar, :done]
+			end
+
+
+			it "should stop notification propagation in case of error" do
+				@loop.run { |loop_logger|
+					loop_logger.progress do |type, id, error|
+						@log << id
+					end
+
+
+					@promise.progress(proc { |result|
+						@log << result
+						:bar
+					}).progress(proc { |result|
+						@log << result
+						raise 'err'
+						result
+					}).progress(proc {|result|
+						@log << result
+						result
+					}).progress(proc {|result|
+						@log << result
+						:done
+					}).progress(proc { |result|
+						@log << result
+						result
+					})
+
+					
+					@deferred.notify(:foo)
+					
+					@loop.next_tick do
+						@loop.next_tick do
+							@loop.next_tick do
+								@loop.next_tick do
+									@loop.next_tick do
+										@loop.stop
+									end
+								end
+							end
+						end
+					end
+				}
+
+				@log.should == [:foo, :bar, :q_progress_cb]
 			end
 			
 			
@@ -391,18 +668,200 @@ describe Libuv::Q do
 				@loop.run {
 					@deferred.reject(:foo)
 					
-					@promise.then(proc {|reason|
+					@promise.catch(proc {|reason|
 						@log << reason
 					})
 					
 					@loop.next_tick do
-						@log.should == [:foo]
 						@loop.stop
 					end
 				}
+
+				@log.should == [:foo]
 			end
 			
 			
+		end
+
+
+		describe 'finally' do
+
+			describe 'when the promise is fulfilled' do
+
+				it "should call the callback" do
+					@loop.run {
+						@promise.finally do
+							@log << :finally
+						end
+
+						@deferred.resolve(:foo)
+						
+						@loop.next_tick do
+							@loop.stop
+						end
+					}
+
+					@log.should == [:finally]
+				end
+
+				it "should fulfill with the original value" do
+					@loop.run {
+						@promise.finally(proc {
+							@log << :finally
+							:finally
+						}).then do |result|
+							@log << result
+						end
+						
+
+						@deferred.resolve(:foo)
+						
+						@loop.next_tick do
+							@loop.next_tick do
+								@loop.stop
+							end
+						end
+					}
+
+					@log.should == [:finally, :foo]
+				end
+
+				it "should fulfill with the original value (larger test)" do
+					@loop.run {
+						@promise.then(proc { |result|
+							@log << result
+							result
+						}).finally(proc {
+							@log << :finally
+							:finally
+						}).then(proc { |result|
+							@log << result
+							:change
+						}).then(proc { |result|
+							@log << result
+							result
+						}).finally(proc {
+							@log << :finally
+							:finally
+						}).then(proc { |result|
+							@log << result
+							result
+						})
+						
+
+						@deferred.resolve(:foo)
+
+						
+						@loop.next_tick do
+							@loop.next_tick do
+								@loop.next_tick do
+									@loop.next_tick do
+										@loop.next_tick do
+											@loop.stop
+										end
+									end
+								end
+							end
+						end
+					}
+
+					@log.should == [:foo, :finally, :foo, :change, :finally, :change]
+				end
+
+				describe "when the callback throws an exception" do
+					it "should reject with this new exception" do
+						@loop.run {
+							@promise.finally(proc {
+								@log << :finally
+								raise 'error'
+							}).catch do |reason|
+								@log.push reason.is_a?(Exception)
+							end
+							
+							@deferred.resolve(:foo)
+							
+							@loop.next_tick do
+								@loop.next_tick do
+									@loop.stop
+								end
+							end
+						}
+
+						@log.should == [:finally, true]
+					end
+				end
+
+				describe "when the callback returns a promise" do
+					it "should fulfill with the original reason after that promise resolves" do
+						@loop.run {
+							deferred2 = @loop.defer
+
+							@promise.finally(proc {
+								@log << :finally
+								deferred2.promise
+							}).then do |result|
+								@log << result
+							end
+							
+							@deferred.resolve(:foo)
+							
+							@loop.next_tick do
+								@loop.next_tick do
+									@loop.next_tick do
+										@loop.next_tick do
+											@log << :resolving
+											deferred2.resolve('working')
+											@loop.next_tick do
+												@loop.next_tick do
+													@loop.stop
+												end
+											end
+										end
+									end
+								end
+							end
+						}
+
+						@log.should == [:finally, :resolving, :foo]
+					end
+
+
+					it "should reject with the new reason when it is rejected" do
+						@loop.run {
+							deferred2 = @loop.defer
+
+							@promise.finally(proc {
+								@log << :finally
+								deferred2.promise
+							}).catch do |result|
+								@log << result
+							end
+							
+							@deferred.resolve(:foo)
+							
+							@loop.next_tick do
+								@loop.next_tick do
+									@loop.next_tick do
+										@loop.next_tick do
+											@log << :rejecting
+											deferred2.reject(:rejected)
+											@loop.next_tick do
+												@loop.next_tick do
+													@loop.stop
+												end
+											end
+										end
+									end
+								end
+							end
+						}
+
+						@log.should == [:finally, :rejecting, :rejected]
+					end
+				end
+
+			end
+
 		end
 		
 	end
@@ -415,17 +874,18 @@ describe Libuv::Q do
 			@loop.run {
 				rejectedPromise = Libuv::Q.reject(@loop, 'not gonna happen')
 				
-				@promise.then(proc {|reason|
+				@promise.then(@default_fail, proc {|reason|
 					@log << reason
-				}, @default_fail)
+				})
 				
 				@deferred.resolve(rejectedPromise)
 				
 				@loop.next_tick do
-					@log.should == ['not gonna happen']
 					@loop.stop
 				end
 			}
+
+			@log.should == ['not gonna happen']
 		end
 		
 		
@@ -433,19 +893,20 @@ describe Libuv::Q do
 			@loop.run {
 				rejectedPromise = Libuv::Q.reject(@loop, 'not gonna happen')
 				
-				@promise.then(proc {|reason|
+				@promise.then(@default_fail, proc {|reason|
 					@log << reason
-				}, @default_fail)
+				})
 				
 				@deferred.resolve(rejectedPromise.then())
 				
 				@loop.next_tick do
 					@loop.next_tick do
-						@log.should == ['not gonna happen']
 						@loop.stop
 					end
 				end
 			}
+
+			@log.should == ['not gonna happen']
 		end
 		
 	end
@@ -456,15 +917,16 @@ describe Libuv::Q do
 		
 		it "should resolve all of nothing" do
 			@loop.run {
-				Libuv::Q.all(@loop).then @default_fail do |result|
+				Libuv::Q.all(@loop).then nil, @default_fail do |result|
 					@log << result
 				end
 				
 				@loop.next_tick do
-					@log.should == [[]]
 					@loop.stop
 				end
 			}
+
+			@log.should == [[]]
 		end
 		
 		it "should take an array of promises and return a promise for an array of results" do
@@ -472,8 +934,8 @@ describe Libuv::Q do
 				deferred1 = @loop.defer
 				deferred2 = @loop.defer
 				
-				Libuv::Q.all(@loop, @promise, deferred1.promise, deferred2.promise).then @default_fail do |result|
-					result.should == [:foo, :bar, :baz]
+				Libuv::Q.all(@loop, @promise, deferred1.promise, deferred2.promise).then nil, @default_fail do |result|
+					@log = result
 					@loop.stop
 				end
 				
@@ -481,6 +943,8 @@ describe Libuv::Q do
 				@loop.work { deferred2.resolve(:baz) }
 				@loop.work { deferred1.resolve(:bar) }
 			}
+
+			@log.should == [:foo, :bar, :baz]
 		end
 		
 		
@@ -489,18 +953,18 @@ describe Libuv::Q do
 				deferred1 = @loop.defer
 				deferred2 = @loop.defer
 				
-				Libuv::Q.all(@loop, @promise, deferred1.promise, deferred2.promise).then(proc {|reason|
-					reason.should == :baz
+				Libuv::Q.all(@loop, @promise, deferred1.promise, deferred2.promise).then(@default_fail, proc {|reason|
+					@log << reason
 					@loop.stop
-				}, @default_fail)
+				})
 				
 				@loop.work { @deferred.resolve(:foo) }
 				@loop.work { deferred2.reject(:baz) }
 			}
+
+			@log.should == [:baz]
 		end
 		
 	end
-	
-
 
 end

@@ -3,32 +3,52 @@ module Libuv
         include Assertions, Handle
 
 
-        def start(timeout, repeat = 0, &block)
-            assert_block(block)
-            assert_type(Integer, timeout, "timeout must be an Integer")
-            assert_type(Integer, repeat, "repeat must be an Integer")
+        def initialize(loop)
+            timer_ptr = ::Libuv::Ext.create_handle(:uv_timer)
+            super(loop, timer_ptr)
+            result = check_result(::Libuv::Ext.timer_init(loop.handle, timer_ptr))
+            @handle_deferred.reject(result) if result
+        end
 
-            @timer_block = block
-            check_result! ::Libuv::Ext.timer_start(handle, callback(:on_timer), timeout, repeat)
+        def start(timeout, repeat = 0)
+            begin
+                assert_type(Integer, timeout, "timeout must be an Integer")
+                assert_type(Integer, repeat, "repeat must be an Integer")
 
-            self
+                check_result! ::Libuv::Ext.timer_start(handle, callback(:on_timer), timeout, repeat)
+            rescue Exception => e
+                @handle_deferred.reject(e)
+            end
+            @handle_promise
         end
 
         def stop
-            check_result! ::Libuv::Ext.timer_stop(handle)
-            self
+            begin
+                check_result! ::Libuv::Ext.timer_stop(handle)
+            rescue Exception => e
+                @handle_deferred.reject(e)
+            end
+            @handle_promise
         end
 
         def again
-            check_result! ::Libuv::Ext.timer_again(handle)
-            self
+            begin
+                check_result! ::Libuv::Ext.timer_again(handle)
+            rescue Exception => e
+                @handle_deferred.reject(e)
+            end
+            @handle_promise
         end
 
         def repeat=(repeat)
-            assert_type(Integer, repeat, "repeat must be an Integer")
+            begin
+                assert_type(Integer, repeat, "repeat must be an Integer")
 
-            check_result! ::Libuv::Ext.timer_set_repeat(handle, repeat)
-            self
+                check_result! ::Libuv::Ext.timer_set_repeat(handle, repeat)
+            rescue Exception => e
+                @handle_deferred.reject(e)
+            end
+            @handle_promise
         end
 
         def repeat
@@ -40,10 +60,12 @@ module Libuv
 
 
         def on_timer(handle, status)
-            begin
-                @timer_block.call(check_result(status))
-            rescue Exception => e
-                # TODO:: log errors, don't want to crash the loop thread
+            e = check_result(status)
+
+            if e
+                @handle_deferred.reject(e)
+            else
+                @handle_deferred.notify(self)   # notify of a new connection
             end
         end
     end
