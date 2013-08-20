@@ -32,7 +32,37 @@ describe Libuv::TCP do
 				end
 
 
+				binding = @server.bind('127.0.0.1', 34567)
 
+				# catch server errors
+				binding.catch do |reason|
+					@general_failure << reason.inspect
+				end
+
+				# catch server exit
+				binding.then do |result|
+					@log << "server_#{result}"
+				end
+
+				# consume data as it is recieved
+				binding.progress do |server|
+					p 'progress on bind'
+					server.accept.then do |client|
+						client[:binding].progress do |data|
+							@log << data
+							p "server: #{data}"
+							client[:handle].write('pong')
+							client[:handle].shutdown
+						end
+						client[:handle].start_read
+						client[:binding].then do
+							client[:handle].close
+						end
+					end
+				end
+
+				# start listening
+				@server.listen(1024)
 
 
 
