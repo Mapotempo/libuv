@@ -4,10 +4,10 @@ module Libuv
 
 
         def initialize(loop, pointer, result, error)
-            @loop, @pointer = loop, pointer
+            @pointer = pointer
 
             # Initialise the promise
-            super(@loop, result, error)
+            super(loop, result, error)
         end
 
         # Public: Increment internal ref counter for the handle on the loop. Useful for
@@ -62,10 +62,12 @@ module Libuv
             ::Libuv::Ext.free(pointer)
             clear_callbacks
 
-            begin
-                @handle_close_cb.call unless @handle_close_cb.nil?
-            rescue Exception => e
-                
+            if @handle_close_cb
+                begin
+                    @handle_close_cb.call
+                rescue Exception => e
+                    @loop.log :error, :async_cb, e
+                end
             end
         end
     end

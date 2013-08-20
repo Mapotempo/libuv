@@ -49,7 +49,7 @@ module Libuv
                     end
                 end
             end
-            @process_queue = @loop.async &@queue_proc
+            @process_queue = @loop.async @queue_proc
 
             # Create a next tick timer
             @next_tick = @loop.timer
@@ -168,25 +168,19 @@ module Libuv
             ::Libuv::Error::UNKNOWN.new("error lookup failed for code: #{err}")
         end
 
-        # Get a new timer instance
-        # 
-        # @return [::Libuv::Timer]
-        def timer
-            Timer.new(@loop)
-        end
 
         # Get a new TCP instance
         # 
         # @return [::Libuv::TCP]
         def tcp
-            TCP.new(@loop, tcp_ptr)
+            TCP.new(@loop)
         end
 
         # Get a new UDP instance
         #
         # @return [::Libuv::UDP]
         def udp
-            UDP.new(@loop, udp_ptr)
+            UDP.new(@loop)
         end
 
         # Get a new TTY instance
@@ -205,6 +199,13 @@ module Libuv
         # @return [::Libuv::Pipe]
         def pipe(ipc = false)
             Pipe.new(@loop, ipc)
+        end
+
+        # Get a new timer instance
+        # 
+        # @return [::Libuv::Timer]
+        def timer
+            Timer.new(@loop)
         end
 
         # Get a new Prepare handle
@@ -233,7 +234,9 @@ module Libuv
         # @return [::Libuv::Async]
         # @raise [ArgumentError] if block is not given
         def async(callback = nil, &block)
-            Async.new(@loop, callback || block)
+            callback ||= block
+            assert_block(callback)
+            Async.new(@loop, callback)
         end
 
         # Queue some work for processing in the libuv thread pool

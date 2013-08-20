@@ -6,6 +6,12 @@ module Libuv
         include Stream, Net
 
 
+        def self.accept(loop, handle)
+            p "#{handle.inspect}"
+            AcceptTCP.new(loop, handle)
+        end
+
+
         def initialize(loop)
             tcp_ptr = ::Libuv::Ext.create_handle(:uv_tcp)
             result = check_result(::Libuv::Ext.tcp_init(loop.handle, tcp_ptr))
@@ -17,32 +23,47 @@ module Libuv
             end
         end
 
+        def reuse(loop)
+            result = check_result(::Libuv::Ext.tcp_init(loop.handle, @pointer))
+            
+            # reset promise
+            if result.nil?
+                @response = self
+                @error = false
+            else
+                @response = result
+                @error = true
+            end
+
+            @loop = loop
+            @handle_deferred = nil
+        end
+
         def bind(ip, port)
-            # TODO:: Bind requires its own promise
+            @handle_deferred, @binding = create_socket(IPAddr.new(ip), port)
             begin
                 assert_type(String, ip, "ip must be a String")
                 assert_type(Integer, port, "port must be an Integer")
 
-                @socket = create_socket(IPAddr.new(ip), port)
-                @socket.bind
+                @binding.bind   # @handle_deferred is a SocketBase < Promise
             rescue Exception => e
                 @handle_deferred.reject(e)
             end
-            @handle_promise
+            @binding
         end
 
-        def connect(ip, port)
-            @connect_deferred = @loop.defer
+        def connect(ip, port, callback = nil, &blk)
+            @callback = callback || blk
+            @handle_deferred, @binding = create_socket(IPAddr.new(ip), port)
             begin
                 assert_type(String, ip, "ip must be a String")
                 assert_type(Integer, port, "port must be an Integer")
 
-                @socket        = create_socket(IPAddr.new(ip), port)
-                @socket.connect(callback(:on_connect))
+                @binding.connect(callback(:on_connect))
             rescue Exception => e
-                @connect_deferred.reject(e)
+                @handle_deferred.reject(e)
             end
-            @connect_deferred.promise
+            @binding
         end
 
         def sockname
@@ -93,36 +114,69 @@ module Libuv
 
 
         def create_socket(ip, port)
+            deferred = @loop.defer
             if ip.ipv4?
-                Socket4.new(@loop, handle, ip.to_s, port)
+                prom = Socket4.new(@loop, deferred, handle, ip.to_s, port)
             else
-                Socket6.new(@loop, handle, ip.to_s, port)
+                prom = Socket6.new(@loop, deferred, handle, ip.to_s, port)
             end
+            return deferred, prom
         end
 
         def on_connect(req, status)
+            p 'connect callback'
+
             ::Libuv::Ext.free(req)
-            resolve @connect_deferred, status
-            @connect_deferred = nil
+            @callback.call(self)
         end
 
 
-        module SocketMethods
+        # Special class for accepting TCP streams
+        class AcceptTCP < TCP
+            private :bind
+            private :connect
+            private :enable_simultaneous_accepts
+            private :disable_simultaneous_accepts
+
+
+            def initialize(loop, handle)
+                @pointer = ::Libuv::Ext.create_handle(:uv_tcp)
+                result = check_result(::Libuv::Ext.tcp_init(loop.handle, @pointer))
+                result = check_result(::Libuv::Ext.accept(handle, @pointer))
+
+                # init promise
+                if result.nil?
+                    @handle_deferred = loop.defer                   # The stream
+                    @response = {:handle => self, :binding => @handle_deferred.promise}    # Passes the promise object in the response
+                    @error = false
+                else
+                    @response = result
+                    @error = true
+                end
+                @defer = loop.defer
+                @loop = loop
+            end
+        end
+
+
+        class SocketBase < Q::DeferredPromise
             include Resource
 
-            def initialize(loop, tcp, ip, port)
+            def initialize(loop, deferred, tcp, ip, port)
                 @tcp, @sockaddr = tcp, ip_addr(ip, port)
 
                 # Initialise the promise
-                super(loop, loop.defer)
+                super(loop, deferred)
             end
 
             def bind
-                check_result! tcp_bind
+                result = check_result(tcp_bind)
+                reject(result) if result
             end
 
             def connect(callback)
-                check_result! tcp_connect(callback)
+                result = check_result(tcp_connect(callback))
+                reject(result) if result
             end
 
 
@@ -134,8 +188,7 @@ module Libuv
             end
         end
 
-        class Socket4 < Q::DeferredPromise
-            include SocketMethods
+        class Socket4 < SocketBase
 
 
             private
@@ -159,8 +212,7 @@ module Libuv
             end
         end
 
-        class Socket6 < Q::DeferredPromise
-            include SocketMethods
+        class Socket6 < SocketBase
 
 
             private

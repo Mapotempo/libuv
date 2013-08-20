@@ -1,135 +1,68 @@
-require 'spec_helper'
+require 'libuv'
+
 
 describe Libuv::TCP do
-  let(:handle_name) { :tcp }
-  let(:loop) { double() }
-  let(:pointer) { double() }
-  let(:promise) { double() }
-  subject { Libuv::TCP.new(loop, pointer) }
+	before :each do
+		@log = []
+		@general_failure = []
 
-  it_behaves_like 'a handle'
-  it_behaves_like 'a stream'
+		@loop = Libuv::Loop.new
+		@server = @loop.tcp
+		@client = @loop.tcp
+		@timeout = @loop.timer
+		@timeout.start(3000) do
+			@loop.stop
+			@general_failure << "test timed out"
+		end
 
-  describe "#bind" do
-    let(:ip_addr) { double() }
-    let(:port) { 0 }
+		@loop.all(@loop, @server, @client, @timeout).catch do |reason|
+			@general_failure << reason.inspect
+		end
+	end
 
-    context "ipv4" do
-      let(:ip) { "0.0.0.0" }
+	after :each do
+		@general_failure.should == []
+	end
+	
+	describe 'basic client server' do
+		it "should send a ping and return a pong" do
+			@loop.run { |logger|
+				logger.progress do |level, errorid, error|
+					p "Log called: #{level}: #{errorid}\n#{e.message}\n#{e.backtrace.join("\n")}\n"
+				end
 
-      it "calls Libuv::Ext.tcp_bind" do
-        Libuv::Ext.should_receive(:ip4_addr).with(ip, port).and_return(ip_addr)
-        Libuv::Ext.should_receive(:tcp_bind).with(pointer, ip_addr)
 
-        subject.bind(ip, port)
-      end
-    end
 
-    context "ipv6" do
-      let(:ip) { "::" }
 
-      it "calls Libuv::Ext.tcp_bind6" do
-        Libuv::Ext.should_receive(:ip6_addr).with(ip, port).and_return(ip_addr)
-        Libuv::Ext.should_receive(:tcp_bind6).with(pointer, ip_addr)
 
-        subject.bind(ip, port)
-      end
-    end
-  end
 
-  describe "#connect" do
-    let(:connect_request) { double() }
-    let(:ip_addr) { double() }
-    let(:port) { 0 }
+				# connect client to server
+				@cbinding = @client.connect('127.0.0.1', 34567) do |client|
+					p 'in callback'
+					cbinding.progress do |data|
+						@log << data
 
-    context "ipv4" do
-      let(:ip) { "0.0.0.0" }
+						p "client: #{data}"
+						@client.shutdown
+						@server.close
+					end
 
-      it "calls Libuv::Ext.tcp_connect" do
-        Libuv::Ext.should_receive(:create_request).with(:uv_connect).and_return(connect_request)
-        Libuv::Ext.should_receive(:ip4_addr).with(ip, port).and_return(ip_addr)
-        Libuv::Ext.should_receive(:tcp_connect).with(connect_request, pointer, ip_addr, subject.method(:on_connect))
-        loop.should_receive(:defer).once.and_return(promise)
-        promise.should_receive(:promise).once
+					@client.write('ping')
+				end
 
-        subject.connect(ip, port) { |e| }
-      end
-    end
+				# catch errors
+				@cbinding.catch do |reason|
+					@general_failure << reason.inspect
+				end
 
-    context "ipv6" do
-      let(:ip) { "::" }
+				# close the handle
+				@cbinding.finally do
+					@client.close
+				end
+				
+			}
 
-      it "calls Libuv::Ext.tcp_connect6" do
-        Libuv::Ext.should_receive(:create_request).with(:uv_connect).and_return(connect_request)
-        Libuv::Ext.should_receive(:ip6_addr).with(ip, port).and_return(ip_addr)
-        Libuv::Ext.should_receive(:tcp_connect6).with(connect_request, pointer, ip_addr, subject.method(:on_connect))
-        loop.should_receive(:defer).once.and_return(promise)
-        promise.should_receive(:promise).once
-
-        subject.connect(ip, port) { |e| }
-      end
-    end
-  end
-
-  # describe "#sockname" do
-  #   let(:sockaddr) { double() }
-  #   let(:len) { 15 }
-  # 
-  #   it "calls Libuv::Ext.tcp_getsockname" do
-  #     Libuv::Ext.should_receive(:tcp_getsockname).with(pointer, sockaddr, len)
-  #   end
-  # end
-  # 
-  # describe "#peername" do
-  # end
-
-  describe "#enable_nodelay" do
-    it "calls Libuv::Ext.tcp_nodelay" do
-      Libuv::Ext.should_receive(:tcp_nodelay).with(pointer, 1)
-
-      subject.enable_nodelay
-    end
-  end
-
-  describe "#disable_nodelay" do
-    it "calls Libuv::Ext.tcp_nodelay" do
-      Libuv::Ext.should_receive(:tcp_nodelay).with(pointer, 0)
-
-      subject.disable_nodelay
-    end
-  end
-
-  describe "#enable_keepalive" do
-    let(:keepalive_delay) { 150 }
-
-    it "calls Libuv::Ext.tcp_keepalive" do
-      Libuv::Ext.should_receive(:tcp_keepalive).with(pointer, 1, keepalive_delay)
-
-      subject.enable_keepalive(keepalive_delay)
-    end
-  end
-
-  describe "#disable_keepalive" do
-    it "calls Libuv::Ext.tcp_keepalive" do
-      Libuv::Ext.should_receive(:tcp_keepalive).with(pointer, 0, 0)
-
-      subject.disable_keepalive
-    end
-  end
-
-  describe "#enable_simultaneous_accepts" do
-    it "calls Libuv::Ext.tcp_simultaneous_accepts" do
-      Libuv::Ext.should_receive(:tcp_simultaneous_accepts).with(pointer, 1)
-
-      subject.enable_simultaneous_accepts
-    end
-  end
-
-  describe "#disable_simultaneous_accepts" do
-    it "calls Libuv::Ext.tcp_simultaneous_accepts" do
-      Libuv::Ext.should_receive(:tcp_simultaneous_accepts).with(pointer, 0)
-
-      subject.disable_simultaneous_accepts
-    end
-  end
+			@log.should == ['ping', 'pong']
+		end
+	end
 end

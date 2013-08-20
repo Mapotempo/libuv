@@ -13,15 +13,15 @@ module Libuv
             rescue Exception => e
                 @handle_deferred.reject(e)
             end
-            @handle_promise
         end
 
         # Accepts a socket
         def accept
-            client = loop.send(handle_name)
-
+            #client = loop.send(handle_name)
+            self.class.send(:accept, loop, handle)
+            #client.process_accept(handle)
             # TODO:: have this check_result resolve on the client promise
-            check_result! ::Libuv::Ext.accept(handle, client.handle)
+            #check_result! ::Libuv::Ext.accept(handle, client.handle)
         end
 
         # Starts reading from the handle

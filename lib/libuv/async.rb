@@ -1,22 +1,21 @@
 module Libuv
-    class Async
-        include Handle
+    class Async < Handle
 
 
         def initialize(loop, callback)
             async_ptr = ::Libuv::Ext.create_handle(:uv_async)
-            super(loop, async_ptr)
-            @handle_promise.progress(callback)
-            result = check_result(::Libuv::Ext.async_init(loop.handle, async_ptr, async.callback(:on_async)))
-            @handle_deferred.reject(result) if result
+            result = check_result(::Libuv::Ext.async_init(loop.handle, async_ptr, callback(:on_async)))
+
+            if result.nil?
+                @callback = callback
+                super(loop, async_ptr, self, false)
+            else
+                super(loop, async_ptr, result, true)
+            end
         end
 
         def call
-            begin
-                check_result! ::Libuv::Ext.async_send(handle)
-            rescue Exception => e
-                @handle_deferred.reject(e)
-            end
+            check_result! ::Libuv::Ext.async_send(handle)
             self
         end
 
@@ -28,9 +27,13 @@ module Libuv
             e = check_result(status)
 
             if e
-                @handle_deferred.reject(e)
+                @loop.log :error, :async_cb, e
             else
-                @handle_deferred.notify(self)   # notify of a new connection
+                begin
+                    @callback.call
+                rescue Exception => e
+                    @loop.log :error, :async_cb, e
+                end
             end
         end
     end
