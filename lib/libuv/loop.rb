@@ -82,7 +82,7 @@ module Libuv
                     Thread.current[:uvloop] = @loop
                     yield  @loop_notify.promise if block_given?
                     @queue_proc.call    # pre-process any pending procs
-                    resolve @loop_notify, ::Libuv::Ext.run(@pointer, run_type)  # This is blocking
+                    ::Libuv::Ext.run(@pointer, run_type)  # This is blocking
                 ensure
                     Thread.current[:uvloop] = nil
                 end
@@ -198,6 +198,7 @@ module Libuv
         #     indicate if a handle will be used for ipc, useful for sharing tcp socket between processes
         # @return [::Libuv::Pipe]
         def pipe(ipc = false)
+            assert_boolean(ipc)
             Pipe.new(@loop, ipc)
         end
 

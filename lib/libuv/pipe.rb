@@ -1,30 +1,26 @@
 module Libuv
-    class Pipe
+    class Pipe < Handle
         include Stream
 
 
-        def initialize(loop, fileno, readable)
-            pipe_ptr = ::Libuv::Ext.create_handle(:uv_pipe)
-            super(loop, pipe_ptr)
-            begin
-                assert_type(Integer, fileno, INVALID_FILE)
-                assert_boolean(readable)
-                check_result!(:::Libuv::Ext.pipe_init(loop.handle, pipe_ptr, ipc ? 1 : 0))
-            rescue Exception => e
-                @handle_deferred.reject(e)
-            end
+        def self.accept(loop, handle)
+            AcceptPipe.new(loop, handle)
         end
 
-        def open(fileno)
-            begin
-                assert_type(Integer, fileno, "io#fileno must return an integer file descriptor")
-                check_result! ::Libuv::Ext.pipe_open(handle, fileno)
-            rescue Exception => e
-                @handle_deferred.reject(e)
+
+        def initialize(loop, ipc)
+            pipe_ptr = ::Libuv::Ext.create_handle(:uv_pipe)
+            result = check_result(::Libuv::Ext.pipe_init(loop.handle, pipe_ptr, ipc ? 1 : 0))
+            
+            if result
+                super(loop, pipe_ptr, result, true)
+            else
+                super(loop, pipe_ptr, self, false)
             end
         end
 
         def bind(name)
+            @handle_deferred = loop.defer
             begin
                 assert_type(String, name, "name must be a String")
                 name = windows_path name if FFI::Platform.windows?
@@ -32,10 +28,33 @@ module Libuv
             rescue Exception => e
                 @handle_deferred.reject(e)
             end
+            @handle_deferred.promise
         end
 
-        def connect(name)
-            @on_conenct = @loop.defer
+        def open(fileno, callback = nil, &blk)
+            @handle_deferred = loop.defer
+            @handle_promise = @handle_deferred.promise
+            @callback = callback || blk
+            begin
+                assert_type(Integer, fileno, "io#fileno must return an integer file descriptor")
+                check_result! ::Libuv::Ext.pipe_open(handle, fileno)
+
+                # Emulate on_connect behavior
+                begin
+                    @callback.call(self, @handle_promise)
+                rescue Exception => e
+                    @loop.log :error, :pipe_connect_cb, e
+                end
+            rescue Exception => e
+                @handle_deferred.reject(e)
+            end
+            @handle_promise
+        end
+
+        def connect(name, callback = nil, &blk)
+            @handle_deferred = loop.defer
+            @handle_promise = @handle_deferred.promise
+            @callback = callback || blk
             begin
                 assert_type(String, name, "name must be a String")
                 name = windows_path name if FFI::Platform.windows?
@@ -43,16 +62,12 @@ module Libuv
             rescue Exception => e
                 @on_conenct.reject(e)
             end
-            @on_conenct.promise
+            @handle_promise
         end
 
         def pending_instances=(count)
-            begin
-                assert_type(Integer, count, "count must be an Integer")
-                ::Libuv::Ext.pipe_pending_instances(handle, count)
-            rescue Exception => e
-                @handle_deferred.reject(e)
-            end
+            assert_type(Integer, count, "count must be an Integer")
+            ::Libuv::Ext.pipe_pending_instances(handle, count)
         end
 
 
@@ -61,7 +76,11 @@ module Libuv
 
         def on_connect(req, status)
             ::Libuv::Ext.free(req)
-            resolve @on_conenct, status
+            begin
+                @callback.call(self, @handle_promise)
+            rescue Exception => e
+                @loop.log :error, :pipe_connect_cb, e
+            end
         end
 
         def windows_path(name)
@@ -70,6 +89,32 @@ module Libuv
                 name = ::File.join("\\\\.\\pipe", name)
             end
             name.gsub("/", "\\")
+        end
+
+
+        class AcceptPipe < TCP
+            private :bind
+            private :open
+            private :connect
+
+
+            def initialize(loop, newhandle)
+                @pointer = ::Libuv::Ext.create_handle(:uv_pipe)
+                result = check_result(::Libuv::Ext.pipe_init(loop.handle, @pointer, 1))
+                result = check_result(::Libuv::Ext.accept(newhandle, @pointer)) if result.nil?
+
+                # init promise
+                if result.nil?
+                    @handle_deferred = loop.defer                   # The stream
+                    @response = {:handle => self, :binding => @handle_deferred.promise}    # Passes the promise object in the response
+                    @error = false
+                else
+                    @response = result
+                    @error = true
+                end
+                @defer = loop.defer
+                @loop = loop
+            end
         end
     end
 end

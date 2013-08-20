@@ -10,18 +10,14 @@ describe Libuv::TCP do
 		@server = @loop.tcp
 		@client = @loop.tcp
 		@timeout = @loop.timer
-		@timeout.start(3000) do
+		@timeout.start(5000) do
 			@loop.stop
 			@general_failure << "test timed out"
 		end
 
-		@loop.all(@loop, @server, @client, @timeout).catch do |reason|
+		@loop.all(@server, @client, @timeout).catch do |reason|
 			@general_failure << reason.inspect
 		end
-	end
-
-	after :each do
-		@general_failure.should == []
 	end
 	
 	describe 'basic client server' do
@@ -48,6 +44,8 @@ describe Libuv::TCP do
 				binding.progress do |server|
 					p 'progress on bind'
 					server.accept.then do |client|
+						p 'client accepted'
+						@accepted = client
 						client[:binding].progress do |data|
 							@log << data
 							p "server: #{data}"
@@ -77,6 +75,7 @@ describe Libuv::TCP do
 						@server.close
 					end
 
+					@client.start_read
 					@client.write('ping')
 				end
 
@@ -92,6 +91,7 @@ describe Libuv::TCP do
 				
 			}
 
+			@general_failure.should == []
 			@log.should == ['ping', 'pong']
 		end
 	end
