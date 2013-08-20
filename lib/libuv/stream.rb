@@ -1,6 +1,5 @@
 module Libuv
     module Stream
-        include Handle
 
 
         BACKLOG_ERROR = "backlog must be an Integer".freeze
@@ -20,6 +19,8 @@ module Libuv
         # Accepts a socket
         def accept
             client = loop.send(handle_name)
+
+            # TODO:: have this check_result resolve on the client promise
             check_result! ::Libuv::Ext.accept(handle, client.handle)
         end
 
@@ -30,8 +31,7 @@ module Libuv
             rescue Exception => e
                 @handle_deferred.reject(e)
             end
-
-            self
+            @handle_promise
         end
 
         # Stops reading from the handle
@@ -41,8 +41,7 @@ module Libuv
             rescue Exception => e
                 @handle_deferred.reject(e)
             end
-
-            self
+            @handle_promise
         end
 
         # Shutsdown the writes on the handle waiting until the last write is complete before triggering the callback
@@ -52,8 +51,7 @@ module Libuv
             rescue Exception => e
                 @handle_deferred.reject(e)
             end
-
-            self
+            @handle_promise
         end
 
         def write(data)

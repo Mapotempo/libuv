@@ -2,18 +2,33 @@ require 'ipaddr'
 
 
 module Libuv
-    class TCP
+    class TCP < Handle
         include Stream, Net
 
 
+        def initialize(loop)
+            tcp_ptr = ::Libuv::Ext.create_handle(:uv_tcp)
+            result = check_result(::Libuv::Ext.tcp_init(loop.handle, tcp_ptr))
+            
+            if result
+                super(loop, tcp_ptr, result, true)
+            else
+                super(loop, tcp_ptr, self, false)
+            end
+        end
+
         def bind(ip, port)
-            assert_type(String, ip, "ip must be a String")
-            assert_type(Integer, port, "port must be an Integer")
+            # TODO:: Bind requires its own promise
+            begin
+                assert_type(String, ip, "ip must be a String")
+                assert_type(Integer, port, "port must be an Integer")
 
-            @socket = create_socket(IPAddr.new(ip), port)
-            @socket.bind
-
-            self
+                @socket = create_socket(IPAddr.new(ip), port)
+                @socket.bind
+            rescue Exception => e
+                @handle_deferred.reject(e)
+            end
+            @handle_promise
         end
 
         def connect(ip, port)
@@ -96,7 +111,10 @@ module Libuv
             include Resource
 
             def initialize(loop, tcp, ip, port)
-                @loop, @tcp, @sockaddr = loop, tcp, ip_addr(ip, port)
+                @tcp, @sockaddr = tcp, ip_addr(ip, port)
+
+                # Initialise the promise
+                super(loop, loop.defer)
             end
 
             def bind
@@ -116,7 +134,7 @@ module Libuv
             end
         end
 
-        class Socket4
+        class Socket4 < Q::DeferredPromise
             include SocketMethods
 
 
@@ -141,7 +159,7 @@ module Libuv
             end
         end
 
-        class Socket6
+        class Socket6 < Q::DeferredPromise
             include SocketMethods
 
 

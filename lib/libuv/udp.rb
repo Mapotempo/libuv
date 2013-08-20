@@ -3,15 +3,25 @@ module Libuv
         include Handle, Net
 
 
+        def initialize(loop)
+            udp_ptr = ::Libuv::Ext.create_handle(:uv_udp)
+            super(loop, udp_ptr)
+            result = check_result(::Libuv::Ext.udp_init(loop.handle, udp_ptr))
+            @handle_deferred.reject(result) if result
+        end
+
         def bind(ip, port, ipv6_only = false)
-            assert_type(String, ip, "ip must be a String")
-            assert_type(Integer, port, "port must be an Integer")
-            assert_boolean(ipv6_only, "ipv6_only must be a Boolean")
+            begin
+                assert_type(String, ip, "ip must be a String")
+                assert_type(Integer, port, "port must be an Integer")
+                assert_boolean(ipv6_only, "ipv6_only must be a Boolean")
 
-            @socket = create_socket(IPAddr.new(ip), port)
-            @socket.bind(ipv6_only)
-
-            self
+                @socket = create_socket(IPAddr.new(ip), port)
+                @socket.bind(ipv6_only)
+            rescue Exception => e
+                @handle_deferred.reject(e)
+            end
+            @handle_promise
         end
 
         def sockname
@@ -21,34 +31,45 @@ module Libuv
         end
 
         def join(multicast_address, interface_address)
-            assert_type(String, multicast_address, "multicast_address must be a String")
-            assert_type(String, interface_address, "interface_address must be a String")
+            begin
+                assert_type(String, multicast_address, "multicast_address must be a String")
+                assert_type(String, interface_address, "interface_address must be a String")
 
-            check_result! ::Libuv::Ext.udp_set_membership(handle, multicast_address, interface_address, :uv_join_group)
-
-            self
+                check_result! ::Libuv::Ext.udp_set_membership(handle, multicast_address, interface_address, :uv_join_group)
+            rescue Exception => e
+                @handle_deferred.reject(e)
+            end
+            @handle_promise
         end
 
         def leave(multicast_address, interface_address)
-            assert_type(String, multicast_address, "multicast_address must be a String")
-            assert_type(String, interface_address, "interface_address must be a String")
+            begin
+                assert_type(String, multicast_address, "multicast_address must be a String")
+                assert_type(String, interface_address, "interface_address must be a String")
 
-            check_result! ::Libuv::Ext.udp_set_membership(handle, multicast_address, interface_address, :uv_leave_group)
-
-            self
+                check_result! ::Libuv::Ext.udp_set_membership(handle, multicast_address, interface_address, :uv_leave_group)
+            rescue Exception => e
+                @handle_deferred.reject(e)
+            end
+            @handle_promise
         end
 
-        def start_recv(&block)
-            assert_block(block)
-
-            @recv_block = block
-            check_result! ::Libuv::Ext.udp_recv_start(handle, callback(:on_allocate), callback(:on_recv))
-
-            self
+        def start_recv
+            begin
+                check_result! ::Libuv::Ext.udp_recv_start(handle, callback(:on_allocate), callback(:on_recv))
+            rescue Exception => e
+                @handle_deferred.reject(e)
+            end
+            @handle_promise
         end
 
         def stop_recv
-            check_result! ::Libuv::Ext.udp_recv_stop(handle)
+            begin
+                check_result! ::Libuv::Ext.udp_recv_stop(handle)
+            rescue Exception => e
+                @handle_deferred.reject(e)
+            end
+            @handle_promise
         end
 
         def send(ip, port, data)
@@ -91,37 +112,61 @@ module Libuv
         end
 
         def enable_multicast_loop
-            check_result! ::Libuv::Ext.udp_set_multicast_loop(handle, 1)
-            self
+            begin
+                check_result! ::Libuv::Ext.udp_set_multicast_loop(handle, 1)
+            rescue Exception => e
+                @handle_deferred.reject(e)
+            end
+            @handle_promise
         end
 
         def disable_multicast_loop
-            check_result! ::Libuv::Ext.udp_set_multicast_loop(handle, 0)
-            self
+            begin
+                check_result! ::Libuv::Ext.udp_set_multicast_loop(handle, 0)
+            rescue Exception => e
+                @handle_deferred.reject(e)
+            end
+            @handle_promise
         end
 
         def multicast_ttl=(ttl)
-            assert_type(Integer, ttl, "ttl must be an Integer")
+            begin
+                assert_type(Integer, ttl, "ttl must be an Integer")
 
-            check_result! ::Libuv::Ext.udp_set_multicast_ttl(handle, ttl)
-            self
+                check_result! ::Libuv::Ext.udp_set_multicast_ttl(handle, ttl)
+            rescue Exception => e
+                @handle_deferred.reject(e)
+            end
+            @handle_promise
         end
 
         def enable_broadcast
-            check_result! ::Libuv::Ext.udp_set_broadcast(handle, 1)
-            self
+            begin
+                check_result! ::Libuv::Ext.udp_set_broadcast(handle, 1)
+            rescue Exception => e
+                @handle_deferred.reject(e)
+            end
+            @handle_promise
         end
 
         def disable_broadcast
-            check_result! ::Libuv::Ext.udp_set_broadcast(handle, 0)
-            self
+            begin
+                check_result! ::Libuv::Ext.udp_set_broadcast(handle, 0)
+            rescue Exception => e
+                @handle_deferred.reject(e)
+            end
+            @handle_promise
         end
 
         def ttl=(ttl)
-            assert_type(Integer, ttl, "ttl must be an Integer")
+            begin
+                assert_type(Integer, ttl, "ttl must be an Integer")
 
-            check_result! ::Libuv::Ext.udp_set_ttl(handle, Integer(ttl))
-            self
+                check_result! ::Libuv::Ext.udp_set_ttl(handle, Integer(ttl))
+            rescue Exception => e
+                @handle_deferred.reject(e)
+            end
+            @handle_promise
         end
 
 
@@ -135,14 +180,18 @@ module Libuv
         def on_recv(handle, nread, buf, sockaddr, flags)
             e = check_result(nread)
             base = buf[:base]
-            unless e
-                data = base.read_string(nread)
-            end
-            ::Libuv::Ext.free(base)
             unless sockaddr.null?
                 ip, port = get_ip_and_port(UV::Sockaddr.new(sockaddr))
             end
-            @recv_block.call(e, data, ip, port)
+
+            if e
+                ::Libuv::Ext.free(base)
+                @handle_deferred.reject([e, ip, port])
+            else
+                data = base.read_string(nread)
+                ::Libuv::Ext.free(base)
+                @handle_deferred.notify([data, ip, port])   # stream the data
+            end
         end
 
         def create_socket(ip, port)

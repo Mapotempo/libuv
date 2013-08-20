@@ -1,17 +1,13 @@
 module Libuv
-    module Handle
+    class Handle < Q::ResolvedPromise
         include Assertions, Resource, Listener
 
 
-        def initialize(loop, pointer)
+        def initialize(loop, pointer, result, error)
             @loop, @pointer = loop, pointer
-            
-            @handle_deferred = @loop.defer
-            @handle_promise = @handle_deferred.promise
-            @handle_promise.catch do |err|  # Auto close on rejection
-                self.close
-                ::Libuv::Q.reject(@loop, err)
-            end
+
+            # Initialise the promise
+            super(@loop, result, error)
         end
 
         # Public: Increment internal ref counter for the handle on the loop. Useful for
@@ -32,9 +28,10 @@ module Libuv
             self
         end
 
-        def close
+        def close(callback = nil, &blk)
+            @handle_close_cb = callback || blk
             Libuv::Ext.close(@pointer, callback(:on_close))
-            @handle_promise
+            self
         end
 
         def active?
@@ -57,14 +54,19 @@ module Libuv
 
 
         def handle_name
+            # Seems a little hacky
             self.class.name.split('::').last.downcase.to_sym
         end
 
         def on_close(pointer)
             ::Libuv::Ext.free(pointer)
             clear_callbacks
-            
-            @handle_deferred.resolve(self)
+
+            begin
+                @handle_close_cb.call unless @handle_close_cb.nil?
+            rescue Exception => e
+                
+            end
         end
     end
 end

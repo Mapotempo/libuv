@@ -164,7 +164,7 @@ module Libuv
             msg  = ::Libuv::Ext.strerror(err)
 
             ::Libuv::Error.const_get(name.to_sym).new(msg)
-        rescue
+        rescue Exception
             ::Libuv::Error::UNKNOWN.new("error lookup failed for code: #{err}")
         end
 
@@ -179,9 +179,6 @@ module Libuv
         # 
         # @return [::Libuv::TCP]
         def tcp
-            tcp_ptr = ::Libuv::Ext.create_handle(:uv_tcp)
-            check_result! ::Libuv::Ext.tcp_init(@pointer, tcp_ptr)
-
             TCP.new(@loop, tcp_ptr)
         end
 
@@ -189,10 +186,7 @@ module Libuv
         #
         # @return [::Libuv::UDP]
         def udp
-            udp_ptr = ::Libuv::Ext.create_handle(:uv_udp)
-            check_result! ::Libuv::Ext.udp_init(@pointer, udp_ptr)
-
-            UV::UDP.new(@loop, udp_ptr)
+            UDP.new(@loop, udp_ptr)
         end
 
         # Get a new TTY instance
@@ -200,15 +194,8 @@ module Libuv
         # @param fileno [Integer] Integer file descriptor of a tty device
         # @param readable [true, false] Boolean indicating if TTY is readable
         # @return [::Libuv::TTY]
-        # @raise [ArgumentError] if fileno argument is not an Integer or readable is not a Boolean
         def tty(fileno, readable = false)
-            assert_type(Integer, fileno, "io#fileno must return an integer file descriptor, #{fileno.inspect} given")
-            assert_boolean(readable)
-
-            tty_ptr = ::Libuv::Ext.create_handle(:uv_tty)
-            check_result! ::Libuv::Ext.tty_init(@pointer, tty_ptr, fileno, readable ? 1 : 0)
-
-            TTY.new(@loop, tty_ptr)
+            TTY.new(@loop, fileno, readable)
         end
 
         # Get a new Pipe instance
@@ -217,12 +204,7 @@ module Libuv
         #     indicate if a handle will be used for ipc, useful for sharing tcp socket between processes
         # @return [::Libuv::Pipe]
         def pipe(ipc = false)
-            assert_boolean(ipc)
-
-            pipe_ptr = ::Libuv::Ext.create_handle(:uv_pipe)
-            check_result! ::Libuv::Ext.pipe_init(@pointer, pipe_ptr, ipc ? 1 : 0)
-
-            Pipe.new(@loop, pipe_ptr)
+            Pipe.new(@loop, ipc)
         end
 
         # Get a new Prepare handle
