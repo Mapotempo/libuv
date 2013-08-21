@@ -4,7 +4,7 @@ module Libuv
 
         def resolve(deferred, rc)
             if rc.nil? || rc >= 0
-                deferred.resolve(self)
+                deferred.resolve(nil)
             else
                 deferred.reject(@loop.lookup_error(rc))
             end

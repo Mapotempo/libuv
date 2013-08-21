@@ -7,47 +7,50 @@ module Libuv
         REPEAT_ERROR = "repeat must be an Integer".freeze
 
 
-        def initialize(loop)
+        def initialize(loop, callback = nil)
+            @callback = callback
             timer_ptr = ::Libuv::Ext.create_handle(:uv_timer)
-            result = check_result(::Libuv::Ext.timer_init(loop.handle, timer_ptr))
+            error = check_result(::Libuv::Ext.timer_init(loop.handle, timer_ptr))
 
-            if result.nil?
-                super(loop, timer_ptr, self, false)
-            else
-                super(loop, timer_ptr, result, true)
-            end
+            super(loop, timer_ptr, error)
         end
 
-        def start(timeout, repeat = 0, callback = nil, &blk)
-            @callback = callback || blk
-
-            assert_block(@callback)
+        def start(timeout, repeat = 0)
+            return if @closed
+            
             assert_type(Integer, timeout, TIMEOUT_ERROR)
             assert_type(Integer, repeat, REPEAT_ERROR)
 
-            check_result! ::Libuv::Ext.timer_start(handle, callback(:on_timer), timeout, repeat)
-            self
+            error = check_result ::Libuv::Ext.timer_start(handle, callback(:on_timer), timeout, repeat)
+            reject(error) if error
         end
 
         def stop
-            check_result! ::Libuv::Ext.timer_stop(handle)
-            self
+            return if @closed
+            error = check_result ::Libuv::Ext.timer_stop(handle)
+            reject(error) if error
         end
 
         def again
-            check_result! ::Libuv::Ext.timer_again(handle)
-            self
+            return if @closed
+            error = check_result ::Libuv::Ext.timer_again(handle)
+            reject(error) if error
         end
 
         def repeat=(repeat)
+            return if @closed
             assert_type(Integer, repeat, REPEAT_ERROR)
-
-            check_result! ::Libuv::Ext.timer_set_repeat(handle, repeat)
-            self
+            check_result ::Libuv::Ext.timer_set_repeat(handle, repeat)
+            reject(error) if error
         end
 
         def repeat
+            return if @closed
             ::Libuv::Ext.timer_get_repeat(handle)
+        end
+
+        def progress(callback = nil, &blk)
+            @callback = callback || blk
         end
 
 
@@ -58,8 +61,9 @@ module Libuv
             e = check_result(status)
 
             if e
-                @loop.log :error, :timer_cb, e
+                reject(e)
             else
+                #defer.notify(self)   # notify of a new connection
                 begin
                     @callback.call
                 rescue Exception => e

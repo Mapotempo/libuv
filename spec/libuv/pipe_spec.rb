@@ -9,49 +9,60 @@ describe Libuv::Pipe do
 		@loop = Libuv::Loop.new
 		@server = @loop.pipe
 		@client = @loop.pipe
-		@timeout = @loop.timer
-		@timeout.start(5000) do
+		@timeout = @loop.timer do
 			@loop.stop
 			@general_failure << "test timed out"
 		end
+		@timeout.start(5000)
+
+		@pipefile = "/tmp/test-pipe.pipe"
 
 		@loop.all(@server, @client, @timeout).catch do |reason|
 			@general_failure << reason.inspect
 			p "Failed with: #{reason.message}\n#{reason.backtrace.join("\n")}\n"
 		end
+
+		begin
+			File.unlink(@pipefile)
+		rescue
+		end
+	end
+
+	after :each do
+		begin
+			File.unlink(@pipefile)
+		rescue
+		end
 	end
 	
 	describe 'bidirectional inter process communication' do
+
 		it "should send a ping and return a pong" do
 			@loop.run { |logger|
 				logger.progress do |level, errorid, error|
-					p "Log called: #{level}: #{errorid}\n#{e.message}\n#{e.backtrace.join("\n")}\n"
+					begin
+						p "Log called: #{level}: #{errorid}\n#{error.message}\n#{error.backtrace.join("\n")}\n"
+					rescue Exception
+						p 'error in logger'
+					end
 				end
 
-
-				binding = @server.bind("/tmp/ipc-example102.ipc")
+				@server.bind("/tmp/ipc-example.ipc") do |connection|
+					connection.accept do |client|
+						client.progress do |data|
+							@log << data
+							client.write('pong')
+						end
+						client.start_read
+					end
+				end
 
 				# catch server errors
-				binding.catch do |reason|
+				@server.catch do |reason|
 					@general_failure << reason.inspect
 					@loop.stop
 
 					p "Failed with: #{reason.message}\n#{reason.backtrace.join("\n")}\n"
-				end
-
-				# consume data as it is recieved
-				binding.progress do |server|
-					server.accept.then do |client|
-						client[:binding].progress do |data|
-							@log << data
-							client[:handle].write('pong')
-							client[:handle].shutdown
-						end
-						client[:handle].start_read
-						client[:binding].then do
-							client[:handle].close
-						end
-					end
 				end
 
 				# start listening
@@ -60,42 +71,32 @@ describe Libuv::Pipe do
 
 
 				# connect client to server
-				cbinding = @client.connect("/tmp/ipc-example102.ipc") do |client|
-					cbinding.progress do |data|
+				@client.connect("/tmp/ipc-example.ipc") do |client|
+					@client.progress do |data|
 						@log << data
 
-						@client.shutdown
-						@server.close
+						@client.close
 					end
 
 					@client.start_read
 					@client.write('ping')
 				end
 
-				# close the handle
-				cbinding.finally do
-					@client.close
+				# Stop the loop once the client handle is closed
+				@client.finally do
+					@server.close
 					@loop.stop
 				end
 			}
 
-			#File.unlink("/tmp/ipc-example102.ipc")
-			@general_failure.should == []
 			@log.should == ['ping', 'pong']
+			@general_failure.should == []
 		end
 	end
 
 	describe 'unidirectional pipeline' do
 		before :each do
-			begin
-				File.unlink("/tmp/exchange-pipe.pipe")
-			rescue
-			end
-			system "/usr/bin/mkfifo", "/tmp/exchange-pipe.pipe"
-		end
-
-		after :each do
-		#	File.unlink("/tmp/exchange-pipe.pipe")
+			system "/usr/bin/mkfifo", @pipefile
 		end
 
 		it "should send work to a consumer" do
@@ -105,54 +106,43 @@ describe Libuv::Pipe do
 				end
 
 
-				file1 = File.open("/tmp/exchange-pipe.pipe", File::RDWR|File::NONBLOCK)
-
-				binding = @server.open(file1.fileno) do |server, binding|
-					heartbeat = @loop.timer
-					heartbeat.then(proc {
-						heartbeat.start(0, 200) do
-							server.write('workload')
-						end
-					}, proc {
-						@general_failure << :timer_fail
-					})
+				heartbeat = @loop.timer
+				file1 = File.open(@pipefile, File::RDWR|File::NONBLOCK)
+				@server.open(file1.fileno) do |server|
+					heartbeat.progress  do
+						@server.write('workload')
+						nil
+					end
+					heartbeat.start(0, 200)
 				end
+				
 
 
-
-				file2 = File.open("/tmp/exchange-pipe.pipe", File::RDWR|File::NONBLOCK)
-
+				file2 = File.open(@pipefile, File::RDWR|File::NONBLOCK)
 				# connect client to server
-				consumer = @client.open(file2.fileno) do |consumer, stream|
-					stream.progress do |data|
+				@client.open(file2.fileno) do |consumer|
+					consumer.progress do |data|
 						@log = data
+						nil
 					end
 
-					@client.start_read
+					consumer.start_read
 				end
 
 
-
-				timeout = @loop.timer
-				timeout.then(proc {
-					timeout.start(1000) do
-						@loop.stop
-					end
-				}, proc {
-					@general_failure << :timeout_fail
-				})
-
-
-				# catch server errors
-				binding.catch do |reason|
-					@general_failure << reason.inspect
+				timeout = @loop.timer do
+					@server.close
+					@client.close
+					timeout.close
+					heartbeat.close
 					@loop.stop
+					nil
 				end
+				timeout.start(1000)
 			}
 
-			#File.unlink("/tmp/ipc-example102.ipc")
-			@general_failure.should == []
 			@log.should == 'workload'
+			@general_failure.should == []
 		end
 	end
 end

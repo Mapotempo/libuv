@@ -9,11 +9,11 @@ describe Libuv::TCP do
 		@loop = Libuv::Loop.new
 		@server = @loop.tcp
 		@client = @loop.tcp
-		@timeout = @loop.timer
-		@timeout.start(5000) do
+		@timeout = @loop.timer do
 			@loop.stop
 			@general_failure << "test timed out"
 		end
+		@timeout.start(5000)
 
 		@loop.all(@server, @client, @timeout).catch do |reason|
 			@general_failure << reason.inspect
@@ -24,39 +24,28 @@ describe Libuv::TCP do
 		it "should send a ping and return a pong" do
 			@loop.run { |logger|
 				logger.progress do |level, errorid, error|
-					p "Log called: #{level}: #{errorid}\n#{e.message}\n#{e.backtrace.join("\n")}\n"
-				end
-
-
-				binding = @server.bind('127.0.0.1', 34567)
-
-				# catch server errors
-				binding.catch do |reason|
-					@general_failure << reason.inspect
-				end
-
-				# catch server exit
-				binding.then do |result|
-					@log << "server_#{result}"
-				end
-
-				# consume data as it is recieved
-				binding.progress do |server|
-					p 'progress on bind'
-					server.accept.then do |client|
-						p 'client accepted'
-						@accepted = client
-						client[:binding].progress do |data|
-							@log << data
-							p "server: #{data}"
-							client[:handle].write('pong')
-							client[:handle].shutdown
-						end
-						client[:handle].start_read
-						client[:binding].then do
-							client[:handle].close
-						end
+					begin
+						p "Log called: #{level}: #{errorid}\n#{error.message}\n#{error.backtrace.join("\n")}\n"
+					rescue Exception
+						p 'error in logger'
 					end
+				end
+
+
+				@server.bind('127.0.0.1', 34567) do |server|
+					server.accept do |client|
+						client.progress do |data|
+							@log << data
+
+							client.write('pong')
+						end
+						client.start_read
+					end
+				end
+
+				# catch errors
+				@server.catch do |reason|
+					@general_failure << reason.inspect
 				end
 
 				# start listening
@@ -65,14 +54,11 @@ describe Libuv::TCP do
 
 
 				# connect client to server
-				@cbinding = @client.connect('127.0.0.1', 34567) do |client|
-					p 'in callback'
-					cbinding.progress do |data|
+				@client.connect('127.0.0.1', 34567) do |client|
+					client.progress do |data|
 						@log << data
 
-						p "client: #{data}"
 						@client.shutdown
-						@server.close
 					end
 
 					@client.start_read
@@ -80,15 +66,15 @@ describe Libuv::TCP do
 				end
 
 				# catch errors
-				@cbinding.catch do |reason|
+				@client.catch do |reason|
 					@general_failure << reason.inspect
 				end
 
 				# close the handle
-				@cbinding.finally do
-					@client.close
+				@client.finally do
+					@server.close
+					@loop.stop
 				end
-				
 			}
 
 			@general_failure.should == []

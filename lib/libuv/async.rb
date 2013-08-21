@@ -2,21 +2,17 @@ module Libuv
     class Async < Handle
 
 
-        def initialize(loop, callback)
+        def initialize(loop)
             async_ptr = ::Libuv::Ext.create_handle(:uv_async)
-            result = check_result(::Libuv::Ext.async_init(loop.handle, async_ptr, callback(:on_async)))
+            error = check_result(::Libuv::Ext.async_init(loop.handle, async_ptr, callback(:on_async)))
 
-            if result.nil?
-                @callback = callback
-                super(loop, async_ptr, self, false)
-            else
-                super(loop, async_ptr, result, true)
-            end
+            super(loop, async_ptr, error)
         end
 
         def call
-            check_result! ::Libuv::Ext.async_send(handle)
-            self
+            return if @closed
+            error = check_result ::Libuv::Ext.async_send(handle)
+            reject(error) if error
         end
 
 
@@ -27,13 +23,9 @@ module Libuv
             e = check_result(status)
 
             if e
-                @loop.log :error, :async_cb, e
+                reject(e)
             else
-                begin
-                    @callback.call
-                rescue Exception => e
-                    @loop.log :error, :async_cb, e
-                end
+                defer.notify(self)   # notify of a call
             end
         end
     end

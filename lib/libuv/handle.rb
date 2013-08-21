@@ -1,13 +1,21 @@
 module Libuv
-    class Handle < Q::ResolvedPromise
+    class Handle < Q::DeferredPromise
         include Assertions, Resource, Listener
 
 
-        def initialize(loop, pointer, result, error)
+        def initialize(loop, pointer, error)
             @pointer = pointer
 
             # Initialise the promise
-            super(loop, result, error)
+            super(loop, loop.defer)
+
+            # clean up on init error (always raise here)
+            if error
+                ::Libuv::Ext.free(pointer)
+                defer.reject(result)
+                @closed = true
+                raise result
+            end
         end
 
         # Public: Increment internal ref counter for the handle on the loop. Useful for
@@ -15,8 +23,8 @@ module Libuv
         # 
         # Returns self
         def ref
-            ::Libuv::Ext.ref(@pointer)
-            self
+            return if @closed
+            ::Libuv::Ext.ref(handle)
         end
 
         # Public: Decrement internal ref counter for the handle on the loop, useful to stop
@@ -24,22 +32,22 @@ module Libuv
         # 
         # Returns self
         def unref
-            ::Libuv::Ext.unref(@pointer)
-            self
+            return if @closed
+            ::Libuv::Ext.unref(handle)
         end
 
-        def close(callback = nil, &blk)
-            @handle_close_cb = callback || blk
-            Libuv::Ext.close(@pointer, callback(:on_close))
-            self
+        def close
+            return if @closed
+            @closed = true
+            Libuv::Ext.close(handle, callback(:on_close))
         end
 
         def active?
-            ::Libuv::Ext.is_active(@pointer) > 0
+            ::Libuv::Ext.is_active(handle) > 0
         end
 
         def closing?
-            ::Libuv::Ext.is_closing(@pointer) > 0
+            ::Libuv::Ext.is_closing(handle) > 0
         end
 
 
@@ -48,26 +56,26 @@ module Libuv
 
         def loop; @loop; end
         def handle; @pointer; end
+        def defer; @defer; end
 
 
         private
 
 
-        def handle_name
-            # Seems a little hacky
-            self.class.name.split('::').last.downcase.to_sym
+        # Clean up and throw an error
+        def reject(reason)
+            @close_error = reason
+            close
         end
 
         def on_close(pointer)
             ::Libuv::Ext.free(pointer)
             clear_callbacks
 
-            if @handle_close_cb
-                begin
-                    @handle_close_cb.call
-                rescue Exception => e
-                    @loop.log :error, :async_cb, e
-                end
+            if @close_error
+                defer.reject(@close_error)
+            else
+                defer.resolve(nil)
             end
         end
     end

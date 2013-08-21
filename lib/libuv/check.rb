@@ -1,6 +1,5 @@
 module Libuv
-    class Check
-        include Handle
+    class Check < Handle
 
 
         def initialize(loop)

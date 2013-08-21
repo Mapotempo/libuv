@@ -40,22 +40,27 @@ module Libuv
             # Create an async call for scheduling work from other threads
             @run_queue = Queue.new
             @queue_proc = proc do
-                until @run_queue.empty? do
+                # ensure we only execute what was required for this tick
+                length = @run_queue.length
+                length.times do
                     begin
                         run = @run_queue.pop true  # pop non-block
                         run.call
-                    rescue
-                        # TODO:: log error here
+                    rescue Exception => e
+                        @loop.log :error, :next_tick_cb, e
                     end
                 end
             end
-            @process_queue = @loop.async @queue_proc
+            @process_queue = SimpleAsync.new(@loop, @queue_proc)
 
             # Create a next tick timer
-            @next_tick = @loop.timer
+            @next_tick = @loop.timer do
+                @next_tick_scheduled = false
+                @queue_proc.call
+            end
 
             # Create an async call for ending the loop
-            @stop_loop = @loop.async do
+            @stop_loop = SimpleAsync.new @loop do
                 @process_queue.close
                 @stop_loop.close
                 @next_tick.close
@@ -76,23 +81,14 @@ module Libuv
         def run(run_type = :UV_RUN_DEFAULT)
             @loop_notify = @loop.defer
 
-            # Ensure this proc is run on its own thread
-            runproc = proc do
-                begin
-                    Thread.current[:uvloop] = @loop
-                    yield  @loop_notify.promise if block_given?
-                    @queue_proc.call    # pre-process any pending procs
-                    ::Libuv::Ext.run(@pointer, run_type)  # This is blocking
-                ensure
-                    Thread.current[:uvloop] = nil
-                end
-            end
-
-            # ensure each libuv loop gets its own thread
-            if Thread.current[:uvloop].nil?
-                runproc.call
-            else
-                Thread.new { runproc.call }
+            begin
+                @reactor_thread = Thread.current
+                yield  @loop_notify.promise if block_given?
+                @queue_proc.call    # pre-process any pending procs
+                ::Libuv::Ext.run(@pointer, run_type)  # This is blocking
+            ensure
+                @reactor_thread = nil
+                @run_queue.clear
             end
 
             @loop
@@ -164,10 +160,10 @@ module Libuv
             msg  = ::Libuv::Ext.strerror(err)
 
             ::Libuv::Error.const_get(name.to_sym).new(msg)
-        rescue Exception
+        rescue Exception => e
+            @loop.log :warn, :error_lookup_failed, e
             ::Libuv::Error::UNKNOWN.new("error lookup failed for code: #{err}")
         end
-
 
         # Get a new TCP instance
         # 
@@ -198,15 +194,14 @@ module Libuv
         #     indicate if a handle will be used for ipc, useful for sharing tcp socket between processes
         # @return [::Libuv::Pipe]
         def pipe(ipc = false)
-            assert_boolean(ipc)
             Pipe.new(@loop, ipc)
         end
 
         # Get a new timer instance
         # 
         # @return [::Libuv::Timer]
-        def timer
-            Timer.new(@loop)
+        def timer(callback = nil, &blk)
+            Timer.new(@loop, callback || blk)
         end
 
         # Get a new Prepare handle
@@ -233,11 +228,11 @@ module Libuv
         # Get a new Async handle
         # 
         # @return [::Libuv::Async]
-        # @raise [ArgumentError] if block is not given
         def async(callback = nil, &block)
             callback ||= block
-            assert_block(callback)
-            Async.new(@loop, callback)
+            handle = Async.new(@loop)
+            handle.progress callback if callback
+            handle
         end
 
         # Queue some work for processing in the libuv thread pool
@@ -275,7 +270,7 @@ module Libuv
         def schedule(&block)
             assert_block(block)
 
-            if Thread.current[:uvloop] == @loop
+            if @reactor_thread == Thread.current
                 block.call
             else
                 @run_queue << block
@@ -290,13 +285,10 @@ module Libuv
             assert_block(block)
 
             @run_queue << block
-            if Thread.current[:uvloop] == @loop
+            if @reactor_thread == Thread.current
                 # Create a next tick timer
                 if not @next_tick_scheduled
-                    @next_tick.start(0) do
-                        @next_tick_scheduled = false
-                        @queue_proc.call
-                    end
+                    @next_tick.start(0)
                     @next_tick_scheduled = true
                 end
             else

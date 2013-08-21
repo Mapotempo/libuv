@@ -245,10 +245,9 @@ module Libuv
 			end
 
 			#
-			# rejects the derived promise with the reason. This is equivalent to resolving it with a rejection
-			# constructed via Q.reject.
+			# Provides an asynchronous callback mechanism
 			#
-			# @param [Object] reason constant, message, exception or an object representing the rejection reason.
+			# @param [*Object] data you would like to send down the promise chain.
 			def notify(*args)
 				@loop.schedule do 	# just in case we are on a different event loop
 					if @pending && @pending.length > 0

@@ -21,6 +21,7 @@ module Libuv
     autoload :Check, 'libuv/check'
     autoload :Idle, 'libuv/idle'
     autoload :Async, 'libuv/async'
+    autoload :SimpleAsync, 'libuv/simple_async'
     autoload :Work, 'libuv/work'
     autoload :Filesystem, 'libuv/filesystem'
     autoload :File, 'libuv/file'
