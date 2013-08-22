@@ -89,12 +89,13 @@ describe Libuv::Pipe do
 				end
 			}
 
-			@log.should == ['ping', 'pong']
 			@general_failure.should == []
+			@log.should == ['ping', 'pong']
 		end
 	end
 
-	describe 'unidirectional pipeline' do
+	# This test won't pass on jRuby as java won't expose file descriptors
+	describe 'unidirectional pipeline', :real_io => true do
 		before :each do
 			system "/usr/bin/mkfifo", @pipefile
 		end
@@ -107,23 +108,23 @@ describe Libuv::Pipe do
 
 
 				heartbeat = @loop.timer
-				file1 = File.open(@pipefile, File::RDWR|File::NONBLOCK)
-				@server.open(file1.fileno) do |server|
+				@file1 = File.open(@pipefile, File::RDWR|File::NONBLOCK)
+				@server.open(@file1.fileno) do |server|
 					heartbeat.progress  do
-						@server.write('workload')
-						nil
+						@server.write('workload').catch do |err|
+							@general_failure << err
+						end
 					end
 					heartbeat.start(0, 200)
 				end
 				
 
 
-				file2 = File.open(@pipefile, File::RDWR|File::NONBLOCK)
+				@file2 = File.open(@pipefile, File::RDWR|File::NONBLOCK)
 				# connect client to server
-				@client.open(file2.fileno) do |consumer|
+				@client.open(@file2.fileno) do |consumer|
 					consumer.progress do |data|
 						@log = data
-						nil
 					end
 
 					consumer.start_read
@@ -136,13 +137,12 @@ describe Libuv::Pipe do
 					timeout.close
 					heartbeat.close
 					@loop.stop
-					nil
 				end
 				timeout.start(1000)
 			}
 
-			@log.should == 'workload'
 			@general_failure.should == []
+			@log.should == 'workload'
 		end
 	end
 end

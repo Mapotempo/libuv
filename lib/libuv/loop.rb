@@ -43,7 +43,7 @@ module Libuv
                 # Rubinius fix for promises
                 # Anything calling schedule will
                 # be delayed a tick outside of promise callbacks on rubinius (see https://github.com/ffi/ffi/issues/279)
-                @reactor_thread = Thread.current
+                #@reactor_thread = Thread.current # Should work in rubinius 2.0
 
                 # ensure we only execute what was required for this tick
                 length = @run_queue.length
