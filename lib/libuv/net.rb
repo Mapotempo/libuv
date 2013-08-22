@@ -4,6 +4,10 @@ module Libuv
     module Net
 
 
+        IP_ARGUMENT_ERROR = "ip must be a String".freeze                # Arguments specifying an IP address
+        PORT_ARGUMENT_ERROR = "port must be an Integer".freeze          # Arguments specifying an IP port
+
+
         private
 
 

@@ -3,7 +3,7 @@ module Libuv
         include Assertions, Resource, Listener
 
 
-        def initialize(loop, pointer, error)
+        def initialize(pointer, error)
             @pointer = pointer
 
             # Initialise the promise
@@ -12,9 +12,9 @@ module Libuv
             # clean up on init error (always raise here)
             if error
                 ::Libuv::Ext.free(pointer)
-                defer.reject(result)
+                defer.reject(error)
                 @closed = true
-                raise result
+                raise error
             end
         end
 

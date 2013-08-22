@@ -1,13 +1,17 @@
 module Libuv
-    class FSEvent
-        include Handle
+    class FSEvent < Handle
 
 
         EVENTS = {1 => :rename, 2 => :change}.freeze
 
-        def initialize(loop, fs_event_ptr, &block)
-            @fs_event_block = block
-            super(loop, fs_event_ptr)
+
+        def initialize(loop, path)
+            @loop = loop
+
+            fs_event_ptr = ::Libuv::Ext.create_handle(:uv_fs_event)
+            error = check_result ::Libuv::Ext.fs_event_init(loop.handle, fs_event_ptr, path, callback(:on_fs_event), 0)
+
+            super(fs_event_ptr, error)
         end
 
 
@@ -15,13 +19,13 @@ module Libuv
 
 
         def on_fs_event(handle, filename, events, status)
-            begin
-                @fs_event_block.call(check_result(status), filename, EVENTS[events])
-            rescue Exception => e
-                # TODO:: log errors, don't want to crash the loop thread
+            e = check_result(status)
+
+            if e
+                reject(e)
+            else
+                defer.notify(filename, EVENTS[events])   # notify of a change
             end
         end
-
-        public :callback
     end
 end

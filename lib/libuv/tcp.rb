@@ -6,18 +6,23 @@ module Libuv
         include Stream, Net
 
 
+        KEEPALIVE_ARGUMENT_ERROR = "delay must be an Integer".freeze
+
+
         def initialize(loop, acceptor = nil)
+            @loop = loop
+
             tcp_ptr = ::Libuv::Ext.create_handle(:uv_tcp)
             error = check_result(::Libuv::Ext.tcp_init(loop.handle, tcp_ptr))
             error = check_result(::Libuv::Ext.accept(acceptor, tcp_ptr)) if acceptor && error.nil?
             
-            super(loop, tcp_ptr, error)
+            super(tcp_ptr, error)
         end
 
         def bind(ip, port, callback = nil, &blk)
             @on_listen = callback || blk
-            assert_type(String, ip, "ip must be a String")
-            assert_type(Integer, port, "port must be an Integer")
+            assert_type(String, ip, IP_ARGUMENT_ERROR)
+            assert_type(Integer, port, PORT_ARGUMENT_ERROR)
 
             begin
                 @tcp_socket = create_socket(IPAddr.new(ip), port)
@@ -34,14 +39,20 @@ module Libuv
             rescue Exception => e
                 @loop.log :info, :tcp_accept_failed, e
             end
-            (callback || blk).call(tcp) if tcp    # Errors here will kill the outer progress loop (this is good)
+            if tcp
+                begin
+                    (callback || blk).call(tcp)
+                rescue Exception => e
+                    @loop.log :error, :tcp_accept_cb, e
+                end
+            end
             nil
         end
 
         def connect(ip, port, callback = nil, &blk)
             @callback = callback || blk
-            assert_type(String, ip, "ip must be a String")
-            assert_type(Integer, port, "port must be an Integer")
+            assert_type(String, ip, IP_ARGUMENT_ERROR)
+            assert_type(Integer, port, PORT_ARGUMENT_ERROR)
             
             begin
                 @tcp_socket = create_socket(IPAddr.new(ip), port)
@@ -72,7 +83,7 @@ module Libuv
         end
 
         def enable_keepalive(delay)
-            assert_type(Integer, delay, "delay must be an Integer")
+            assert_type(Integer, delay, KEEPALIVE_ARGUMENT_ERROR)
             check_result ::Libuv::Ext.tcp_keepalive(handle, 1, delay)
         end
 

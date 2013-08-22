@@ -1,31 +1,31 @@
 module Libuv
-    class Prepare
-        include Handle
+    class Prepare < Handle
 
 
-        def initialize(loop)
+        def initialize(loop, callback = nil, &blk)
+            @loop = loop
+            @callback = callback || blk
+
             prepare_ptr = ::Libuv::Ext.create_handle(:uv_prepare)
-            super(loop, prepare_ptr)
-            result = check_result(::Libuv::Ext.prepare_init(@pointer, prepare_ptr))
-            @handle_deferred.reject(result) if result
+            error = check_result(::Libuv::Ext.prepare_init(@pointer, prepare_ptr))
+
+            super(prepare_ptr, error)
         end
 
         def start
-            begin
-                check_result! ::Libuv::Ext.prepare_start(handle, callback(:on_prepare))
-            rescue Exception => e
-                @handle_deferred.reject(e)
-            end
-            @handle_promise
+            return if @closed
+            error = check_result ::Libuv::Ext.prepare_start(handle, callback(:on_prepare))
+            reject(error) if error
         end
 
         def stop
-            begin
-                check_result! ::Libuv::Ext.prepare_stop(handle)
-            rescue Exception => e
-                @handle_deferred.reject(e)
-            end
-            @handle_promise
+            return if @closed
+            error = check_result ::Libuv::Ext.prepare_stop(handle)
+            reject(error) if error
+        end
+
+        def progress(callback = nil, &blk)
+            @callback = callback || blk
         end
 
 
@@ -36,9 +36,13 @@ module Libuv
             e = check_result(status)
 
             if e
-                @handle_deferred.reject(e)
+                reject(e)
             else
-                @handle_deferred.notify(self)   # notify when idle
+                begin
+                    @callback.call
+                rescue Exception => e
+                    @loop.log :error, :prepare_cb, e
+                end
             end
         end
     end

@@ -563,7 +563,9 @@ describe Libuv::Q do
 							@loop.next_tick do
 								@loop.next_tick do
 									@loop.next_tick do
-										@loop.stop
+										@loop.next_tick do 	# extra tick?
+											@loop.stop
+										end
 									end
 								end
 							end
@@ -607,7 +609,9 @@ describe Libuv::Q do
 							@loop.next_tick do
 								@loop.next_tick do
 									@loop.next_tick do
-										@loop.stop
+										@loop.next_tick do # extra tick?
+											@loop.stop
+										end
 									end
 								end
 							end
@@ -753,6 +757,9 @@ describe Libuv::Q do
 
 						
 						@loop.next_tick do
+						@loop.next_tick do
+						@loop.next_tick do
+						@loop.next_tick do
 							@loop.next_tick do
 								@loop.next_tick do
 									@loop.next_tick do
@@ -762,6 +769,9 @@ describe Libuv::Q do
 									end
 								end
 							end
+						end
+						end
+						end
 						end
 					}
 

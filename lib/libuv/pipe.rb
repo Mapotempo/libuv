@@ -4,13 +4,13 @@ module Libuv
 
 
         def initialize(loop, ipc, acceptor = nil)
-            @ipc = ipc
+            @loop, @ipc = loop, ipc
 
             pipe_ptr = ::Libuv::Ext.create_handle(:uv_pipe)
-            result = check_result(::Libuv::Ext.pipe_init(loop.handle, pipe_ptr, ipc ? 1 : 0))
-            result = check_result(::Libuv::Ext.accept(acceptor, pipe_ptr)) if acceptor && result.nil?
+            error = check_result(::Libuv::Ext.pipe_init(loop.handle, pipe_ptr, ipc ? 1 : 0))
+            error = check_result(::Libuv::Ext.accept(acceptor, pipe_ptr)) if acceptor && error.nil?
             
-            super(loop, pipe_ptr, result)
+            super(pipe_ptr, error)
         end
 
         def bind(name, callback = nil, &blk)
@@ -29,7 +29,13 @@ module Libuv
             rescue Exception => e
                 @loop.log :info, :pipe_accept_failed, e
             end
-            (callback || blk).call(pipe) if pipe    # Errors here will kill the outer progress loop (this is good)
+            if pipe
+                begin
+                    (callback || blk).call(pipe)
+                rescue Exception => e
+                    @loop.log :error, :pipe_accept_cb, e
+                end
+            end
             nil
         end
 

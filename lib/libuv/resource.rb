@@ -24,9 +24,5 @@ module Libuv
         end
 
 
-        protected
-
-
-        attr_reader :loop
     end
 end

@@ -3,10 +3,11 @@ module Libuv
 
 
         def initialize(loop)
+            @loop = loop
             async_ptr = ::Libuv::Ext.create_handle(:uv_async)
             error = check_result(::Libuv::Ext.async_init(loop.handle, async_ptr, callback(:on_async)))
 
-            super(loop, async_ptr, error)
+            super(async_ptr, error)
         end
 
         def call

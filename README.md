@@ -2,7 +2,7 @@
 
 [![Build Status](https://travis-ci.org/cotag/libuv.png?branch=master)](https://travis-ci.org/cotag/libuv)
 
-[Libuv](https://github.com/joyent/libuv) is a cross platform asynchronous IO implementation that powers NodeJS. It supports sockets, both UDP and TCP, filesystem operations, TTY, Pipes and other asynchronous primitives like timer, check, prepare and idle.
+[Libuv](https://github.com/joyent/libuv) is a cross platform asynchronous IO implementation that powers NodeJS. It supports sockets, both UDP and TCP, filesystem watch, TTY, Pipes and other asynchronous primitives like timer, check, prepare and idle.
 
 The Libuv gem contains Libuv and a Ruby wrapper that implements [pipelined promises](http://en.wikipedia.org/wiki/Futures_and_promises#Promise_pipelining) for asynchronous flow control
 
@@ -18,17 +18,17 @@ Create a new libuv loop or use a default one
   # loop = Libuv::Loop.new
 
   loop.run do
-    timer = loop.timer
-    timer.start(50000, 0) do |error|
+    timer = loop.timer do |error|
       p error if error
       puts "50 seconds passed"
       timer.close
       loop.stop
     end
+    timer.start(50000)
   end
 ```
 
-Find more examples in examples directory and check out the [yard documentation](http://rubydoc.info/gems/libuv/Libuv/Loop)
+Check out the [yard documentation](http://rubydoc.info/gems/libuv/Libuv/Loop)
 
 
 ## Installation
@@ -67,10 +67,7 @@ if you have a compatible `libuv.(so | dylib | dll)` on the PATH already, setting
 * Check
 * Idle
 * Async
-* Filesystem (partially)
-* File (partially)
-* FSEvent
+* Filesystem Events
 * Errors
 * Work queue (thread pool)
-
 

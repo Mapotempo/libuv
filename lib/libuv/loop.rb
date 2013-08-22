@@ -40,6 +40,11 @@ module Libuv
             # Create an async call for scheduling work from other threads
             @run_queue = Queue.new
             @queue_proc = proc do
+                # Rubinius fix for promises
+                # Anything calling schedule will
+                # be delayed a tick outside of promise callbacks on rubinius (see https://github.com/ffi/ffi/issues/279)
+                @reactor_thread = Thread.current
+
                 # ensure we only execute what was required for this tick
                 length = @run_queue.length
                 length.times do
@@ -84,7 +89,6 @@ module Libuv
             begin
                 @reactor_thread = Thread.current
                 yield  @loop_notify.promise if block_given?
-                @queue_proc.call    # pre-process any pending procs
                 ::Libuv::Ext.run(@pointer, run_type)  # This is blocking
             ensure
                 @reactor_thread = nil
@@ -162,7 +166,7 @@ module Libuv
             ::Libuv::Error.const_get(name.to_sym).new(msg)
         rescue Exception => e
             @loop.log :warn, :error_lookup_failed, e
-            ::Libuv::Error::UNKNOWN.new("error lookup failed for code: #{err}")
+            ::Libuv::Error::UNKNOWN.new("error lookup failed for code #{err} #{name} #{msg}")
         end
 
         # Get a new TCP instance
@@ -185,6 +189,8 @@ module Libuv
         # @param readable [true, false] Boolean indicating if TTY is readable
         # @return [::Libuv::TTY]
         def tty(fileno, readable = false)
+            assert_type(Integer, fileno, "io#fileno must return an integer file descriptor, #{fileno.inspect} given")
+
             TTY.new(@loop, fileno, readable)
         end
 
@@ -243,24 +249,12 @@ module Libuv
             Work.new(@loop, callback || block)    # Work is a promise object
         end
 
-        # Get a new Filesystem instance
-        # 
-        # @return [::Libuv::Filesystem]
-        def fs
-            Filesystem.new(self)
-        end
-
         # Get a new FSEvent instance
         # 
         # @return [::Libuv::FSEvent]
-        def fs_event(path, &block)
-            assert_block(block)
-
-            fs_event_ptr = ::Libuv::Ext.create_handle(:uv_fs_event)
-            fs_event     = FSEvent.new(self, fs_event_ptr, &block)
-            check_result! ::Libuv::Ext.fs_event_init(@pointer, fs_event_ptr, path, fs_event.callback(:on_fs_event), 0)
-
-            fs_event
+        def fs_event(path)
+            assert_type(String, path)
+            FSEvent.new(@loop, path)
         end
 
 

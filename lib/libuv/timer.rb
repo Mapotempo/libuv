@@ -8,11 +8,12 @@ module Libuv
 
 
         def initialize(loop, callback = nil)
-            @callback = callback
+            @loop, @callback = loop, callback
+            
             timer_ptr = ::Libuv::Ext.create_handle(:uv_timer)
             error = check_result(::Libuv::Ext.timer_init(loop.handle, timer_ptr))
 
-            super(loop, timer_ptr, error)
+            super(timer_ptr, error)
         end
 
         def start(timeout, repeat = 0)
@@ -63,7 +64,6 @@ module Libuv
             if e
                 reject(e)
             else
-                #defer.notify(self)   # notify of a new connection
                 begin
                     @callback.call
                 rescue Exception => e

@@ -1,24 +1,28 @@
 require 'rubygems'
-require 'bundler/setup'
-require 'bundler/gem_tasks'
-require 'rspec/core/rake_task'
-require 'cucumber'
-require 'cucumber/rake/task'
-require 'yard'
-require 'ffi'
-require 'rake/clean'
-require 'libuv/ext/tasks'
+require 'rspec/core/rake_task'  # testing framework
+require 'yard'                  # yard documentation
+require 'ffi'                   # loads the extension
+require 'rake/clean'            # for the :clobber rake task
+require 'libuv/ext/tasks'       # platform specific rake tasks used by compile
 
-task :default => :test
 
+
+# By default we don't run network tests
+task :default => :limited_spec
+RSpec::Core::RakeTask.new(:limited_spec) do |t|
+    t.rspec_opts = "--tag ~network"     # Exclude network tests
+end
 RSpec::Core::RakeTask.new(:spec)
-Cucumber::Rake::Task.new(:features)
+
+
+desc "Run all tests"
+task :test => [:spec]
+
 
 YARD::Rake::YardocTask.new do |t|
     t.files   = ['lib/**/*.rb', '-', 'ext/README.md', 'README.md']
 end
 
-task :test => [:spec, :features]
 
 desc "Compile libuv from submodule"
 task :compile => ["ext/libuv.#{FFI::Platform::LIBSUFFIX}"]
