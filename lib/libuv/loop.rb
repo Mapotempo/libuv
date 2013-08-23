@@ -227,8 +227,8 @@ module Libuv
         # Get a new Idle handle
         # 
         # @return [::Libuv::Idle]
-        def idle
-            Idle.new(@loop)
+        def idle(callback = nil, &block)
+            Idle.new(@loop, callback || block)
         end
 
         # Get a new Async handle
