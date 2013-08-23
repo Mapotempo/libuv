@@ -34,9 +34,8 @@ describe Libuv::Async do
 
 			timer = @loop.timer do
 				@count += 1
-				sleep(0.2)
 			end
-			timer.start(0, 100)
+			timer.start(0, 200)
 
 			callback = @loop.async do
 				stopper = @loop.timer do
