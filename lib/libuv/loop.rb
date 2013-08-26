@@ -13,14 +13,14 @@ module Libuv
                 create(::Libuv::Ext.default_loop)
             end
 
-            # Create new loop
+            # Create new Libuv loop
             # 
             # @return [::Libuv::Loop]
             def new
                 create(::Libuv::Ext.loop_new)
             end
 
-            # Create custom loop from pointer
+            # Build a Ruby Libuv loop from an existing loop pointer
             # 
             # @return [::Libuv::Loop]
             def create(pointer)
@@ -30,9 +30,7 @@ module Libuv
         extend ClassMethods
 
 
-        # Initialize a loop using an FFI::Pointer
-        # 
-        # @return [::Libuv::Loop]
+        # Initialize a loop using an FFI::Pointer to a libuv loop
         def initialize(pointer) # :notnew:
             @pointer = pointer
             @loop = self
@@ -40,11 +38,6 @@ module Libuv
             # Create an async call for scheduling work from other threads
             @run_queue = Queue.new
             @queue_proc = proc do
-                # Rubinius fix for promises
-                # Anything calling schedule will
-                # be delayed a tick outside of promise callbacks on rubinius (see https://github.com/ffi/ffi/issues/279)
-                #@reactor_thread = Thread.current # Should work in rubinius 2.0
-
                 # ensure we only execute what was required for this tick
                 length = @run_queue.length
                 length.times do
@@ -76,13 +69,11 @@ module Libuv
 
         def handle; @pointer; end
 
-        # Run the actual event loop. This method will block for the duration of event loop unless
-        # it is run inside an existing event loop, where a new thread will be created for it
+        # Run the actual event loop. This method will block until the loop is stopped.
         #
         # @param run_type [:UV_RUN_DEFAULT, :UV_RUN_ONCE, :UV_RUN_NOWAIT]
-        # @yieldparam promise [::Libuv::Loop] Yields a promise that can be used for logging unhandled
+        # @yieldparam promise [::Libuv::Q::Promise] Yields a promise that can be used for logging unhandled
         #   exceptions on the loop.
-        # @return [::Libuv::Q::Promise]
         def run(run_type = :UV_RUN_DEFAULT)
             @loop_notify = @loop.defer
 
@@ -110,8 +101,8 @@ module Libuv
         # Combines multiple promises into a single promise that is resolved when all of the input
         # promises are resolved. (thread safe)
         #
-        # @param [*Promise] Promises a number of promises that will be combined into a single promise
-        # @return [Promise] Returns a single promise that will be resolved with an array of values,
+        # @param *promises [::Libuv::Q::Promise] a number of promises that will be combined into a single promise
+        # @return [::Libuv::Q::Promise] Returns a single promise that will be resolved with an array of values,
         #   each value corresponding to the promise at the same index in the `promises` array. If any of
         #   the promises is resolved with a rejection, this resulting promise will be resolved with the
         #   same rejection.
@@ -123,8 +114,8 @@ module Libuv
         # Combines multiple promises into a single promise that is resolved when any of the input
         # promises are resolved.
         #
-        # @param [*Promise] Promises a number of promises that will be combined into a single promise
-        # @return [Promise] Returns a single promise
+        # @param *promises [::Libuv::Q::Promise] a number of promises that will be combined into a single promise
+        # @return [::Libuv::Q::Promise] Returns a single promise
         def any(*promises)
             Q.any(@loop, *promises)
         end
@@ -133,8 +124,8 @@ module Libuv
         # Combines multiple promises into a single promise that is resolved when all of the input
         # promises are resolved or rejected.
         #
-        # @param [*Promise] Promises a number of promises that will be combined into a single promise
-        # @return [Promise] Returns a single promise that will be resolved with an array of values,
+        # @param *promises [::Libuv::Q::Promise] a number of promises that will be combined into a single promise
+        # @return [::Libuv::Q::Promise] Returns a single promise that will be resolved with an array of values,
         #   each [result, wasResolved] value pair corresponding to a at the same index in the `promises` array.
         def finally(*promises)
             Q.finally(@loop, *promises)
@@ -196,8 +187,7 @@ module Libuv
 
         # Get a new Pipe instance
         # 
-        # @param ipc [true, false]
-        #     indicate if a handle will be used for ipc, useful for sharing tcp socket between processes
+        # @param ipc [true, false] indicate if a handle will be used for ipc, useful for sharing tcp socket between processes
         # @return [::Libuv::Pipe]
         def pipe(ipc = false)
             Pipe.new(@loop, ipc)
@@ -205,6 +195,7 @@ module Libuv
 
         # Get a new timer instance
         # 
+        # @param callback [Proc] the callback to be called on timer trigger
         # @return [::Libuv::Timer]
         def timer(callback = nil, &blk)
             Timer.new(@loop, callback || blk)
@@ -226,6 +217,7 @@ module Libuv
 
         # Get a new Idle handle
         # 
+        # @param callback [Proc] the callback to be called on idle trigger
         # @return [::Libuv::Idle]
         def idle(callback = nil, &block)
             Idle.new(@loop, callback || block)
@@ -243,14 +235,18 @@ module Libuv
 
         # Queue some work for processing in the libuv thread pool
         #
+        # @param callback [Proc] the callback to be called in the thread pool
         # @return [::Libuv::Work]
         # @raise [ArgumentError] if block is not given
         def work(callback = nil, &block)
-            Work.new(@loop, callback || block)    # Work is a promise object
+            callback ||= block
+            assert_block(callback)
+            Work.new(@loop, callback)    # Work is a promise object
         end
 
         # Get a new FSEvent instance
         # 
+        # @param path [String] the path to the file or folder for watching
         # @return [::Libuv::FSEvent]
         def fs_event(path)
             assert_type(String, path)
@@ -258,27 +254,29 @@ module Libuv
         end
 
 
-        # Schedule some work to be processed on the event loop (thread safe)
+        # Schedule some work to be processed on the event loop as soon as possible (thread safe)
         #
-        # @return [nil]
-        def schedule(&block)
-            assert_block(block)
+        # @param callback [Proc] the callback to be called on the reactor thread
+        def schedule(callback = nil, &block)
+            callback ||= block
+            assert_block(callback)
 
             if @reactor_thread == Thread.current
                 block.call
             else
-                @run_queue << block
+                @run_queue << callback
                 @process_queue.call
             end
         end
 
-        # Schedule some work to be processed in the next iteration of the event loop (thread safe)
+        # Queue some work to be processed in the next iteration of the event loop (thread safe)
         #
-        # @return [nil]
-        def next_tick(&block)
-            assert_block(block)
+        # @param callback [Proc] the callback to be called on the reactor thread
+        def next_tick(callback = nil, &block)
+            callback ||= block
+            assert_block(callback)
 
-            @run_queue << block
+            @run_queue << callback
             if @reactor_thread == Thread.current
                 # Create a next tick timer
                 if not @next_tick_scheduled
@@ -295,14 +293,11 @@ module Libuv
         # @param level [Symbol] the error level (info, warn, error etc)
         # @param id [Object] some kind of identifying information
         # @param *args [*args] any additional information
-        # @return [nil]
         def log(level, id, *args)
             @loop_notify.notify(level, id, *args)
         end
 
         # Closes handles opened by the loop class and completes the current loop iteration (thread safe)
-        # 
-        # @return [nil]
         def stop
             @stop_loop.call
         end

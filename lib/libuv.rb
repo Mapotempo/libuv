@@ -5,6 +5,23 @@ module Libuv
     require 'libuv/ext/ext'     # The libuv ffi ext
     require 'libuv/q'           # The promise library
 
+
+    # Returns the number of CPU cores on the host platform
+    # 
+    # @return [Fixnum] representing the number of CPU cores
+    def self.cpu_count
+        cpu_info = FFI::MemoryPointer.new(:pointer)
+        cpu_count = FFI::MemoryPointer.new(:int)
+        if ::Libuv::Ext.cpu_info(cpu_info, cpu_count) >= 0
+            count = cpu_count.read_int
+            ::Libuv::Ext.free_cpu_info(cpu_info.read_pointer, count)
+            return count
+        else
+            return nil
+        end
+    end
+
+
     autoload :Assertions, 'libuv/assertions'    # Common code to check arguments
     autoload :Resource, 'libuv/resource'        # Common code to check for errors
     autoload :Listener, 'libuv/listener'        # Common callback code

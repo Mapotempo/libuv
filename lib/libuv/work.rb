@@ -3,6 +3,8 @@ module Libuv
         include Resource, Listener
 
 
+        # @param loop [::Libuv::Loop] loop this work request will be associated
+        # @param work [Proc] callback to be called in the thread pool
         def initialize(loop, work)
             super(loop, loop.defer)
 
