@@ -47,7 +47,7 @@ describe Libuv::Pipe do
 					end
 				end
 
-				@server.bind("/tmp/ipc-example.ipc") do |connection|
+				@server.bind(@pipefile) do |connection|
 					connection.accept do |client|
 						client.progress do |data|
 							@log << data
@@ -71,7 +71,7 @@ describe Libuv::Pipe do
 
 
 				# connect client to server
-				@client.connect("/tmp/ipc-example.ipc") do |client|
+				@client.connect(@pipefile) do |client|
 					@client.progress do |data|
 						@log << data
 
