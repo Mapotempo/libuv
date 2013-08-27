@@ -49,14 +49,12 @@ module Libuv
         attach_function :default_loop, :uv_default_loop, [], :uv_loop_t, :blocking => true
         attach_function :run, :uv_run, [:uv_loop_t, :uv_run_mode], :int, :blocking => true
         attach_function :stop, :uv_stop, [:uv_loop_t], :void, :blocking => true
-        #attach_function :run_once, :uv_run_once, [:uv_loop_t], :int
         attach_function :update_time, :uv_update_time, [:uv_loop_t], :void, :blocking => true
         attach_function :now, :uv_now, [:uv_loop_t], :int64, :blocking => true
 
         attach_function :backend_timeout, :uv_backend_timeout, [:uv_loop_t], :int, :blocking => true
         attach_function :backend_fd, :uv_backend_fd, [:uv_loop_t], :int, :blocking => true
 
-        #attach_function :last_error, :uv_last_error, [:uv_loop_t], :int
         attach_function :strerror, :uv_strerror, [:int], :string, :blocking => true
         attach_function :err_name, :uv_err_name, [:int], :string, :blocking => true
 
@@ -84,7 +82,7 @@ module Libuv
         attach_function :shutdown, :uv_shutdown, [:uv_shutdown_t, :uv_stream_t, :uv_shutdown_cb], :int, :blocking => true
 
         attach_function :tcp_init, :uv_tcp_init, [:uv_loop_t, :uv_tcp_t], :int, :blocking => true
-        #attach_function :tcp_open, :uv_tcp_open, [:uv_tcp_t, :uv_os_sock_t], :int
+        #attach_function :tcp_open, :uv_tcp_open, [:uv_tcp_t, :uv_os_sock_t], :int, :blocking => true
         attach_function :tcp_nodelay, :uv_tcp_nodelay, [:uv_tcp_t, :int], :int, :blocking => true
         attach_function :tcp_keepalive, :uv_tcp_keepalive, [:uv_tcp_t, :int, :uint], :int, :blocking => true
         attach_function :tcp_simultaneous_accepts, :uv_tcp_simultaneous_accepts, [:uv_tcp_t, :int], :int, :blocking => true
@@ -96,6 +94,7 @@ module Libuv
         attach_function :tcp_connect6, :uv_tcp_connect6, [:uv_connect_t, :uv_tcp_t, :sockaddr_in6, :uv_connect_cb], :int, :blocking => true
 
         attach_function :udp_init, :uv_udp_init, [:uv_loop_t, :uv_udp_t], :int, :blocking => true
+        #attach_function :udp_open, :uv_udp_open, [:uv_udp_t, :uv_os_sock_t], :int, :blocking => true
         attach_function :udp_bind, :uv_udp_bind, [:uv_udp_t, :sockaddr_in, :uint], :int, :blocking => true
         attach_function :udp_bind6, :uv_udp_bind6, [:uv_udp_t, :sockaddr_in6, :uint], :int, :blocking => true
         attach_function :udp_getsockname, :uv_udp_getsockname, [:uv_udp_t, :pointer, :pointer], :int, :blocking => true
@@ -144,9 +143,6 @@ module Libuv
         attach_function :timer_set_repeat, :uv_timer_set_repeat, [:uv_timer_t, :int64_t], :void, :blocking => true
         attach_function :timer_get_repeat, :uv_timer_get_repeat, [:uv_timer_t], :int64_t, :blocking => true
 
-        #attach_function :ares_init_options, :uv_ares_init_options, [:uv_loop_t, :ares_channel, :ares_options, :int], :int
-        #attach_function :ares_destroy, :uv_ares_destroy, [:uv_loop_t, :ares_channel], :void
-
         attach_function :getaddrinfo, :uv_getaddrinfo, [:uv_loop_t, :uv_getaddrinfo_t, :uv_getaddrinfo_cb, :string, :string, :addrinfo], :int, :blocking => true
         attach_function :freeaddrinfo, :uv_freeaddrinfo, [:addrinfo], :void, :blocking => true
 
@@ -166,10 +162,6 @@ module Libuv
         attach_function :free_cpu_info, :uv_free_cpu_info, [:uv_cpu_info_t, :int], :void, :blocking => true
         attach_function :interface_addresses, :uv_interface_addresses, [:uv_interface_address_t, :pointer], :int, :blocking => true
         attach_function :free_interface_addresses, :uv_free_interface_addresses, [:uv_interface_address_t, :int], :void, :blocking => true
-
-        #attach_function :fs_req_result, :uv_fs_req_result, [:uv_fs_t], :ssize_t
-        #attach_function :fs_req_stat, :uv_fs_req_stat, [:uv_fs_t], :uv_fs_stat_t
-        #attach_function :fs_req_pointer, :uv_fs_req_pointer, [:uv_fs_t], :pointer
 
         attach_function :fs_req_cleanup, :uv_fs_req_cleanup, [:uv_fs_t], :void, :blocking => true
         attach_function :fs_close, :uv_fs_close, [:uv_loop_t, :uv_fs_t, :uv_file, :uv_fs_cb], :int, :blocking => true
@@ -217,14 +209,17 @@ module Libuv
         attach_function :dlopen, :uv_dlopen, [:string, :uv_lib_t], :int, :blocking => true
         attach_function :dlclose, :uv_dlclose, [:uv_lib_t], :int, :blocking => true
         attach_function :dlsym, :uv_dlsym, [:uv_lib_t, :string, :pointer], :int, :blocking => true
-        #attach_function :dlerror, :uv_dlerror, [:uv_lib_t], :string
-        #attach_function :dlerror_free, :uv_dlerror_free, [:uv_lib_t, :string], :void
+        attach_function :dlerror, :uv_dlerror, [:uv_lib_t], :string
 
         attach_function :mutex_init, :uv_mutex_init, [:uv_mutex_t], :int, :blocking => true
         attach_function :mutex_destroy, :uv_mutex_destroy, [:uv_mutex_t], :void, :blocking => true
         attach_function :mutex_lock, :uv_mutex_lock, [:uv_mutex_t], :void, :blocking => true
         attach_function :mutex_trylock, :uv_mutex_trylock, [:uv_mutex_t], :int, :blocking => true
         attach_function :mutex_unlock, :uv_mutex_unlock, [:uv_mutex_t], :void, :blocking => true
+
+        attach_function :signal_init, :uv_signal_init, [:uv_loop_t, :uv_signal_t], :int, :blocking => true
+        attach_function :signal_start, :uv_signal_start, [:uv_signal_t, :uv_signal_cb, :int], :int, :blocking => true
+        attach_function :signal_stop, :uv_signal_stop, [:uv_signal_t], :int, :blocking => true
 
         attach_function :rwlock_init, :uv_rwlock_init, [:uv_rwlock_t], :int, :blocking => true
         attach_function :rwlock_destroy, :uv_rwlock_destroy, [:uv_rwlock_t], :void, :blocking => true

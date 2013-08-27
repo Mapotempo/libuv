@@ -8,7 +8,7 @@ module Libuv
 
     # Returns the number of CPU cores on the host platform
     # 
-    # @return [Fixnum] representing the number of CPU cores
+    # @return [Fixnum, nil] representing the number of CPU cores or nil if failed
     def self.cpu_count
         cpu_info = FFI::MemoryPointer.new(:pointer)
         cpu_count = FFI::MemoryPointer.new(:int)
@@ -36,6 +36,7 @@ module Libuv
     autoload :Check, 'libuv/check'              # Called before processing events on the loop
     autoload :Prepare, 'libuv/prepare'          # Called at the end of a loop cycle
     autoload :Idle, 'libuv/idle'                # Called when there are no events to process
+    autoload :Signal, 'libuv/signal'            # Used to handle OS signals
     autoload :Async, 'libuv/async'              # Provide a threadsafe way to signal the event loop (uses promises)
     autoload :SimpleAsync, 'libuv/simple_async' # Same as above using a simple callback
     autoload :Work, 'libuv/work'                # Provide work to be completed on another thread (thread pool)

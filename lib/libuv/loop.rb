@@ -233,6 +233,17 @@ module Libuv
             handle
         end
 
+        # Get a new signal handler
+        # 
+        # @return [::Libuv::Signal]
+        def signal(signum = nil, callback = nil, &block)
+            callback ||= block
+            handle = Signal.new(@loop)
+            handle.progress callback if callback
+            handle.start(signum) if signum
+            handle
+        end
+
         # Queue some work for processing in the libuv thread pool
         #
         # @param callback [Proc] the callback to be called in the thread pool
@@ -248,6 +259,7 @@ module Libuv
         # 
         # @param path [String] the path to the file or folder for watching
         # @return [::Libuv::FSEvent]
+        # @raise [ArgumentError] if path is not a string
         def fs_event(path)
             assert_type(String, path)
             FSEvent.new(@loop, path)
@@ -257,6 +269,7 @@ module Libuv
         # Schedule some work to be processed on the event loop as soon as possible (thread safe)
         #
         # @param callback [Proc] the callback to be called on the reactor thread
+        # @raise [ArgumentError] if block is not given
         def schedule(callback = nil, &block)
             callback ||= block
             assert_block(callback)
@@ -272,6 +285,7 @@ module Libuv
         # Queue some work to be processed in the next iteration of the event loop (thread safe)
         #
         # @param callback [Proc] the callback to be called on the reactor thread
+        # @raise [ArgumentError] if block is not given
         def next_tick(callback = nil, &block)
             callback ||= block
             assert_block(callback)

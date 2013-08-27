@@ -172,6 +172,7 @@ module Libuv
         typedef :pointer, :uv_idle_t
         typedef :pointer, :uv_async_t
         typedef :pointer, :uv_timer_t
+        typedef :pointer, :uv_signal_t
         typedef :pointer, :uv_process_t
         typedef :pointer, :uv_getaddrinfo_cb
         typedef :pointer, :addrinfo
@@ -199,6 +200,7 @@ module Libuv
         typedef :pointer, :uv_stat_t
         typedef :int,     :status
         typedef :int,     :events
+        typedef :int,     :signal
 
         callback :uv_alloc_cb,       [:uv_handle_t, :size_t],                            :uv_buf_t
         callback :uv_read_cb,        [:uv_stream_t, :ssize_t, :uv_buf_t],                :void
@@ -210,6 +212,7 @@ module Libuv
         callback :uv_close_cb,       [:uv_handle_t],                                     :void
         callback :uv_poll_cb,        [:uv_poll_t, :status, :events],                     :void
         callback :uv_timer_cb,       [:uv_timer_t, :status],                             :void
+        callback :uv_signal_cb,      [:uv_signal_t, :signal],                            :void
         callback :uv_async_cb,       [:uv_async_t, :status],                             :void
         callback :uv_prepare_cb,     [:uv_prepare_t, :status],                           :void
         callback :uv_check_cb,       [:uv_check_t, :status],                             :void
