@@ -79,6 +79,10 @@ module Libuv
             ::Libuv::Ext.is_writable(handle) > 0
         end
 
+        def progress(callback = nil, &blk)
+            @progress = callback || blk
+        end
+
 
         private
 
@@ -111,7 +115,11 @@ module Libuv
             else
                 data = base.read_string(nread)
                 ::Libuv::Ext.free(base)
-                defer.notify(data)   # stream the data
+                begin
+                    @progress.call
+                rescue Exception => e
+                    @loop.log :error, :stream_progress_cb, e
+                end
             end
         end
 
