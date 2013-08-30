@@ -382,7 +382,7 @@ module Libuv
 		# @param [*Promise] Promises a number of promises that will be combined into a single promise
 		# @return [Promise] Returns a single promise that will be resolved with an array of values,
 		#   each [result, wasResolved] value pair corresponding to a at the same index in the `promises` array.
-		def finally(loop, *promises)
+		def self.finally(loop, *promises)
 			deferred = Q.defer(loop)
 			counter = promises.length
 			results = []

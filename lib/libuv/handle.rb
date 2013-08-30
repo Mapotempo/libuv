@@ -3,6 +3,9 @@ module Libuv
         include Assertions, Resource, Listener
 
 
+        attr_accessor :storage  # A place for general storage
+
+
         def initialize(pointer, error)
             @pointer = pointer
 
