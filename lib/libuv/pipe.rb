@@ -169,7 +169,12 @@ module Libuv
                         reject(e)  # if accept fails we should close the socket to avoid a stale pipe
                     end
                     if remote
-                        defer.notify(data, remote)   # stream the data and new socket
+                        # stream the data and new socket
+                        begin
+                            @progress.call data, remote
+                        rescue Exception => e
+                            @loop.log :error, :stream_progress_cb, e
+                        end
                     end
                 end
             end
