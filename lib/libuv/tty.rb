@@ -13,10 +13,12 @@ module Libuv
         end
 
         def enable_raw_mode
+            return if @closed
             check_result ::Libuv::Ext.tty_set_mode(handle, 1)
         end
 
         def disable_raw_mode
+            return if @closed
             check_result ::Libuv::Ext.tty_set_mode(handle, 0)
         end
 
@@ -25,6 +27,7 @@ module Libuv
         end
 
         def winsize
+            return [] if @closed
             width = FFI::MemoryPointer.new(:int)
             height = FFI::MemoryPointer.new(:int)
             ::Libuv::Ext.tty_get_winsize(handle, width, height)

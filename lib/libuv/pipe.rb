@@ -17,6 +17,7 @@ module Libuv
         end
 
         def bind(name, callback = nil, &blk)
+            return if @closed
             @on_listen = callback || blk
             assert_type(String, name, "name must be a String")
             name = windows_path name if FFI::Platform.windows?
@@ -28,6 +29,7 @@ module Libuv
         def accept(callback = nil, &blk)
             pipe = nil
             begin
+                raise RuntimeError, CLOSED_HANDLE_ERROR if @closed
                 pipe = Pipe.new(loop, @ipc, handle)
             rescue Exception => e
                 @loop.log :info, :pipe_accept_failed, e
@@ -46,6 +48,7 @@ module Libuv
             @callback = callback || blk
             assert_type(Integer, fileno, "io#fileno must return an integer file descriptor")
             begin
+                raise RuntimeError, CLOSED_HANDLE_ERROR if @closed
                 check_result! ::Libuv::Ext.pipe_open(handle, fileno)
 
                 # Emulate on_connect behavior
@@ -60,6 +63,7 @@ module Libuv
         end
 
         def connect(name, callback = nil, &blk)
+            return if @closed
             @callback = callback || blk
             assert_type(String, name, "name must be a String")
             begin
@@ -72,7 +76,7 @@ module Libuv
 
         def write2(fd, data = ".")
             deferred = @loop.defer
-            if @ipc
+            if @ipc && !@closed
                 begin
                     assert_type(String, data, WRITE_ERROR)
                     assert_type(Handle, fd, WRITE2_ERROR)
@@ -116,12 +120,14 @@ module Libuv
         end
 
         def start_read2
+            return if @closed
             error = check_result ::Libuv::Ext.read2_start(handle, callback(:on_allocate), callback(:on_read2))
             reject(error) if error
         end
 
         # Windows only
         def pending_instances=(count)
+            return 0 if @closed
             assert_type(Integer, count, "count must be an Integer")
             ::Libuv::Ext.pipe_pending_instances(handle, count)
         end

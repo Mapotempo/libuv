@@ -20,6 +20,7 @@ module Libuv
         end
 
         def bind(ip, port, callback = nil, &blk)
+            return if @closed
             @on_listen = callback || blk
             assert_type(String, ip, IP_ARGUMENT_ERROR)
             assert_type(Integer, port, PORT_ARGUMENT_ERROR)
@@ -35,6 +36,7 @@ module Libuv
         def accept(callback = nil, &blk)
             tcp = nil
             begin
+                raise RuntimeError, CLOSED_HANDLE_ERROR if @closed
                 tcp = TCP.new(loop, handle)
             rescue Exception => e
                 @loop.log :info, :tcp_accept_failed, e
@@ -50,6 +52,7 @@ module Libuv
         end
 
         def connect(ip, port, callback = nil, &blk)
+            return if @closed
             @callback = callback || blk
             assert_type(String, ip, IP_ARGUMENT_ERROR)
             assert_type(Integer, port, PORT_ARGUMENT_ERROR)
@@ -63,39 +66,47 @@ module Libuv
         end
 
         def sockname
+            return [] if @closed
             sockaddr, len = get_sockaddr_and_len
             check_result! ::Libuv::Ext.tcp_getsockname(handle, sockaddr, len)
             get_ip_and_port(::Libuv::Sockaddr.new(sockaddr), len.get_int(0))
         end
 
         def peername
+            return [] if @closed
             sockaddr, len = get_sockaddr_and_len
             check_result! ::Libuv::Ext.tcp_getpeername(handle, sockaddr, len)
             get_ip_and_port(::Libuv::Sockaddr.new(sockaddr), len.get_int(0))
         end
 
         def enable_nodelay
+            return if @closed
             check_result ::Libuv::Ext.tcp_nodelay(handle, 1)
         end
 
         def disable_nodelay
+            return if @closed
             check_result ::Libuv::Ext.tcp_nodelay(handle, 0)
         end
 
         def enable_keepalive(delay)
+            return if @closed
             assert_type(Integer, delay, KEEPALIVE_ARGUMENT_ERROR)
             check_result ::Libuv::Ext.tcp_keepalive(handle, 1, delay)
         end
 
         def disable_keepalive
+            return if @closed
             check_result ::Libuv::Ext.tcp_keepalive(handle, 0, 0)
         end
 
         def enable_simultaneous_accepts
+            return if @closed
             check_result ::Libuv::Ext.tcp_simultaneous_accepts(handle, 1)
         end
 
         def disable_simultaneous_accepts
+            return if @closed
             check_result ::Libuv::Ext.tcp_simultaneous_accepts(handle, 0)
         end
 

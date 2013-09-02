@@ -5,6 +5,33 @@ module Libuv
     require 'libuv/ext/ext'     # The libuv ffi ext
     require 'libuv/q'           # The promise library
 
+    require 'libuv/assertions'  # Common code to check arguments
+    require 'libuv/resource'    # Common code to check for errors
+    require 'libuv/listener'    # Common callback code
+    require 'libuv/error'       # List of errors (matching those in uv.h)
+
+    require 'libuv/handle'      # Base class for most libuv functionality
+    require 'libuv/timer'       # High resolution timer
+    require 'libuv/async'       # Provide a threadsafe way to signal the event loop (uses promises)
+    require 'libuv/simple_async'
+    require 'libuv/loop'        # The libuv reactor or event loop
+
+    require 'libuv/check'       # Called before processing events on the loop
+    require 'libuv/prepare'     # Called at the end of a loop cycle
+    require 'libuv/idle'        # Called when there are no events to process
+    require 'libuv/signal'      # Used to handle OS signals
+    require 'libuv/work'        # Provide work to be completed on another thread (thread pool)
+
+    # Streams
+    require 'libuv/net'         # Common functions for tcp and udp
+    require 'libuv/stream'
+    require 'libuv/tcp'         # Communicate over TCP
+    require 'libuv/pipe'        # Communicate over Pipes
+    require 'libuv/tty'         # Terminal output
+
+    require 'libuv/udp'         # Communicate over UDP
+    require 'libuv/fs_event'    # Notifies of changes to files and folders as they occur
+
 
     # Returns the number of CPU cores on the host platform
     # 
@@ -20,33 +47,4 @@ module Libuv
             return nil
         end
     end
-
-
-    autoload :Assertions, 'libuv/assertions'    # Common code to check arguments
-    autoload :Resource, 'libuv/resource'        # Common code to check for errors
-    autoload :Listener, 'libuv/listener'        # Common callback code
-
-    autoload :Error, 'libuv/error'              # List of errors (matching those in uv.h)
-    autoload :Net, 'libuv/net'                  # Common functions for tcp and udp
-
-    autoload :Handle, 'libuv/handle'            # Libuv handle base class
-    
-    autoload :Loop, 'libuv/loop'                # The libuv reactor or event loop
-    autoload :Timer, 'libuv/timer'              # High resolution timer
-    autoload :Check, 'libuv/check'              # Called before processing events on the loop
-    autoload :Prepare, 'libuv/prepare'          # Called at the end of a loop cycle
-    autoload :Idle, 'libuv/idle'                # Called when there are no events to process
-    autoload :Signal, 'libuv/signal'            # Used to handle OS signals
-    autoload :Async, 'libuv/async'              # Provide a threadsafe way to signal the event loop (uses promises)
-    autoload :SimpleAsync, 'libuv/simple_async' # Same as above using a simple callback
-    autoload :Work, 'libuv/work'                # Provide work to be completed on another thread (thread pool)
-
-    # Streams
-    autoload :Stream, 'libuv/stream'
-    autoload :TCP, 'libuv/tcp'                  # Communicate over TCP
-    autoload :Pipe, 'libuv/pipe'                # Communicate over Pipes
-    autoload :TTY, 'libuv/tty'                  # Terminal output
-
-    autoload :UDP, 'libuv/udp'                  # Communicate over UDP
-    autoload :FSEvent, 'libuv/fs_event'         # Notifies of changes to files and folders as they occur
 end

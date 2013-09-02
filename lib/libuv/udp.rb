@@ -7,6 +7,7 @@ module Libuv
         TTL_ARGUMENT_ERROR = "ttl must be an Integer".freeze
         MULTICAST_ARGUMENT_ERROR = "multicast_address must be a String".freeze
         INTERFACE_ARGUMENT_ERROR = "interface_address must be a String".freeze
+        HANDLE_CLOSED_ERROR = "unable to send as handle closed".freeze
 
 
         def initialize(loop)
@@ -19,6 +20,7 @@ module Libuv
         end
 
         def bind(ip, port, ipv6_only = false)
+            return if @closed
             assert_type(String, ip, IP_ARGUMENT_ERROR)
             assert_type(Integer, port, PORT_ARGUMENT_ERROR)
 
@@ -31,12 +33,14 @@ module Libuv
         end
 
         def sockname
+            return [] if @closed
             sockaddr, len = get_sockaddr_and_len
             check_result! ::Libuv::Ext.udp_getsockname(handle, sockaddr, len)
             get_ip_and_port(UV::Sockaddr.new(sockaddr), len.get_int(0))
         end
 
         def join(multicast_address, interface_address)
+            return if @closed
             assert_type(String, multicast_address, MULTICAST_ARGUMENT_ERROR)
             assert_type(String, interface_address, INTERFACE_ARGUMENT_ERROR)
 
@@ -45,6 +49,7 @@ module Libuv
         end
 
         def leave(multicast_address, interface_address)
+            return if @closed
             assert_type(String, multicast_address, MULTICAST_ARGUMENT_ERROR)
             assert_type(String, interface_address, INTERFACE_ARGUMENT_ERROR)
 
@@ -53,83 +58,96 @@ module Libuv
         end
 
         def start_recv
+            return if @closed
             error = check_result ::Libuv::Ext.udp_recv_start(handle, callback(:on_allocate), callback(:on_recv))
             reject(error) if error
         end
 
         def stop_recv
+            return if @closed
             error = check_result ::Libuv::Ext.udp_recv_stop(handle)
             reject(error) if error
         end
 
         def send(ip, port, data)
+            # NOTE:: Similar to stream.rb -> write
             deferred = @loop.defer
-            begin
-                assert_type(String, ip, IP_ARGUMENT_ERROR)
-                assert_type(Integer, port, PORT_ARGUMENT_ERROR)
-                assert_type(String, data, SEND_DATA_ERROR)
-
-                @udp_socket = create_socket(IPAddr.new(ip), port)
-
-                # local as this variable will be avaliable until the handle is closed
-                @sent_callbacks = @sent_callbacks || []
-
-                #
-                # create the curried callback
-                #
-                callback = FFI::Function.new(:void, [:pointer, :int]) do |req, status|
-                    ::Libuv::Ext.free(req)
-                    # remove the callback from the array
-                    # assumes sends are done in order
-                    promise = @sent_callbacks.shift[0]
-                    resolve promise, status
-                end
-
-                #
-                # Save the callback and return the promise
-                #
+            if !@closed
                 begin
-                    @sent_callbacks << [deferred, callback]
-                    @udp_socket.send(data, callback)
-                rescue Exception => e
-                    @sent_callbacks.pop
-                    deferred.reject(e)
+                    assert_type(String, ip, IP_ARGUMENT_ERROR)
+                    assert_type(Integer, port, PORT_ARGUMENT_ERROR)
+                    assert_type(String, data, SEND_DATA_ERROR)
 
-                    reject(e)       # close the handle
+                    @udp_socket = create_socket(IPAddr.new(ip), port)
+
+                    # local as this variable will be avaliable until the handle is closed
+                    @sent_callbacks = @sent_callbacks || []
+
+                    #
+                    # create the curried callback
+                    #
+                    callback = FFI::Function.new(:void, [:pointer, :int]) do |req, status|
+                        ::Libuv::Ext.free(req)
+                        # remove the callback from the array
+                        # assumes sends are done in order
+                        promise = @sent_callbacks.shift[0]
+                        resolve promise, status
+                    end
+
+                    #
+                    # Save the callback and return the promise
+                    #
+                    begin
+                        @sent_callbacks << [deferred, callback]
+                        @udp_socket.send(data, callback)
+                    rescue Exception => e
+                        @sent_callbacks.pop
+                        deferred.reject(e)
+
+                        reject(e)       # close the handle
+                    end
+                rescue Exception => e
+                    deferred.reject(e)
                 end
-            rescue Exception => e
-                deferred.reject(e)
+            else
+                deferred.reject(RuntimeError.new(HANDLE_CLOSED_ERROR))
             end
             deferred.promise
         end
 
         def enable_multicast_loop
+            return if @closed
             error = check_result ::Libuv::Ext.udp_set_multicast_loop(handle, 1)
             reject(error) if error
         end
 
         def disable_multicast_loop
+            return if @closed
             error = check_result ::Libuv::Ext.udp_set_multicast_loop(handle, 0)
             reject(error) if error
         end
 
         def multicast_ttl=(ttl)
+            return if @closed
             assert_type(Integer, ttl, TTL_ARGUMENT_ERROR)
             error = check_result ::Libuv::Ext.udp_set_multicast_ttl(handle, ttl)
             reject(error) if error
         end
 
         def enable_broadcast
+            return if @closed
             error = check_result ::Libuv::Ext.udp_set_broadcast(handle, 1)
             reject(error) if error
         end
 
         def disable_broadcast
+            return if @closed
             error = check_result ::Libuv::Ext.udp_set_broadcast(handle, 0)
             reject(error) if error
         end
 
         def ttl=(ttl)
+            return if @closed
             assert_type(Integer, ttl, TTL_ARGUMENT_ERROR)
             error = check_result ::Libuv::Ext.udp_set_ttl(handle, Integer(ttl))
             reject(error) if error

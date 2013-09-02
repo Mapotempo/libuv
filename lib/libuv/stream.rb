@@ -4,6 +4,8 @@ module Libuv
 
         BACKLOG_ERROR = "backlog must be an Integer".freeze
         WRITE_ERROR = "data must be a String".freeze
+        STREAM_CLOSED_ERROR = "unable to write to a closed stream".freeze
+        CLOSED_HANDLE_ERROR = "handle closed before accept called".freeze
 
 
         def listen(backlog)
@@ -15,67 +17,77 @@ module Libuv
 
         # Starts reading from the handle
         def start_read
+            return if @closed
             error = check_result ::Libuv::Ext.read_start(handle, callback(:on_allocate), callback(:on_read))
             reject(error) if error
         end
 
         # Stops reading from the handle
         def stop_read
+            return if @closed
             error = check_result ::Libuv::Ext.read_stop(handle)
             reject(error) if error
         end
 
         # Shutsdown the writes on the handle waiting until the last write is complete before triggering the callback
         def shutdown
+            return if @closed
             error = check_result ::Libuv::Ext.shutdown(::Libuv::Ext.create_request(:uv_shutdown), handle, callback(:on_shutdown))
             reject(error) if error
         end
 
         def write(data)
+            # NOTE:: Similar to udp.rb -> write
             deferred = @loop.defer
-            begin
-                assert_type(String, data, WRITE_ERROR)
+            if !@closed
+                begin
+                    assert_type(String, data, WRITE_ERROR)
 
-                size         = data.respond_to?(:bytesize) ? data.bytesize : data.size
-                buffer       = ::Libuv::Ext.buf_init(FFI::MemoryPointer.from_string(data), size)
+                    size         = data.respond_to?(:bytesize) ? data.bytesize : data.size
+                    buffer       = ::Libuv::Ext.buf_init(FFI::MemoryPointer.from_string(data), size)
 
-                # local as this variable will be avaliable until the handle is closed
-                @write_callbacks = @write_callbacks || []
+                    # local as this variable will be avaliable until the handle is closed
+                    @write_callbacks ||= []
 
-                #
-                # create the curried callback
-                #
-                callback = FFI::Function.new(:void, [:pointer, :int]) do |req, status|
-                    ::Libuv::Ext.free(req)
-                    # remove the callback from the array
-                    # assumes writes are done in order
-                    promise = @write_callbacks.shift[0]
-                    resolve promise, status
+                    #
+                    # create the curried callback
+                    #
+                    callback = FFI::Function.new(:void, [:pointer, :int]) do |req, status|
+                        ::Libuv::Ext.free(req)
+                        # remove the callback from the array
+                        # assumes writes are done in order
+                        promise = @write_callbacks.shift[0]
+                        resolve promise, status
+                    end
+
+
+                    @write_callbacks << [deferred, callback]
+                    req = ::Libuv::Ext.create_request(:uv_write)
+                    error = check_result ::Libuv::Ext.write(req, handle, buffer, 1, callback)
+
+                    if error
+                        @write_callbacks.pop
+                        ::Libuv::Ext.free(req)
+                        deferred.reject(error)
+
+                        reject(error)       # close the handle
+                    end
+                rescue Exception => e
+                    deferred.reject(e)  # this write exception may not be fatal
                 end
-
-
-                @write_callbacks << [deferred, callback]
-                req = ::Libuv::Ext.create_request(:uv_write)
-                error = check_result ::Libuv::Ext.write(req, handle, buffer, 1, callback)
-
-                if error
-                    @write_callbacks.pop
-                    ::Libuv::Ext.free(req)
-                    deferred.reject(error)
-
-                    reject(error)       # close the handle
-                end
-            rescue Exception => e
-                deferred.reject(e)  # this write exception may not be fatal
+            else
+                deferred.reject(RuntimeError.new(STREAM_CLOSED_ERROR))
             end
             deferred.promise
         end
 
         def readable?
+            return false if @closed
             ::Libuv::Ext.is_readable(handle) > 0
         end
 
         def writable?
+            return false if @closed
             ::Libuv::Ext.is_writable(handle) > 0
         end
 

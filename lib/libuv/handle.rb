@@ -4,6 +4,7 @@ module Libuv
 
 
         attr_accessor :storage  # A place for general storage
+        attr_reader :closed
 
 
         def initialize(pointer, error)
