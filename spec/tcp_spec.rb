@@ -155,7 +155,6 @@ describe Libuv::TCP do
 			@client.finally do
 				@server.close
 				@pipeserve.close
-				@loop.stop
 			end
 			
 
@@ -187,6 +186,7 @@ describe Libuv::TCP do
 							connection.finally do
 								@pipeclient.close
 								@loop2.stop
+								@loop.stop
 							end
 						end
 

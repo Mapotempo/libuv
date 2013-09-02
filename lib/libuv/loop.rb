@@ -49,7 +49,7 @@ module Libuv
                     end
                 end
             end
-            @process_queue = SimpleAsync.new(@loop, @queue_proc)
+            @process_queue = Async.new(@loop, @queue_proc)
 
             # Create a next tick timer
             @next_tick = @loop.timer do
@@ -58,7 +58,7 @@ module Libuv
             end
 
             # Create an async call for ending the loop
-            @stop_loop = SimpleAsync.new @loop do
+            @stop_loop = Async.new @loop do
                 @process_queue.close
                 @stop_loop.close
                 @next_tick.close
