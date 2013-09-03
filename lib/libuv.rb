@@ -7,6 +7,7 @@ module Libuv
     require 'libuv/q'           # The promise library
 
     require 'libuv/mixins/assertions'  # Common code to check arguments
+    require 'libuv/mixins/fs_checks'   # Common code to check file system results
     require 'libuv/mixins/resource'    # Common code to check for errors
     require 'libuv/mixins/listener'    # Common callback code
     require 'libuv/mixins/stream'      # For all libuv streams (tcp, pipes, tty)
@@ -19,10 +20,12 @@ module Libuv
     require 'libuv/loop'        # The libuv reactor or event loop
     # --
 
+    require 'libuv/filesystem'  # Async directory manipulation
     require 'libuv/fs_event'    # Notifies of changes to files and folders as they occur
     require 'libuv/prepare'     # Called at the end of a loop cycle
     require 'libuv/signal'      # Used to handle OS signals
     require 'libuv/check'       # Called before processing events on the loop
+    require 'libuv/file'        # Async file reading and writing
     require 'libuv/idle'        # Called when there are no events to process
     require 'libuv/work'        # Provide work to be completed on another thread (thread pool)
     require 'libuv/udp'         # Communicate over UDP

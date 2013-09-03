@@ -265,6 +265,25 @@ module Libuv
             FSEvent.new(@loop, path)
         end
 
+        # Opens a file and returns an object that can be used to manipulate it
+        #
+        # @param path [String] the path to the file or folder for watching
+        # @param flags [Integer] see ruby File::Constants
+        # @param mode [Integer]
+        # @return [::Libuv::File]
+        def file(path, flags = 0, mode = 0)
+            assert_type(String, path, "path must be a String")
+            assert_type(Integer, flags, "flags must be an Integer")
+            assert_type(Integer, mode, "mode must be an Integer")
+            File.new(@loop, path, flags, mode)
+        end
+
+        # Returns an object for manipulating the filesystem
+        #
+        # @return [::Libuv::Filesystem]
+        def filesystem
+            Filesystem.new(@loop)
+        end
 
         # Schedule some work to be processed on the event loop as soon as possible (thread safe)
         #

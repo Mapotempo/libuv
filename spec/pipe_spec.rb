@@ -95,7 +95,7 @@ describe Libuv::Pipe do
 	end
 
 	# This test won't pass on jRuby as java won't expose file descriptors
-	describe 'unidirectional pipeline', :real_io => true do
+	describe 'unidirectional pipeline' do
 		before :each do
 			system "/usr/bin/mkfifo", @pipefile
 		end
@@ -103,31 +103,36 @@ describe Libuv::Pipe do
 		it "should send work to a consumer" do
 			@loop.run { |logger|
 				logger.progress do |level, errorid, error|
-					p "Log called: #{level}: #{errorid}\n#{e.message}\n#{e.backtrace.join("\n")}\n"
+					p "Log called: #{level}: #{errorid}\n#{error.message}\n#{error.backtrace.join("\n")}\n"
 				end
 
 
 				heartbeat = @loop.timer
-				@file1 = File.open(@pipefile, File::RDWR|File::NONBLOCK)
-				@server.open(@file1.fileno) do |server|
-					heartbeat.progress  do
-						@server.write('workload').catch do |err|
-							@general_failure << err
+				@file1 = @loop.file(@pipefile, File::RDWR|File::NONBLOCK)
+				@file1.progress do
+					@server.open(@file1.fileno) do |server|
+						heartbeat.progress  do
+							@server.write('workload').catch do |err|
+								@general_failure << err
+							end
 						end
+						heartbeat.start(0, 200)
 					end
-					heartbeat.start(0, 200)
 				end
-				
+				@file1.catch do |e|
+					p "Log called: #{level}: #{errorid}\n#{e.message}\n#{e.backtrace.join("\n")}\n"
+				end
 
+				@file2 = @loop.file(@pipefile, File::RDWR|File::NONBLOCK)
+				@file2.progress do
+					# connect client to server
+					@client.open(@file2.fileno) do |consumer|
+						consumer.progress do |data|
+							@log = data
+						end
 
-				@file2 = File.open(@pipefile, File::RDWR|File::NONBLOCK)
-				# connect client to server
-				@client.open(@file2.fileno) do |consumer|
-					consumer.progress do |data|
-						@log = data
+						consumer.start_read
 					end
-
-					consumer.start_read
 				end
 
 

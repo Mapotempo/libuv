@@ -41,6 +41,25 @@ module Libuv
 
         require 'libuv/ext/types'
 
+
+        attach_function :handle_size, :uv_handle_size, [:uv_handle_type], :size_t, :blocking => true
+        attach_function :req_size, :uv_req_size, [:uv_req_type], :size_t, :blocking => true
+
+
+        # We need to calculate where the FS request data is located using req_size
+        class FsRequest < FFI::Struct
+            layout :req_data, [:uint8, Ext.req_size(:uv_req)],
+                   :fs_type, :uv_fs_type,
+                   :loop, :uv_loop_t,
+                   :fs_callback, :pointer,
+                   :result, :ssize_t,
+                   :ptr, :pointer,
+                   :path, :string,
+                   :stat, UvStat
+        end
+        callback :uv_fs_cb, [FsRequest.by_ref], :void
+
+
         attach_function :version_number, :uv_version, [], :uint, :blocking => true
         attach_function :version_string, :uv_version_string, [], :string, :blocking => true
 
@@ -166,9 +185,9 @@ module Libuv
         attach_function :fs_req_cleanup, :uv_fs_req_cleanup, [:uv_fs_t], :void, :blocking => true
         attach_function :fs_close, :uv_fs_close, [:uv_loop_t, :uv_fs_t, :uv_file, :uv_fs_cb], :int, :blocking => true
         attach_function :fs_open, :uv_fs_open, [:uv_loop_t, :uv_fs_t, :string, :int, :int, :uv_fs_cb], :int, :blocking => true
-        attach_function :fs_read, :uv_fs_read, [:uv_loop_t, :uv_fs_t, :uv_file, :string, :size_t, :off_t, :uv_fs_cb], :int, :blocking => true
+        attach_function :fs_read, :uv_fs_read, [:uv_loop_t, :uv_fs_t, :uv_file, :pointer, :size_t, :off_t, :uv_fs_cb], :int, :blocking => true
         attach_function :fs_unlink, :uv_fs_unlink, [:uv_loop_t, :uv_fs_t, :string, :uv_fs_cb], :int, :blocking => true
-        attach_function :fs_write, :uv_fs_write, [:uv_loop_t, :uv_fs_t, :uv_file, :string, :size_t, :off_t, :uv_fs_cb], :int, :blocking => true
+        attach_function :fs_write, :uv_fs_write, [:uv_loop_t, :uv_fs_t, :uv_file, :pointer, :size_t, :off_t, :uv_fs_cb], :int, :blocking => true
         attach_function :fs_mkdir, :uv_fs_mkdir, [:uv_loop_t, :uv_fs_t, :string, :int, :uv_fs_cb], :int, :blocking => true
         attach_function :fs_rmdir, :uv_fs_rmdir, [:uv_loop_t, :uv_fs_t, :string, :uv_fs_cb], :int, :blocking => true
         attach_function :fs_readdir, :uv_fs_readdir, [:uv_loop_t, :uv_fs_t, :string, :int, :uv_fs_cb], :int, :blocking => true
@@ -233,12 +252,6 @@ module Libuv
         attach_function :once, :uv_once, [:uv_once_t, :uv_cb], :void, :blocking => true
         attach_function :thread_create, :uv_thread_create, [:uv_thread_t, :uv_cb], :int, :blocking => true
         attach_function :thread_join, :uv_thread_join, [:uv_thread_t], :int, :blocking => true
-
-        attach_function :handle_size, :uv_handle_size, [:uv_handle_type], :size_t, :blocking => true
-        attach_function :req_size, :uv_req_size, [:uv_req_type], :size_t, :blocking => true
-
-        # This function is attached differently in windows - see ./types/windows.rb
-        attach_function :ntohs, [:ushort], :ushort, :blocking => true unless FFI::Platform.windows?
 
 
         def self.create_handle(type)

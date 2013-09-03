@@ -9,7 +9,11 @@ module Libuv
         require 'libuv/ext/platform/linux.rb' if FFI::Platform.linux?
         require 'libuv/ext/platform/unix.rb' if FFI::Platform.unix?
         require 'libuv/ext/platform/darwin_x64.rb' if FFI::Platform.mac? and FFI::Platform::ARCH == 'x86_64'
-        require 'libuv/ext/platform/windows.rb' if FFI::Platform.windows?
+        if FFI::Platform.windows?
+            require 'libuv/ext/platform/windows.rb'
+        else
+            attach_function :ntohs, [:ushort], :ushort, :blocking => true
+        end
 
         enum :uv_handle_type, [
             :uv_unknown_handle, 0,
@@ -176,7 +180,6 @@ module Libuv
         typedef :pointer, :uv_process_t
         typedef :pointer, :uv_getaddrinfo_cb
         typedef :pointer, :addrinfo
-        typedef :pointer, :uv_fs_t
         typedef :pointer, :uv_work_t
         typedef :pointer, :uv_loop_t
         typedef :pointer, :uv_shutdown_t
@@ -184,13 +187,13 @@ module Libuv
         typedef :pointer, :uv_connect_t
         typedef :pointer, :uv_udp_send_t
         typedef :int,     :uv_file
+        typedef :pointer, :uv_fs_t
         typedef :pointer, :ares_channel
         typedef :pointer, :ares_options
         typedef :pointer, :uv_getaddrinfo_t
         typedef :pointer, :uv_options_t
         typedef :pointer, :uv_cpu_info_t
         typedef :pointer, :uv_interface_address_t
-        typedef :pointer, :uv_fs_t
         typedef :pointer, :uv_lib_t
         typedef :pointer, :uv_mutex_t
         typedef :pointer, :uv_rwlock_t
@@ -220,7 +223,6 @@ module Libuv
         callback :uv_getaddrinfo_cb, [:uv_getaddrinfo_t, :status, :addrinfo],            :void
         callback :uv_exit_cb,        [:uv_process_t, :int, :int],                        :void
         callback :uv_walk_cb,        [:uv_handle_t, :pointer],                           :void
-        callback :uv_fs_cb,          [:uv_fs_t],                                         :void
         callback :uv_work_cb,        [:uv_work_t],                                       :void
         callback :uv_after_work_cb,  [:uv_work_t, :int],                                 :void
         callback :uv_fs_event_cb,    [:uv_fs_event_t, :string, :int, :int],              :void

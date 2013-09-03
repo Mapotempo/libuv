@@ -18,13 +18,18 @@ Create a new libuv loop or use a default one
   # loop = Libuv::Loop.new
 
   loop.run do
-    timer = loop.timer do |error|
-      p error if error
-      puts "50 seconds passed"
+    timer = loop.timer do
+      puts "5 seconds passed"
       timer.close
       loop.stop
     end
-    timer.start(50000)
+    timer.catch do |error|
+      puts "error with timer: #{error}"
+    end
+    timer.finally do
+      puts "timer handle was closed"
+    end
+    timer.start(5000)
   end
 ```
 
@@ -53,7 +58,8 @@ or
 
 or
 
-if you have a compatible `libuv.(so | dylib | dll)` on the PATH already, setting the environmental variable `USE_GLOBAL_LIBUV` will prevent compiling the packaged version.
+* setting the environmental variable `USE_GLOBAL_LIBUV` will prevent compiling the packaged version.
+  * if you have a compatible `libuv.(so | dylib | dll)` on the PATH already
 
 
 ## What's supported
@@ -68,6 +74,8 @@ if you have a compatible `libuv.(so | dylib | dll)` on the PATH already, setting
 * Idle
 * Async
 * Filesystem Events
+* File manipulation
+* Filesystem manipulation
 * Errors
 * Work queue (thread pool)
 

@@ -10,8 +10,8 @@ require 'libuv/ext/tasks'       # platform specific rake tasks used by compile
 # By default we don't run network tests
 task :default => :limited_spec
 RSpec::Core::RakeTask.new(:limited_spec) do |t|
-    # Exclude network tests and tests that won't run on java (real io)
-    t.rspec_opts = "--tag ~network --tag ~real_io" 
+    # Exclude network tests
+    t.rspec_opts = "--tag ~network" 
 end
 RSpec::Core::RakeTask.new(:spec)
 
