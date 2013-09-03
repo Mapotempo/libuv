@@ -159,7 +159,7 @@ module Libuv
             if post_check(req, @readdir_deferred)
                 num_files = req[:result]
                 string_ptr = req[:ptr]
-                files = string_ptr.null? ? [] : string_ptr.read_array_of_type(FFI::TYPE_STRING, :read_string_to_null, num_files)
+                files = string_ptr.null? ? [] : string_ptr.read_array_of_type(FFI::TYPE_STRING, :read_string, num_files)
                 cleanup(req)
                 @readdir_deferred.resolve(files)
             end

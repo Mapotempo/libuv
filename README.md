@@ -73,6 +73,7 @@ or
 * Check
 * Idle
 * Async
+* Signals
 * Filesystem Events
 * File manipulation
 * Filesystem manipulation
