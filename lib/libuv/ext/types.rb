@@ -206,7 +206,7 @@ module Libuv
         typedef :int,     :events
         typedef :int,     :signal
 
-        callback :uv_alloc_cb,       [:uv_handle_t, :size_t, :pointer],                  :void
+        callback :uv_alloc_cb,       [:uv_handle_t, :size_t, UvBuf.by_ref],                  :void
         callback :uv_read_cb,        [:uv_stream_t, :ssize_t, :uv_buf_t],                :void
         callback :uv_read2_cb,       [:uv_pipe_t, :ssize_t, :uv_buf_t, :uv_handle_type], :void
         callback :uv_write_cb,       [:uv_write_t, :status],                             :void

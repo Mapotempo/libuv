@@ -158,7 +158,8 @@ module Libuv
 
 
         def on_allocate(client, suggested_size, buf)
-            buf.write_pointer ::Libuv::Ext.buf_init(::Libuv::Ext.malloc(suggested_size), suggested_size)
+            buf[:len] = suggested_size
+            buf[:base] = ::Libuv::Ext.malloc(suggested_size)
         end
 
         def on_recv(handle, nread, buf, sockaddr, flags)
