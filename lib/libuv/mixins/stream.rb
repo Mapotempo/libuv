@@ -113,9 +113,9 @@ module Libuv
             end
         end
 
-        def on_allocate(client, suggested_size, buf)
-            buf[:len] = suggested_size
-            buf[:base] = ::Libuv::Ext.malloc(suggested_size)
+        def on_allocate(client, suggested_size, buffer)
+            buffer[:len] = suggested_size
+            buffer[:base] = ::Libuv::Ext.malloc(suggested_size)
         end
 
         def on_read(handle, nread, buf)
@@ -128,6 +128,7 @@ module Libuv
             else
                 data = base.read_string(nread)
                 ::Libuv::Ext.free(base)
+                
                 begin
                     @progress.call data, self
                 rescue Exception => e

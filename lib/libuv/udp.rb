@@ -157,9 +157,9 @@ module Libuv
         private
 
 
-        def on_allocate(client, suggested_size, buf)
-            buf[:len] = suggested_size
-            buf[:base] = ::Libuv::Ext.malloc(suggested_size)
+        def on_allocate(client, suggested_size, buffer)
+            buffer[:len] = suggested_size
+            buffer[:base] = ::Libuv::Ext.malloc(suggested_size)
         end
 
         def on_recv(handle, nread, buf, sockaddr, flags)
@@ -188,7 +188,7 @@ module Libuv
         end
 
 
-        module SocketMethods
+        class SocketBase
             include Resource
 
             def initialize(loop, udp, ip, port)
@@ -214,19 +214,6 @@ module Libuv
             def buf_init(data)
                 ::Libuv::Ext.buf_init(FFI::MemoryPointer.from_string(data), data.respond_to?(:bytesize) ? data.bytesize : data.size)
             end
-        end
-
-
-        class Socket4
-            include SocketMethods
-
-
-            private
-
-
-            def ip_addr(ip, port)
-                ::Libuv::Ext.ip4_addr(ip, port)
-            end
 
             def udp_bind(ipv6_only)
                 ::Libuv::Ext.udp_bind(@udp, @sockaddr, 0)
@@ -245,30 +232,26 @@ module Libuv
         end
 
 
-        class Socket6 < Socket
-            include SocketMethods
-
-
-            private
+        class Socket4 < SocketBase
+            protected
 
 
             def ip_addr(ip, port)
-                ::Libuv::Ext.ip6_addr(ip, port)
+                addr = Ext::SockaddrIn.new
+                check_result! ::Libuv::Ext.ip4_addr(ip, port, addr)
+                addr
             end
+        end
 
-            def udp_bind(ipv6_only)
-                ::Libuv::Ext.udp_bind6(@udp, @sockaddr, ipv6_only ? 1 : 0)
-            end
 
-            def udp_send(data, callback)
-                ::Libuv::Ext.udp_send6(
-                    send_req,
-                    @udp,
-                    buf_init(data),
-                    1,
-                    @sockaddr,
-                    callback
-                )
+        class Socket6 < SocketBase
+            protected
+
+
+            def ip_addr(ip, port)
+                addr = Ext::SockaddrIn6.new
+                check_result! ::Libuv::Ext.ip6_addr(ip, port, addr)
+                addr
             end
         end
     end

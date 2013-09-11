@@ -92,7 +92,7 @@ module Libuv
             :UV_RUN_NOWAIT
         ]
 
-        typedef UvBuf.by_value, :uv_buf_t
+        typedef UvBuf.by_ref, :uv_buf_t
         typedef UvFSStat.by_value, :uv_fs_stat_t
 
 
@@ -114,7 +114,7 @@ module Libuv
                    :sin_zero, [:char, 8]
         end
 
-        typedef SockaddrIn.by_value, :sockaddr_in4
+        typedef SockaddrIn.by_ref, :sockaddr_in4
 
         class U6Addr < FFI::Union
             layout :__u6_addr8, [:uint8, 16],
@@ -134,7 +134,7 @@ module Libuv
                    :sin6_scope_id, :uint32
         end
 
-        typedef SockaddrIn6.by_value, :sockaddr_in6
+        typedef SockaddrIn6.by_ref, :sockaddr_in6
 
 
         class UvTimespec < FFI::Struct
@@ -206,7 +206,7 @@ module Libuv
         typedef :int,     :events
         typedef :int,     :signal
 
-        callback :uv_alloc_cb,       [:uv_handle_t, :size_t, UvBuf.by_ref],                  :void
+        callback :uv_alloc_cb,       [:uv_handle_t, :size_t, :uv_buf_t],                 :void
         callback :uv_read_cb,        [:uv_stream_t, :ssize_t, :uv_buf_t],                :void
         callback :uv_read2_cb,       [:uv_pipe_t, :ssize_t, :uv_buf_t, :uv_handle_type], :void
         callback :uv_write_cb,       [:uv_write_t, :status],                             :void

@@ -85,7 +85,7 @@ module Libuv
         attach_function :close, :uv_close, [:uv_handle_t, :uv_close_cb], :void, :blocking => true
         attach_function :is_closing, :uv_is_closing, [:uv_handle_t], :int, :blocking => true
 
-        attach_function :buf_init, :uv_buf_init, [:pointer, :size_t], :uv_buf_t, :blocking => true
+        attach_function :buf_init, :uv_buf_init, [:pointer, :size_t], UvBuf.by_value, :blocking => true
         attach_function :strlcpy, :uv_strlcpy, [:string, :string, :size_t], :size_t, :blocking => true
         attach_function :strlcat, :uv_strlcat, [:string, :string, :size_t], :size_t, :blocking => true
 
@@ -207,8 +207,8 @@ module Libuv
 
         attach_function :fs_event_init, :uv_fs_event_init, [:uv_loop_t, :uv_fs_event_t, :string, :uv_fs_event_cb, :int], :int, :blocking => true
 
-        attach_function :ip4_addr, :uv_ip4_addr, [:string, :int], :sockaddr_in4, :blocking => true
-        attach_function :ip6_addr, :uv_ip6_addr, [:string, :int], :sockaddr_in6, :blocking => true
+        attach_function :ip4_addr, :uv_ip4_addr, [:string, :int, :sockaddr_in4], :int, :blocking => true
+        attach_function :ip6_addr, :uv_ip6_addr, [:string, :int, :sockaddr_in6], :int, :blocking => true
         attach_function :ip4_name, :uv_ip4_name, [SockaddrIn.by_ref, :pointer, :size_t], :int, :blocking => true
         attach_function :ip6_name, :uv_ip6_name, [SockaddrIn6.by_ref, :pointer, :size_t], :int, :blocking => true
         #TODO:: attach_function :inet_ntop, :uv_inet_ntop, [:int, :pointer, ]

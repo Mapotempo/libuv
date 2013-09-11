@@ -171,7 +171,9 @@ module Libuv
 
 
             def ip_addr(ip, port)
-                ::Libuv::Ext.ip4_addr(ip, port)
+                addr = Ext::SockaddrIn.new
+                check_result! ::Libuv::Ext.ip4_addr(ip, port, addr)
+                addr
             end
         end
 
@@ -181,7 +183,9 @@ module Libuv
 
 
             def ip_addr(ip, port)
-                ::Libuv::Ext.ip6_addr(ip, port)
+                addr = Ext::SockaddrIn6.new
+                check_result! ::Libuv::Ext.ip6_addr(ip, port, addr)
+                addr
             end
         end
     end
