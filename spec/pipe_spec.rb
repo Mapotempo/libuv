@@ -15,11 +15,11 @@ describe Libuv::Pipe do
 		end
 		@timeout.start(5000)
 
-		@pipefile = "/tmp/test-pipe.pipe"
+		@pipefile = "/tmp/test-pipes.pipe"
 
 		@loop.all(@server, @client, @timeout).catch do |reason|
 			@general_failure << reason.inspect
-			p "Failed with: #{reason.message}\n#{reason.backtrace.join("\n")}\n"
+			p "Failed with: #{reason.message}\n#{reason.backtrace}\n"
 		end
 
 		begin
@@ -41,7 +41,7 @@ describe Libuv::Pipe do
 			@loop.run { |logger|
 				logger.progress do |level, errorid, error|
 					begin
-						p "Log called: #{level}: #{errorid}\n#{error.message}\n#{error.backtrace.join("\n")}\n"
+						p "Log called: #{level}: #{errorid}\n#{error.message}\n#{error.backtrace}\n"
 					rescue Exception
 						p 'error in logger'
 					end
@@ -62,7 +62,7 @@ describe Libuv::Pipe do
 					@general_failure << reason.inspect
 					@loop.stop
 
-					p "Failed with: #{reason.message}\n#{reason.backtrace.join("\n")}\n"
+					p "Failed with: #{reason.message}\n#{reason.backtrace}\n"
 				end
 
 				# start listening
@@ -82,6 +82,13 @@ describe Libuv::Pipe do
 					@client.write('ping')
 				end
 
+				@client.catch do |reason|
+					@general_failure << reason.inspect
+					@loop.stop
+
+					p "Failed with: #{reason.message}\n#{reason.backtrace}\n"
+				end
+
 				# Stop the loop once the client handle is closed
 				@client.finally do
 					@server.close
@@ -94,7 +101,7 @@ describe Libuv::Pipe do
 		end
 	end
 
-	# This test won't pass on jRuby as java won't expose file descriptors
+	# This test won't pass on windows as pipes don't work like this on windows
 	describe 'unidirectional pipeline' do
 		before :each do
 			system "/usr/bin/mkfifo", @pipefile
@@ -120,7 +127,7 @@ describe Libuv::Pipe do
 					end
 				end
 				@file1.catch do |e|
-					p "Log called: #{level}: #{errorid}\n#{e.message}\n#{e.backtrace.join("\n")}\n"
+					p "Log called: #{e.inspect} - #{e.message}\n"
 				end
 
 				@file2 = @loop.file(@pipefile, File::RDWR|File::NONBLOCK)

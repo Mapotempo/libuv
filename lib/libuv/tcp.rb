@@ -144,27 +144,11 @@ module Libuv
             end
 
 
-            private
+            protected
 
 
             def connect_req
                 ::Libuv::Ext.create_request(:uv_connect)
-            end
-        end
-
-
-        class Socket4 < SocketBase
-
-
-            private
-
-
-            def ip_addr(ip, port)
-                ::Libuv::Ext.ip4_addr(ip, port)
-            end
-
-            def tcp_bind
-                ::Libuv::Ext.tcp_bind(@tcp, @sockaddr)
             end
 
             def tcp_connect(callback)
@@ -175,30 +159,29 @@ module Libuv
                   callback
                 )
             end
+
+            def tcp_bind
+                ::Libuv::Ext.tcp_bind(@tcp, @sockaddr)
+            end
+        end
+
+
+        class Socket4 < SocketBase
+            protected
+
+
+            def ip_addr(ip, port)
+                ::Libuv::Ext.ip4_addr(ip, port)
+            end
         end
 
 
         class Socket6 < SocketBase
-
-
-            private
+            protected
 
 
             def ip_addr(ip, port)
                 ::Libuv::Ext.ip6_addr(ip, port)
-            end
-
-            def tcp_bind
-                ::Libuv::Ext.tcp_bind6(@tcp, @sockaddr)
-            end
-
-            def tcp_connect(callback)
-                ::Libuv::Ext.tcp_connect6(
-                  connect_req,
-                  @tcp,
-                  @sockaddr,
-                  callback
-                )
             end
         end
     end

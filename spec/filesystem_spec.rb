@@ -106,9 +106,14 @@ describe Libuv::Filesystem do
 			@loop.run { |logger|
 				logger.progress &@logger
 
-				@loop.filesystem.unlink(@thefile).then do
+				op = @loop.filesystem.unlink(@thefile)
+				op.then do
 					@loop.stop
 					@log = :success
+				end
+				op.catch do |error|
+					@general_failure << error
+					@loop.stop
 				end
 			}
 

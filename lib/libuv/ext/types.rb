@@ -114,7 +114,7 @@ module Libuv
                    :sin_zero, [:char, 8]
         end
 
-        typedef SockaddrIn.by_value, :sockaddr_in
+        typedef SockaddrIn.by_value, :sockaddr_in4
 
         class U6Addr < FFI::Union
             layout :__u6_addr8, [:uint8, 16],
@@ -163,6 +163,7 @@ module Libuv
 
         typedef UvStat.by_value, :uv_stat_t
 
+        typedef :pointer, :sockaddr_in
         typedef :pointer, :uv_handle_t
         typedef :pointer, :uv_fs_event_t
         typedef :pointer, :uv_fs_poll_t
@@ -205,7 +206,7 @@ module Libuv
         typedef :int,     :events
         typedef :int,     :signal
 
-        callback :uv_alloc_cb,       [:uv_handle_t, :size_t],                            :uv_buf_t
+        callback :uv_alloc_cb,       [:uv_handle_t, :size_t, :pointer],                  :void
         callback :uv_read_cb,        [:uv_stream_t, :ssize_t, :uv_buf_t],                :void
         callback :uv_read2_cb,       [:uv_pipe_t, :ssize_t, :uv_buf_t, :uv_handle_type], :void
         callback :uv_write_cb,       [:uv_write_t, :status],                             :void
