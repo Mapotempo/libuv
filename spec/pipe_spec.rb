@@ -19,7 +19,7 @@ describe Libuv::Pipe do
 
 		@loop.all(@server, @client, @timeout).catch do |reason|
 			@general_failure << reason.inspect
-			p "Failed with: #{reason.message}\n#{reason.backtrace}\n"
+			@general_failure << "Failed with: #{reason.message}\n#{reason.backtrace}\n"
 		end
 
 		begin
@@ -41,9 +41,9 @@ describe Libuv::Pipe do
 			@loop.run { |logger|
 				logger.progress do |level, errorid, error|
 					begin
-						p "Log called: #{level}: #{errorid}\n#{error.message}\n#{error.backtrace}\n"
+						@general_failure << "Log called: #{level}: #{errorid}\n#{error.message}\n#{error.backtrace}\n"
 					rescue Exception
-						p 'error in logger'
+						@general_failure << 'error in logger'
 					end
 				end
 
@@ -62,7 +62,7 @@ describe Libuv::Pipe do
 					@general_failure << reason.inspect
 					@loop.stop
 
-					p "Failed with: #{reason.message}\n#{reason.backtrace}\n"
+					@general_failure << "Failed with: #{reason.message}\n#{reason.backtrace}\n"
 				end
 
 				# start listening
@@ -86,7 +86,7 @@ describe Libuv::Pipe do
 					@general_failure << reason.inspect
 					@loop.stop
 
-					p "Failed with: #{reason.message}\n#{reason.backtrace}\n"
+					@general_failure << "Failed with: #{reason.message}\n#{reason.backtrace}\n"
 				end
 
 				# Stop the loop once the client handle is closed
@@ -102,7 +102,7 @@ describe Libuv::Pipe do
 	end
 
 	# This test won't pass on windows as pipes don't work like this on windows
-	describe 'unidirectional pipeline' do
+	describe 'unidirectional pipeline', :unix_only => true do
 		before :each do
 			system "/usr/bin/mkfifo", @pipefile
 		end
@@ -110,7 +110,7 @@ describe Libuv::Pipe do
 		it "should send work to a consumer" do
 			@loop.run { |logger|
 				logger.progress do |level, errorid, error|
-					p "Log called: #{level}: #{errorid}\n#{error.message}\n#{error.backtrace.join("\n")}\n"
+					@general_failure << "Log called: #{level}: #{errorid}\n#{error.message}\n#{error.backtrace.join("\n")}\n"
 				end
 
 
@@ -127,7 +127,7 @@ describe Libuv::Pipe do
 					end
 				end
 				@file1.catch do |e|
-					p "Log called: #{e.inspect} - #{e.message}\n"
+					@general_failure << "Log called: #{e.inspect} - #{e.message}\n"
 				end
 
 				@file2 = @loop.file(@pipefile, File::RDWR|File::NONBLOCK)

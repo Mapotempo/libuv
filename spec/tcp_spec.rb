@@ -35,9 +35,9 @@ describe Libuv::TCP do
 			@loop.run { |logger|
 				logger.progress do |level, errorid, error|
 					begin
-						p "Log called: #{level}: #{errorid}\n#{error.message}\n#{error.backtrace.join("\n")}\n"
+						@general_failure << "Log called: #{level}: #{errorid}\n#{error.message}\n#{error.backtrace.join("\n")}\n"
 					rescue Exception
-						p 'error in logger'
+						@general_failure << 'error in logger'
 					end
 				end
 
@@ -98,9 +98,9 @@ describe Libuv::TCP do
 		@loop.run { |logger|
 			logger.progress do |level, errorid, error|
 				begin
-					p "Log called: #{level}: #{errorid}\n#{error.message}\n#{error.backtrace.join("\n")}\n"
+					@general_failure << "Log called: #{level}: #{errorid}\n#{error.message}\n#{error.backtrace.join("\n")}\n"
 				rescue Exception
-					p 'error in logger'
+					@general_failure << 'error in logger'
 				end
 			end
 
@@ -167,9 +167,9 @@ describe Libuv::TCP do
 				@loop2.run do  |logger|
 					logger.progress do |level, errorid, error|
 						begin
-							p "Log called: #{level}: #{errorid}\n#{error.message}\n#{error.backtrace.join("\n")}\n"
+							@general_failure << "Log called: #{level}: #{errorid}\n#{error.message}\n#{error.backtrace.join("\n")}\n"
 						rescue Exception
-							p 'error in logger'
+							@general_failure << 'error in logger'
 						end
 					end
 			
