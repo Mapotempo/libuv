@@ -93,7 +93,6 @@ module Libuv
         ]
 
         typedef UvBuf.by_ref, :uv_buf_t
-        typedef UvFSStat.by_value, :uv_fs_stat_t
 
 
         class Sockaddr < FFI::Struct
@@ -161,8 +160,6 @@ module Libuv
                     :st_birthtim, UvTimespec
         end
 
-        typedef UvStat.by_value, :uv_stat_t
-
         typedef :pointer, :sockaddr_in
         typedef :pointer, :uv_handle_t
         typedef :pointer, :uv_fs_event_t
@@ -228,9 +225,8 @@ module Libuv
         callback :uv_after_work_cb,  [:uv_work_t, :int],                                 :void
         callback :uv_fs_event_cb,    [:uv_fs_event_t, :string, :int, :int],              :void
         callback :uv_fs_poll_cb,     [:uv_fs_poll_t, :status, :uv_stat_t, :uv_stat_t],   :void
-        #callback :uv_signal_cb,      []
         callback :uv_udp_send_cb,    [:uv_udp_send_t, :int],                             :void
-        callback :uv_udp_recv_cb,    [:uv_udp_t, :ssize_t, :uv_buf_t, Sockaddr, :uint],  :void
+        callback :uv_udp_recv_cb,    [:uv_udp_t, :ssize_t, :uv_buf_t, Sockaddr.by_ref, :uint],  :void
         callback :uv_cb,             [],                                                 :void
     end
 end

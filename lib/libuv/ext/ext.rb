@@ -209,8 +209,8 @@ module Libuv
 
         attach_function :ip4_addr, :uv_ip4_addr, [:string, :int, :sockaddr_in4], :int, :blocking => true
         attach_function :ip6_addr, :uv_ip6_addr, [:string, :int, :sockaddr_in6], :int, :blocking => true
-        attach_function :ip4_name, :uv_ip4_name, [SockaddrIn.by_ref, :pointer, :size_t], :int, :blocking => true
-        attach_function :ip6_name, :uv_ip6_name, [SockaddrIn6.by_ref, :pointer, :size_t], :int, :blocking => true
+        attach_function :ip4_name, :uv_ip4_name, [:sockaddr_in4, :pointer, :size_t], :int, :blocking => true
+        attach_function :ip6_name, :uv_ip6_name, [:sockaddr_in6, :pointer, :size_t], :int, :blocking => true
         #TODO:: attach_function :inet_ntop, :uv_inet_ntop, [:int, :pointer, ]
         #TODO:: attach_function :uv_inet_pton
 
