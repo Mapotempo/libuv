@@ -204,15 +204,15 @@ module Libuv
         # Get a new Prepare handle
         # 
         # @return [::Libuv::Prepare]
-        def prepare
-            Prepare.new(@loop)
+        def prepare(callback = nil, &blk)
+            Prepare.new(@loop, callback || blk)
         end
 
         # Get a new Check handle
         # 
         # @return [::Libuv::Check]
-        def check
-            Check.new(@loop)
+        def check(callback = nil, &blk)
+            Check.new(@loop, callback || blk)
         end
 
         # Get a new Idle handle
