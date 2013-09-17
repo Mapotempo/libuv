@@ -3,7 +3,7 @@ module Libuv
         MSG_NO_PROC = 'no block given'
 
         def assert_block(proc, msg = MSG_NO_PROC)
-            raise ArgumentError, msg, caller if proc.nil?
+            raise ArgumentError, msg, caller unless proc.respond_to? :call
         end
 
         def assert_type(type, actual, msg = nil)

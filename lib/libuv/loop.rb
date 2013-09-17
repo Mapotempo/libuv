@@ -293,7 +293,7 @@ module Libuv
             callback ||= block
             assert_block(callback)
 
-            if @reactor_thread == Thread.current
+            if reactor_thread?
                 block.call
             else
                 @run_queue << callback
@@ -310,7 +310,7 @@ module Libuv
             assert_block(callback)
 
             @run_queue << callback
-            if @reactor_thread == Thread.current
+            if reactor_thread?
                 # Create a next tick timer
                 if not @next_tick_scheduled
                     @next_tick.start(0)
@@ -333,6 +333,27 @@ module Libuv
         # Closes handles opened by the loop class and completes the current loop iteration (thread safe)
         def stop
             @stop_loop.call
+        end
+
+        # True if the calling thread is the same thread as the reactor.
+        #
+        # @return [Boolean]
+        def reactor_thread?
+            @reactor_thread == Thread.current
+        end
+
+        # Exposed to allow joining on the thread, when run in a multithreaded environment. Performing other actions on the thread has undefined semantics (read: a dangerous endevor).
+        #
+        # @return [Thread]
+        def reactor_thread
+            @reactor_thread
+        end
+
+        # Tells you whether the Libuv reactor loop is currently running.
+        #
+        # @return [Boolean]
+        def reactor_running?
+            !@reactor_thread.nil?
         end
     end
 end

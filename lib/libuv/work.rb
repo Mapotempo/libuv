@@ -3,6 +3,10 @@ module Libuv
         include Resource, Listener
 
 
+        attr_reader :error
+        attr_reader :result
+
+
         # @param loop [::Libuv::Loop] loop this work request will be associated
         # @param work [Proc] callback to be called in the thread pool
         def initialize(loop, work)
@@ -46,16 +50,21 @@ module Libuv
             @complete = true
             ::Libuv::Ext.free(req)
 
-            if @error
-                @defer.reject(@error)
+            e = check_result(status)
+            if e
+                @defer.reject(e)
             else
-                resolve @defer, status
+                if @error
+                    @defer.reject(@error)
+                else
+                    @defer.resolve(@result)
+                end
             end
         end
 
         def on_work(req)
             begin
-                @work.call
+                @result = @work.call
             rescue Exception => e
                 @error = e   # Catch errors for promise resolution
             end

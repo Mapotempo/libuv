@@ -14,6 +14,7 @@ module Libuv
             
             timer_ptr = ::Libuv::Ext.create_handle(:uv_timer)
             error = check_result(::Libuv::Ext.timer_init(loop.handle, timer_ptr))
+            @stopped = true
 
             super(timer_ptr, error)
         end
@@ -24,7 +25,8 @@ module Libuv
         # @param repeat [Fixnum] time in milliseconds between repeated callbacks after the first
         def start(timeout, repeat = 0)
             return if @closed
-            
+            @stopped = false
+
             assert_type(Integer, timeout, TIMEOUT_ERROR)
             assert_type(Integer, repeat, REPEAT_ERROR)
 
@@ -34,7 +36,8 @@ module Libuv
 
         # Disables the timer.
         def stop
-            return if @closed
+            return if @stopped || @closed
+            @stopped = true
             error = check_result ::Libuv::Ext.timer_stop(handle)
             reject(error) if error
         end

@@ -124,7 +124,12 @@ module Libuv
 
             if e
                 ::Libuv::Ext.free(base)
-                reject(e)
+                # I assume this is desirable behaviour
+                if e.is_a? ::Libuv::Error::EOF
+                    close   # Close gracefully 
+                else
+                    reject(e)
+                end
             else
                 data = base.read_string(nread)
                 ::Libuv::Ext.free(base)
