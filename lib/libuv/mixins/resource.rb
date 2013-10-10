@@ -3,10 +3,10 @@ module Libuv
 
 
         def resolve(deferred, rc)
-            if rc.nil? || rc >= 0
-                deferred.resolve(nil)
-            else
+            if rc && rc < 0
                 deferred.reject(@loop.lookup_error(rc))
+            else
+                deferred.resolve(nil)
             end
         end
 

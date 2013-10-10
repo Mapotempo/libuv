@@ -9,11 +9,7 @@ module Libuv
         require 'libuv/ext/platform/linux.rb' if FFI::Platform.linux?
         require 'libuv/ext/platform/unix.rb' if FFI::Platform.unix?
         require 'libuv/ext/platform/darwin_x64.rb' if FFI::Platform.mac? and FFI::Platform::ARCH == 'x86_64'
-        if FFI::Platform.windows?
-            require 'libuv/ext/platform/windows.rb'
-        else
-            attach_function :ntohs, [:ushort], :ushort, :blocking => true
-        end
+        require 'libuv/ext/platform/windows.rb' if FFI::Platform.windows?
 
         enum :uv_handle_type, [
             :uv_unknown_handle, 0,

@@ -32,6 +32,12 @@ module Libuv
             end
         end
 
+        def open(fd)
+            return if @closed
+            error = check_result UV.udp_open(handle, fd)
+            reject(error) if error
+        end
+
         def sockname
             return [] if @closed
             sockaddr, len = get_sockaddr_and_len

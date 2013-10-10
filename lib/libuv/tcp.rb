@@ -33,20 +33,23 @@ module Libuv
             end
         end
 
+        def open(fd)
+            return if @closed
+            error = check_result UV.tcp_open(handle, fd)
+            reject(error) if error
+        end
+
         def accept(callback = nil, &blk)
-            tcp = nil
             begin
                 raise RuntimeError, CLOSED_HANDLE_ERROR if @closed
                 tcp = TCP.new(loop, handle)
-            rescue Exception => e
-                @loop.log :info, :tcp_accept_failed, e
-            end
-            if tcp
                 begin
                     (callback || blk).call(tcp)
                 rescue Exception => e
                     @loop.log :error, :tcp_accept_cb, e
                 end
+            rescue Exception => e
+                @loop.log :info, :tcp_accept_failed, e
             end
             nil
         end
