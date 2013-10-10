@@ -5,19 +5,22 @@ module Libuv
         include Resource, Assertions
 
 
+        LOOPS = ThreadSafe::Cache.new
+
+
         module ClassMethods
             # Get default loop
             # 
             # @return [::Libuv::Loop]
             def default
-                create(::Libuv::Ext.default_loop)
+                return on_thread? || create(::Libuv::Ext.default_loop)
             end
 
             # Create new Libuv loop
             # 
             # @return [::Libuv::Loop]
             def new
-                create(::Libuv::Ext.loop_new)
+                return on_thread? || create(::Libuv::Ext.loop_new)
             end
 
             # Build a Ruby Libuv loop from an existing loop pointer
@@ -25,6 +28,13 @@ module Libuv
             # @return [::Libuv::Loop]
             def create(pointer)
                 allocate.tap { |i| i.send(:initialize, FFI::AutoPointer.new(pointer, ::Libuv::Ext.method(:loop_delete))) }
+            end
+
+            # Checks for the existence of a loop on the current thread
+            #
+            # @return [::Libuv::Loop | nil]
+            def on_thread?
+                LOOPS[Thread.current]
             end
         end
         extend ClassMethods
@@ -59,6 +69,8 @@ module Libuv
 
             # Create an async call for ending the loop
             @stop_loop = Async.new @loop do
+                LOOPS.delete(@reactor_thread)
+                @reactor_thread = nil
                 @process_queue.close
                 @stop_loop.close
                 @next_tick.close
@@ -75,17 +87,19 @@ module Libuv
         # @yieldparam promise [::Libuv::Q::Promise] Yields a promise that can be used for logging unhandled
         #   exceptions on the loop.
         def run(run_type = :UV_RUN_DEFAULT)
-            @loop_notify = @loop.defer
+            if @reactor_thread.nil?
+                @loop_notify = @loop.defer
 
-            begin
-                @reactor_thread = Thread.current
-                yield  @loop_notify.promise if block_given?
-                ::Libuv::Ext.run(@pointer, run_type)  # This is blocking
-            ensure
-                @reactor_thread = nil
-                @run_queue.clear
+                begin
+                    @reactor_thread = Thread.current
+                    LOOPS[@reactor_thread] = @loop
+                    yield  @loop_notify.promise if block_given?
+                    ::Libuv::Ext.run(@pointer, run_type)  # This is blocking
+                ensure
+                    @reactor_thread = nil
+                    @run_queue.clear
+                end
             end
-
             @loop
         end
 
@@ -139,7 +153,7 @@ module Libuv
             ::Libuv::Ext.update_time(@pointer)
         end
 
-        # Get current time in microseconds
+        # Get current time in milliseconds
         # 
         # @return [Fixnum]
         def now

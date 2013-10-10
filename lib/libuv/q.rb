@@ -241,7 +241,8 @@ module Libuv
 			# Creates a promise object associated with this deferred
 			#
 			def promise
-				DeferredPromise.new(@loop, self)
+				@promise ||= DeferredPromise.new(@loop, self)
+				@promise # Should only ever be one per deferred
 			end
 
 			#
