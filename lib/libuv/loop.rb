@@ -13,14 +13,14 @@ module Libuv
             # 
             # @return [::Libuv::Loop]
             def default
-                return on_thread? || create(::Libuv::Ext.default_loop)
+                return current || create(::Libuv::Ext.default_loop)
             end
 
             # Create new Libuv loop
             # 
             # @return [::Libuv::Loop]
             def new
-                return on_thread? || create(::Libuv::Ext.loop_new)
+                return current || create(::Libuv::Ext.loop_new)
             end
 
             # Build a Ruby Libuv loop from an existing loop pointer
@@ -33,7 +33,7 @@ module Libuv
             # Checks for the existence of a loop on the current thread
             #
             # @return [::Libuv::Loop | nil]
-            def on_thread?
+            def current
                 LOOPS[Thread.current]
             end
         end
