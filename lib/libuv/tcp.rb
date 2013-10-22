@@ -33,8 +33,13 @@ module Libuv
             end
         end
 
-        def open(fd)
+        def open(fd, binding = true, callback = nil, &blk)
             return if @closed
+            if binding
+                @on_listen = callback || blk
+            else
+                @callback = callback || blk
+            end
             error = check_result UV.tcp_open(handle, fd)
             reject(error) if error
         end
@@ -127,7 +132,11 @@ module Libuv
 
         def on_connect(req, status)
             ::Libuv::Ext.free(req)
-            @callback.call(self)
+            begin
+                @callback.call(self)
+            rescue Exception => e
+                @loop.log :error, :connect_cb, e
+            end
         end
 
 

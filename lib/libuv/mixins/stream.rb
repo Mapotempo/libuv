@@ -37,7 +37,7 @@ module Libuv
         end
 
         def write(data)
-            # NOTE:: Similar to udp.rb -> write
+            # NOTE:: Similar to udp.rb -> send
             deferred = @loop.defer
             if !@closed
                 begin

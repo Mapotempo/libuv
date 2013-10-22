@@ -19,20 +19,17 @@ module Libuv
             super(udp_ptr, error)
         end
 
-        def bind(ip, port, ipv6_only = false)
+        def bind(ip, port)
             return if @closed
             assert_type(String, ip, IP_ARGUMENT_ERROR)
             assert_type(Integer, port, PORT_ARGUMENT_ERROR)
 
-            begin
-                @udp_socket = create_socket(IPAddr.new(ip), port)
-                @udp_socket.bind(ipv6_only)
-            rescue Exception => e
-                reject(e)
-            end
+            sockaddr = create_sockaddr(ip, port)
+            error = check_result ::Libuv::Ext.udp_bind(handle, sockaddr, 0)
+            reject(error) if error
         end
 
-        def open(fd)
+        def open(fd, binding = true, callback = nil, &blk)
             return if @closed
             error = check_result UV.udp_open(handle, fd)
             reject(error) if error
@@ -63,13 +60,17 @@ module Libuv
             reject(error) if error
         end
 
-        def start_recv
+        # Starts reading from the handle
+        # Renamed to match Stream
+        def start_read
             return if @closed
             error = check_result ::Libuv::Ext.udp_recv_start(handle, callback(:on_allocate), callback(:on_recv))
             reject(error) if error
         end
 
-        def stop_recv
+        # Stops reading from the handle
+        # Renamed to match Stream
+        def stop_read
             return if @closed
             error = check_result ::Libuv::Ext.udp_recv_stop(handle)
             reject(error) if error
@@ -84,10 +85,10 @@ module Libuv
                     assert_type(Integer, port, PORT_ARGUMENT_ERROR)
                     assert_type(String, data, SEND_DATA_ERROR)
 
-                    @udp_socket = create_socket(IPAddr.new(ip), port)
+                    sockaddr = create_sockaddr(ip, port)
 
                     # local as this variable will be avaliable until the handle is closed
-                    @sent_callbacks = @sent_callbacks || []
+                    @sent_callbacks ||= []
 
                     #
                     # create the curried callback
@@ -103,16 +104,21 @@ module Libuv
                     #
                     # Save the callback and return the promise
                     #
-                    begin
-                        @sent_callbacks << [deferred, callback]
-                        @udp_socket.send(data, callback)
-                    rescue Exception => e
+                    @sent_callbacks << [deferred, callback]
+                    error = check_result ::Libuv::Ext.udp_send(
+                        send_req,
+                        handle,
+                        buf_init(data),
+                        1,
+                        sockaddr,
+                        callback
+                    )
+                    if error
                         @sent_callbacks.pop
-                        deferred.reject(e)
-
-                        reject(e)       # close the handle
+                        deferred.reject(error)
+                        reject(error)       # close the handle
                     end
-                rescue Exception => e
+                rescue StandardError => e
                     deferred.reject(e)
                 end
             else
@@ -159,8 +165,34 @@ module Libuv
             reject(error) if error
         end
 
+        def progress(callback = nil, &blk)
+            @progress = callback || blk
+        end
+
 
         private
+
+
+        def send_req
+            ::Libuv::Ext.create_request(:uv_udp_send)
+        end
+
+        def buf_init(data)
+            ::Libuv::Ext.buf_init(FFI::MemoryPointer.from_string(data), data.respond_to?(:bytesize) ? data.bytesize : data.size)
+        end
+
+        def create_sockaddr(ip, port)
+            ips = IPAddr.new(ip)
+            if ips.ipv4?
+                addr = Ext::SockaddrIn.new
+                check_result! ::Libuv::Ext.ip4_addr(ip, port, addr)
+                addr
+            else
+                addr = Ext::SockaddrIn6.new
+                check_result! ::Libuv::Ext.ip6_addr(ip, port, addr)
+                addr
+            end
+        end
 
 
         def on_allocate(client, suggested_size, buffer)
@@ -181,83 +213,12 @@ module Libuv
                 unless sockaddr.null?
                     ip, port = get_ip_and_port(UV::Sockaddr.new(sockaddr))
                 end
-                defer.notify(data, ip, port)   # stream the data
-            end
-        end
-
-        def create_socket(ip, port)
-            if ip.ipv4?
-                Socket4.new(@loop, handle, ip, port)
-            else
-                Socket6.new(@loop, handle, ip, port)
-            end
-        end
-
-
-        class SocketBase
-            include Resource
-
-            def initialize(loop, udp, ip, port)
-                @loop, @udp, @sockaddr = loop, udp, ip_addr(ip.to_s, port)
-            end
-
-            def bind(ipv6_only = false)
-                check_result! udp_bind(ipv6_only)
-            end
-
-            def send(data, callback)
-                check_result! udp_send(data, callback)
-            end
-
-
-            private
-
-
-            def send_req
-                ::Libuv::Ext.create_request(:uv_udp_send)
-            end
-
-            def buf_init(data)
-                ::Libuv::Ext.buf_init(FFI::MemoryPointer.from_string(data), data.respond_to?(:bytesize) ? data.bytesize : data.size)
-            end
-
-            def udp_bind(ipv6_only)
-                ::Libuv::Ext.udp_bind(@udp, @sockaddr, 0)
-            end
-
-            def udp_send(data, callback)
-                ::Libuv::Ext.udp_send(
-                    send_req,
-                    @udp,
-                    buf_init(data),
-                    1,
-                    @sockaddr,
-                    callback
-                )
-            end
-        end
-
-
-        class Socket4 < SocketBase
-            protected
-
-
-            def ip_addr(ip, port)
-                addr = Ext::SockaddrIn.new
-                check_result! ::Libuv::Ext.ip4_addr(ip, port, addr)
-                addr
-            end
-        end
-
-
-        class Socket6 < SocketBase
-            protected
-
-
-            def ip_addr(ip, port)
-                addr = Ext::SockaddrIn6.new
-                check_result! ::Libuv::Ext.ip6_addr(ip, port, addr)
-                addr
+                
+                begin
+                    @progress.call data, ip, port, self
+                rescue Exception => e
+                    @loop.log :error, :udp_progress_cb, e
+                end
             end
         end
     end
