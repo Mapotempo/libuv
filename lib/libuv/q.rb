@@ -146,6 +146,10 @@ module Libuv
 				
 				result.promise
 			end
+
+			def resolved?
+				pending.nil?
+			end
 			
 			
 			private
@@ -188,6 +192,10 @@ module Libuv
 				}
 				
 				result.promise
+			end
+
+			def resolved?
+				true
 			end
 		end
 		
@@ -260,6 +268,10 @@ module Libuv
 						end
 					end
 				end
+			end
+
+			def resolved?
+				@pending.nil?
 			end
 		end
 		
