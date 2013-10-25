@@ -185,9 +185,21 @@ module Libuv
 				
 				@loop.next_tick {
 					if @error
-						result.resolve(errback.nil? ? Q.reject(@loop, @response) : errback.call(@response))
+						begin
+							result.resolve(errback.nil? ? Q.reject(@loop, @response) : errback.call(@response))
+						rescue Exception => e
+							#warn "Unhandled exception: #{e.message}\n#{e.backtrace.join("\n")}\n"
+							result.reject(e)
+							@loop.log(:error, :q_reject_cb, e)
+						end
 					else
-						result.resolve(callback.nil? ? @response : callback.call(@response))
+						begin
+							result.resolve(callback.nil? ? @response : callback.call(@response))
+						rescue Exception => e
+							#warn "\nUnhandled exception: #{e.message}\n#{e.backtrace.join("\n")}\n"
+							result.reject(e)
+							@loop.log(:error, :q_resolve_cb, e)
+						end
 					end
 				}
 				
