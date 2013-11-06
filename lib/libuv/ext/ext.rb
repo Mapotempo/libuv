@@ -86,8 +86,6 @@ module Libuv
         attach_function :is_closing, :uv_is_closing, [:uv_handle_t], :int, :blocking => true
 
         attach_function :buf_init, :uv_buf_init, [:pointer, :size_t], UvBuf.by_value, :blocking => true
-        attach_function :strlcpy, :uv_strlcpy, [:string, :string, :size_t], :size_t, :blocking => true
-        attach_function :strlcat, :uv_strlcat, [:string, :string, :size_t], :size_t, :blocking => true
 
         attach_function :listen, :uv_listen, [:uv_stream_t, :int, :uv_connection_cb], :int, :blocking => true
         attach_function :accept, :uv_accept, [:uv_stream_t, :uv_stream_t], :int, :blocking => true
