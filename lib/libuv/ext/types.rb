@@ -13,7 +13,18 @@ module Libuv
                    :sa_family, :sa_family_t,
                    :sa_data, [:char, 14]
         end
-        
+
+        class UvAddrinfo < FFI::Struct
+            layout  :flags, :int,
+                    :family, :int,
+                    :socktype, :int,
+                    :protocol, :int,
+                    :addrlen, :socklen_t,
+                    :addr, Sockaddr.by_ref,
+                    :canonname, :string,
+                    :next, :pointer
+        end
+
         require 'libuv/ext/platform/linux.rb' if FFI::Platform.linux?
         require 'libuv/ext/platform/unix.rb' if FFI::Platform.unix?
         require 'libuv/ext/platform/darwin_x64.rb' if FFI::Platform.mac? and FFI::Platform::ARCH == 'x86_64'
