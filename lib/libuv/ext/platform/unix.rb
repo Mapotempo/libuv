@@ -19,8 +19,8 @@ module Libuv
                     :socktype, :int,
                     :protocol, :int,
                     :addrlen, :socklen_t,
-                    :canonname, :string,
                     :addr, Sockaddr.by_ref,
+                    :canonname, :string,
                     :next, UvAddrinfo.by_ref
         end
 

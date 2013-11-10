@@ -8,5 +8,16 @@ module Libuv
                     :blksize_t, :st_flags, :uint32, :st_gen, :uint32, :st_lspare,
                     :int32, :st_qspare_0, :int64, :st_qspare_1, :int64
         end
+
+        class UvAddrinfo < FFI::Struct
+            layout  :flags, :int,
+                    :family, :int,
+                    :socktype, :int,
+                    :protocol, :int,
+                    :addrlen, :socklen_t,
+                    :canonname, :string,
+                    :addr, Sockaddr.by_ref,
+                    :next, UvAddrinfo.by_ref
+        end
     end
 end
