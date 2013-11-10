@@ -29,6 +29,7 @@ module Libuv
     require 'libuv/idle'        # Called when there are no events to process
     require 'libuv/work'        # Provide work to be completed on another thread (thread pool)
     require 'libuv/udp'         # Communicate over UDP
+    require 'libuv/dns'         # Async DNS lookup
 
     # Streams
     require 'libuv/pipe'        # Communicate over Pipes

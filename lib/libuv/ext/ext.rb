@@ -155,9 +155,9 @@ module Libuv
         attach_function :timer_again, :uv_timer_again, [:uv_timer_t], :int, :blocking => true
         attach_function :timer_set_repeat, :uv_timer_set_repeat, [:uv_timer_t, :int64_t], :void, :blocking => true
         attach_function :timer_get_repeat, :uv_timer_get_repeat, [:uv_timer_t], :int64_t, :blocking => true
-
-        attach_function :getaddrinfo, :uv_getaddrinfo, [:uv_loop_t, :uv_getaddrinfo_t, :uv_getaddrinfo_cb, :string, :string, :addrinfo], :int, :blocking => true
-        attach_function :freeaddrinfo, :uv_freeaddrinfo, [:addrinfo], :void, :blocking => true
+#:addrinfo
+        attach_function :getaddrinfo, :uv_getaddrinfo, [:uv_loop_t, :uv_getaddrinfo_t, :uv_getaddrinfo_cb, :string, :string, UvAddrinfo.by_ref], :int, :blocking => true
+        attach_function :freeaddrinfo, :uv_freeaddrinfo, [UvAddrinfo.by_ref], :void, :blocking => true
 
         attach_function :spawn, :uv_spawn, [:uv_loop_t, :uv_process_t, :uv_options_t], :int, :blocking => true
         attach_function :process_kill, :uv_process_kill, [:uv_process_t, :int], :int, :blocking => true

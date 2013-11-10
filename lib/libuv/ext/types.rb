@@ -1,3 +1,5 @@
+require 'socket'    # Addrinfo
+
 module FFI::Platform
     def self.linux?
         IS_LINUX
@@ -6,6 +8,12 @@ end
 
 module Libuv
     module Ext
+        class Sockaddr < FFI::Struct
+            layout :sa_len, :uint8,
+                   :sa_family, :sa_family_t,
+                   :sa_data, [:char, 14]
+        end
+        
         require 'libuv/ext/platform/linux.rb' if FFI::Platform.linux?
         require 'libuv/ext/platform/unix.rb' if FFI::Platform.unix?
         require 'libuv/ext/platform/darwin_x64.rb' if FFI::Platform.mac? and FFI::Platform::ARCH == 'x86_64'
@@ -90,13 +98,6 @@ module Libuv
 
         typedef UvBuf.by_ref, :uv_buf_t
 
-
-        class Sockaddr < FFI::Struct
-            layout :sa_len, :uint8,
-                   :sa_family, :sa_family_t,
-                   :sa_data, [:char, 14]
-        end
-
         class InAddr < FFI::Struct
             layout :s_addr, :in_addr_t
         end
@@ -173,7 +174,6 @@ module Libuv
         typedef :pointer, :uv_signal_t
         typedef :pointer, :uv_process_t
         typedef :pointer, :uv_getaddrinfo_cb
-        typedef :pointer, :addrinfo
         typedef :pointer, :uv_work_t
         typedef :pointer, :uv_loop_t
         typedef :pointer, :uv_shutdown_t
@@ -214,7 +214,7 @@ module Libuv
         callback :uv_prepare_cb,     [:uv_prepare_t, :status],                           :void
         callback :uv_check_cb,       [:uv_check_t, :status],                             :void
         callback :uv_idle_cb,        [:uv_idle_t, :status],                              :void
-        callback :uv_getaddrinfo_cb, [:uv_getaddrinfo_t, :status, :addrinfo],            :void
+        callback :uv_getaddrinfo_cb, [:uv_getaddrinfo_t, :status, UvAddrinfo.by_ref],    :void
         callback :uv_exit_cb,        [:uv_process_t, :int, :int],                        :void
         callback :uv_walk_cb,        [:uv_handle_t, :pointer],                           :void
         callback :uv_work_cb,        [:uv_work_t],                                       :void

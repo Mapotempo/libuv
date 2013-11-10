@@ -13,6 +13,17 @@ module Libuv
                     :st_mtime, :time_t, :st_ctime, :time_t
         end
 
+        class UvAddrinfo < FFI::Struct
+            layout  :flags, :int,
+                    :family, :int,
+                    :socktype, :int,
+                    :protocol, :int,
+                    :addrlen, :socklen_t,
+                    :canonname, :string,
+                    :addr, Sockaddr.by_ref,
+                    :next, UvAddrinfo.by_ref
+        end
+
         attach_function :ntohs, [:ushort], :ushort, :blocking => true
     end
 end

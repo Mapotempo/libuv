@@ -77,14 +77,14 @@ module Libuv
             return [] if @closed
             sockaddr, len = get_sockaddr_and_len
             check_result! ::Libuv::Ext.tcp_getsockname(handle, sockaddr, len)
-            get_ip_and_port(::Libuv::Sockaddr.new(sockaddr), len.get_int(0))
+            get_ip_and_port(::Libuv::Ext::Sockaddr.new(sockaddr), len.get_int(0))
         end
 
         def peername
             return [] if @closed
             sockaddr, len = get_sockaddr_and_len
             check_result! ::Libuv::Ext.tcp_getpeername(handle, sockaddr, len)
-            get_ip_and_port(::Libuv::Sockaddr.new(sockaddr), len.get_int(0))
+            get_ip_and_port(::Libuv::Ext::Sockaddr.new(sockaddr), len.get_int(0))
         end
 
         def enable_nodelay

@@ -25,5 +25,16 @@ module Libuv
                     :st_ino, :ino_t, :st_mode, :mode_t, :st_mtime, :time_t, :st_nlink, :nlink_t,
                     :st_rdev, :dev_t, :st_size, :off_t, :st_uid, :uid_t
         end
+
+        class UvAddrinfo < FFI::Struct
+            layout  :flags, :int,
+                    :family, :int,
+                    :socktype, :int,
+                    :protocol, :int,
+                    :addrlen, :size_t,
+                    :canonname, :string,
+                    :addr, Sockaddr.by_ref,
+                    :next, UvAddrinfo.by_ref
+        end
     end
 end

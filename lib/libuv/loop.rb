@@ -269,6 +269,18 @@ module Libuv
             Work.new(@loop, callback)    # Work is a promise object
         end
 
+        # Lookup a hostname
+        #
+        # @param hostname [String] the domain name to lookup
+        # @param port [Integer, String] the service being connected too
+        # @param callback [Proc] the callback to be called on success
+        # @return [::Libuv::Dns]
+        def lookup(hostname, hint = :IPv4, port = 9, &block)
+            dns = Dns.new(@loop, hostname, port, hint)    # Work is a promise object
+            dns.then block if block_given?
+            dns
+        end
+
         # Get a new FSEvent instance
         # 
         # @param path [String] the path to the file or folder for watching

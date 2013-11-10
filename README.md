@@ -38,7 +38,7 @@ Check out the [yard documentation](http://rubydoc.info/gems/libuv/Libuv/Loop)
 
 ## Installation
 
-```Shell
+```shell
   gem install libuv
 ```
 
@@ -62,7 +62,7 @@ or
   * if you have a compatible `libuv.(so | dylib | dll)` on the PATH already
 
 
-## What's supported
+## Libuv features supported
 
 * TCP
 * UDP
@@ -72,11 +72,11 @@ or
 * Prepare
 * Check
 * Idle
-* Async
 * Signals
+* Async callbacks
+* Async DNS Resolution
 * Filesystem Events
-* File manipulation
 * Filesystem manipulation
+* File manipulation
 * Errors
 * Work queue (thread pool)
-
