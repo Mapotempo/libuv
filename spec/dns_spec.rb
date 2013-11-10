@@ -19,7 +19,7 @@ describe Libuv::Dns do
 		end
 	end
 	
-	it "should resolve localhost using IP4" do
+	it "should resolve localhost using IP4", :network => true do
 		@loop.run { |logger|
 			logger.progress do |level, errorid, error|
 				begin
@@ -42,7 +42,7 @@ describe Libuv::Dns do
 		@result.should == '127.0.0.1'
 	end
 
-	it "should resolve localhost using IP6" do
+	it "should resolve localhost using IP6", :network => true do
 		@loop.run { |logger|
 			logger.progress do |level, errorid, error|
 				begin
@@ -63,5 +63,28 @@ describe Libuv::Dns do
 
 		@general_failure.should == []
 		@result.should == '::1'
+	end
+
+	it "should resolve loop back" do
+		@loop.run { |logger|
+			logger.progress do |level, errorid, error|
+				begin
+					p "Log called: #{level}: #{errorid}\n#{error.message}\n#{error.backtrace.join("\n")}\n"
+				rescue Exception
+					p 'error in logger'
+				end
+			end
+
+			@loop.lookup('127.0.0.1').then proc { |addrinfo|
+				@result = addrinfo[0][0]
+				@loop.stop
+			}, proc { |err|
+				@general_failure << err
+				@loop.stop
+			}
+		}
+
+		@general_failure.should == []
+		@result.should == '127.0.0.1'
 	end
 end

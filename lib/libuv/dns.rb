@@ -68,17 +68,16 @@ module Libuv
                 begin
                     current = addrinfo
                     @results = []
-                    begin
+                    while !current.null?
                         @results << get_ip_and_port(current[:addr])
                         current = current[:next]
-                    end while !current.null?
+                    end
                     @defer.resolve(@results)
                 rescue Exception => e
                     @defer.reject(e)
                 end
+                ::Libuv::Ext.freeaddrinfo(addrinfo)
             end
-
-            ::Libuv::Ext.freeaddrinfo(addrinfo)
         end
     end
 end
