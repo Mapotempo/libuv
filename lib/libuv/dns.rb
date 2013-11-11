@@ -78,6 +78,9 @@ module Libuv
                 end
                 ::Libuv::Ext.freeaddrinfo(addrinfo)
             end
+
+            # Clean up references
+            clear_callbacks
         end
     end
 end

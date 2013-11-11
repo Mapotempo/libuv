@@ -5,6 +5,7 @@ module Libuv
 
         attr_accessor :storage  # A place for general storage
         attr_reader :closed
+        attr_reader :loop
 
 
         def initialize(pointer, error)
@@ -58,7 +59,6 @@ module Libuv
         protected
 
 
-        def loop; @loop; end
         def handle; @pointer; end
         def defer; @defer; end
 

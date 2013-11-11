@@ -60,6 +60,9 @@ module Libuv
                     @defer.resolve(@result)
                 end
             end
+            
+            # Clean up references
+            clear_callbacks
         end
 
         def on_work(req)
