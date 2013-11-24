@@ -1,4 +1,5 @@
 require 'ipaddr'
+require 'ruby-tls'
 
 
 module Libuv
@@ -7,6 +8,7 @@ module Libuv
 
 
         KEEPALIVE_ARGUMENT_ERROR = "delay must be an Integer".freeze
+        TLS_ERROR = "TLS write failed".freeze
 
 
         def initialize(loop, acceptor = nil)
@@ -18,6 +20,101 @@ module Libuv
             
             super(tcp_ptr, error)
         end
+
+
+        #
+        # TLS Abstraction ----------------------
+        # --------------------------------------
+        #
+        def start_tls(args = {})
+            @handshake = false
+            @pending_writes = []
+            @tls = ::RubyTls::Connection.new(self)
+            @tls.start(args)
+        end
+
+        # Push through any pending writes when handshake has completed
+        def handshake_cb
+            @handshake = true
+            writes = @pending_writes
+            @pending_writes = nil
+            writes.each do |deferred, data|
+                @pending_write = deferred
+                @tls.encrypt(data)
+            end
+        end
+
+        # This is clear text data that has been decrypted
+        # Same as stream.rb on_read for clear text
+        def dispatch_cb(data)
+            begin
+                @progress.call data, self
+            rescue Exception => e
+                @loop.log :error, :stream_progress_cb, e
+            end
+        end
+
+        # We resolve the existing tls write promise with a the
+        #  real writes promise (a close may have occurred)
+        def transmit_cb(data)
+            if not @pending_write.nil?
+                @pending_write.resolve(direct_write(data))
+                @pending_write = nil
+            else
+                direct_write(data)
+            end
+        end
+
+        # Close can be called multiple times
+        def close_cb
+            if not @pending_write.nil?
+                @pending_write.reject(TLS_ERROR)
+                @pending_write = nil
+            end
+
+            # Shutdown the stream
+            close
+        end
+
+        # overwrite the default close to ensure
+        # pending writes are rejected
+        def close
+            if not @pending_writes.nil?
+                @pending_writes.each do |deferred, data|
+                    deferred.reject(TLS_ERROR)
+                end
+                @pending_writes = nil
+            end
+
+            super
+        end
+
+        # Verify peers will be called for each cert in the chain
+        def verify_peer(&block)
+            @tls.verify_cb &block
+        end
+
+        alias_method :direct_write, :write
+        def write(data)
+            if @tls.nil?
+                direct_write(data)
+            else
+                deferred = @loop.defer
+                
+                if @handshake == true
+                    @pending_write = deferred
+                    @tls.encrypt(data)
+                else
+                    @pending_writes << [deferred, data]
+                end
+
+                deferred.promise
+            end
+        end
+        #
+        # END TLS Abstraction ------------------
+        # --------------------------------------
+        #
 
         def bind(ip, port, callback = nil, &blk)
             return if @closed

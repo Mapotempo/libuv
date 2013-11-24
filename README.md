@@ -64,7 +64,7 @@ or
 
 ## Libuv features supported
 
-* TCP
+* TCP (with TLS support)
 * UDP
 * TTY
 * Pipe

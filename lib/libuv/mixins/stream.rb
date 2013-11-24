@@ -134,10 +134,14 @@ module Libuv
                 data = base.read_string(nread)
                 ::Libuv::Ext.free(base)
                 
-                begin
-                    @progress.call data, self
-                rescue Exception => e
-                    @loop.log :error, :stream_progress_cb, e
+                if @tls.nil?
+                    begin
+                        @progress.call data, self
+                    rescue Exception => e
+                        @loop.log :error, :stream_progress_cb, e
+                    end
+                else
+                    @tls.decrypt(data)
                 end
             end
         end
