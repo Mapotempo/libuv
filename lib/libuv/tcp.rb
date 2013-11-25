@@ -11,12 +11,21 @@ module Libuv
         TLS_ERROR = "TLS write failed".freeze
 
 
+        attr_reader :connected
+
+
         def initialize(loop, acceptor = nil)
             @loop = loop
 
             tcp_ptr = ::Libuv::Ext.create_handle(:uv_tcp)
             error = check_result(::Libuv::Ext.tcp_init(loop.handle, tcp_ptr))
-            error = check_result(::Libuv::Ext.accept(acceptor, tcp_ptr)) if acceptor && error.nil?
+
+            if acceptor && error.nil?
+                error = check_result(::Libuv::Ext.accept(acceptor, tcp_ptr))
+                @connected = true
+            else
+                @connected = false
+            end
             
             super(tcp_ptr, error)
         end
@@ -27,6 +36,8 @@ module Libuv
         # --------------------------------------
         #
         def start_tls(args = {})
+            return unless @connected && @tls.nil?
+
             @handshake = false
             @pending_writes = []
             @tls = ::RubyTls::Connection.new(self)
@@ -79,6 +90,8 @@ module Libuv
         # overwrite the default close to ensure
         # pending writes are rejected
         def close
+            @connected = false
+
             if not @pending_writes.nil?
                 @pending_writes.each do |deferred, data|
                     deferred.reject(TLS_ERROR)
@@ -229,6 +242,8 @@ module Libuv
 
         def on_connect(req, status)
             ::Libuv::Ext.free(req)
+            @connected = true
+
             begin
                 @callback.call(self)
             rescue Exception => e
