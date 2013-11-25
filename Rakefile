@@ -3,7 +3,7 @@ require 'rspec/core/rake_task'  # testing framework
 require 'yard'                  # yard documentation
 require 'ffi'                   # loads the extension
 require 'rake/clean'            # for the :clobber rake task
-require 'libuv/ext/tasks'       # platform specific rake tasks used by compile
+require File.expand_path('../lib/libuv/ext/tasks', __FILE__)    # platform specific rake tasks used by compile
 
 
 
