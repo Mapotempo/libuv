@@ -18,6 +18,8 @@ Gem::Specification.new do |gem|
     gem.add_runtime_dependency     'ffi', '>= 1.9'
     gem.add_runtime_dependency     'thread_safe'
     gem.add_runtime_dependency     'ruby-tls', '>= 1.0.1'
+    gem.add_runtime_dependency     'rubysl' if $platform.to_s == 'rbx'
+
     gem.add_development_dependency 'rspec', '>= 2.14'
     gem.add_development_dependency 'rake', '>= 10.1'
     gem.add_development_dependency 'yard'
