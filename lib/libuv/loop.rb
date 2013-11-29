@@ -13,14 +13,14 @@ module Libuv
             # 
             # @return [::Libuv::Loop]
             def default
-                return current || create(::Libuv::Ext.default_loop)
+                return create(::Libuv::Ext.default_loop)
             end
 
             # Create new Libuv loop
             # 
             # @return [::Libuv::Loop]
             def new
-                return current || create(::Libuv::Ext.loop_new)
+                return create(::Libuv::Ext.loop_new)
             end
 
             # Build a Ruby Libuv loop from an existing loop pointer
@@ -99,6 +99,8 @@ module Libuv
                     @reactor_thread = nil
                     @run_queue.clear
                 end
+            else
+                yield  @loop_notify.promise if block_given?
             end
             @loop
         end
