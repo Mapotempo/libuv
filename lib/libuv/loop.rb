@@ -13,7 +13,7 @@ module Libuv
             # 
             # @return [::Libuv::Loop]
             def default
-                return create(::Libuv::Ext.default_loop)
+                return @default ||= create(::Libuv::Ext.default_loop)
             end
 
             # Create new Libuv loop
@@ -99,8 +99,8 @@ module Libuv
                     @reactor_thread = nil
                     @run_queue.clear
                 end
-            else
-                yield  @loop_notify.promise if block_given?
+            elsif block_given?
+                schedule { yield  @loop_notify.promise }
             end
             @loop
         end
