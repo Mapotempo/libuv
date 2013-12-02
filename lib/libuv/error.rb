@@ -8,12 +8,15 @@ module Libuv
         class EAI_ADDRFAMILY < Error; end
         class EAI_AGAIN < Error; end
         class EAI_BADFLAGS < Error; end
+        class EAI_BADHINTS < Error; end
         class EAI_CANCELED < Error; end
         class EAI_FAIL < Error; end
         class EAI_FAMILY < Error; end
         class EAI_MEMORY < Error; end
         class EAI_NODATA < Error; end
         class EAI_NONAME < Error; end
+        class EAI_OVERFLOW < Error; end
+        class EAI_PROTOCOL < Error; end
         class EAI_SERVICE < Error; end
         class EAI_SOCKTYPE < Error; end
         class EAI_SYSTEM < Error; end
