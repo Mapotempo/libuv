@@ -3,6 +3,10 @@ module Libuv
         include Assertions, Resource, Listener, FsChecks
 
 
+        EOF = "0\r\n\r\n".freeze
+        CRLF = "\r\n".freeze
+
+
         attr_reader :fileno, :closed
 
 
@@ -102,8 +106,82 @@ module Libuv
             @chown_deferred.promise
         end
 
+        def send_file(stream, type = :raw, chunk_size = 4096)
+            @transmit_failure ||= method(:transmit_failure)
+            @transmit_data ||= method(:transmit_data)
+            @start_transmit ||= method(:start_transmit)
+            @next_chunk ||= method(:next_chunk)
+
+            @sending_file = @loop.defer
+            @file_stream = stream
+            @file_stream_type = type
+            @file_chunk_size = chunk_size
+            @file_chunk_count = 0
+
+            stat.then @start_transmit, @transmit_failure
+            
+            @sending_file.promise.finally &method(:clean_up_send)
+        end
+
 
         private
+
+
+        ##
+        # File transmit functions -------------
+        def start_transmit(stats)
+            @file_stream_total = stats[:st_size]
+            next_chunk
+        end
+
+        def transmit_data(data)
+            @file_chunk_count += 1
+            if @file_stream_type == :http
+                resp = ''
+                resp << data.bytesize.to_s(16) << CRLF
+                resp << data
+                resp << CRLF
+                data = resp
+            end
+            @file_stream.write(data).then @next_chunk, @transmit_failure
+            nil
+        end
+
+        def next_chunk(*args)
+            next_size = @file_chunk_size
+            next_offset = @file_chunk_size * @file_chunk_count
+            
+            if next_offset >= @file_stream_total
+                if @file_stream_type == :http
+                    @file_stream.write(EOF.dup).then(proc {
+                        @sending_file.resolve(@file_stream_total)
+                    }, @transmit_failure)
+                else
+                    @sending_file.resolve(@file_stream_total)
+                end
+            else
+                if next_offset + next_size > @file_stream_total
+                    next_size = @file_stream_total - next_offset
+                end
+                read(next_size, next_offset).then(@transmit_data, @transmit_failure)
+            end
+            nil
+        end
+
+        def transmit_failure(reason)
+            @sending_file.reject(reason)
+        end
+
+        def clean_up_send
+            @sending_file = nil
+            @file_stream = nil
+            @file_stream_type = nil
+            @file_chunk_size = nil
+            @file_chunk_count = nil
+            @file_stream_total = nil
+        end
+        # -------------------------------------
+        ##
 
 
         def on_open(req)

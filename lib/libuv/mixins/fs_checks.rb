@@ -19,11 +19,14 @@ module Libuv
             if post_check(req, @stat_deferred)
                 uv_stat = req[:stat]
                 uv_members = uv_stat.members
-                values = UvStat.members.map { |k| uv_members.include?(k) ? uv_stat[k] : nil }
-                uv_stat = UvStat.new(*values)
+
+                stats = {}
+                uv_members.each do |key|
+                    stats[key] = uv_stat[key]
+                end
 
                 cleanup(req)
-                @stat_deferred.resolve(uv_stat)
+                @stat_deferred.resolve(stats)
             end
             @stat_deferred = nil
         end

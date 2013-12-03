@@ -121,4 +121,130 @@ describe Libuv::Filesystem do
 			@log.should == :success
 		end
 	end
+
+	describe 'file streaming' do
+		it "should send a file over a stream", :network => true do
+			@loop.run { |logger|
+				logger.progress &@logger
+
+				@server = @loop.tcp
+				@client = @loop.tcp
+
+				@server.bind('127.0.0.1', 34570) do |server|
+					server.accept do |client|
+						client.progress do |data|
+							file = @loop.file('.rspec', File::RDONLY)
+							file.progress do
+								file.send_file(client).then(proc {
+									file.close
+									client.close
+								}, proc { |error|
+									@general_failure << error
+								})
+							end
+							file.catch do |error|
+								@general_failure << error.inspect
+								file.close
+								client.close
+							end
+						end
+						client.start_read
+						client.finally do
+							@server.close
+							@loop.stop
+						end
+					end
+				end
+				# catch errors
+				@server.catch do |reason|
+					@general_failure << reason.inspect
+					@loop.stop
+				end
+				# start listening
+				@server.listen(5)
+
+
+				# connect client to server
+				@client.connect('127.0.0.1', 34570) do |client|
+					client.progress do |data|
+						@log << data
+					end
+
+					@client.start_read
+					@client.write('send file')
+				end
+				# catch errors
+				@client.catch do |reason|
+					@general_failure << reason.inspect
+					@server.close
+					@loop.stop
+				end
+			}
+
+			@general_failure.should == []
+			@log.should == ["--format progress\n"]
+		end
+
+		it "should send a file as a HTTP chunked response", :network => true do
+			@loop.run { |logger|
+				logger.progress &@logger
+
+				@server = @loop.tcp
+				@client = @loop.tcp
+
+				@server.bind('127.0.0.1', 34568) do |server|
+					server.accept do |client|
+						client.progress do |data|
+							file = @loop.file('.rspec', File::RDONLY)
+							file.progress do
+								file.send_file(client, :http).then(proc {
+									file.close
+									client.close
+								}, proc { |error|
+									@general_failure << error
+								})
+							end
+							file.catch do |error|
+								@general_failure << error.inspect
+								file.close
+								client.close
+							end
+						end
+						client.start_read
+						client.finally do
+							@server.close
+							@loop.stop
+						end
+					end
+				end
+				# catch errors
+				@server.catch do |reason|
+					@general_failure << reason.inspect
+					@loop.stop
+				end
+				# start listening
+				@server.listen(5)
+
+
+				# connect client to server
+				@client.connect('127.0.0.1', 34568) do |client|
+					client.progress do |data|
+						@log << data
+					end
+
+					@client.start_read
+					@client.write('send file')
+				end
+				# catch errors
+				@client.catch do |reason|
+					@general_failure << reason.inspect
+					@server.close
+					@loop.stop
+				end
+			}
+
+			@general_failure.should == []
+			@log.should == ["12\r\n--format progress\n\r\n", "0\r\n\r\n"]
+		end
+	end
 end

@@ -47,37 +47,54 @@ module Libuv
 
             # Create an async call for scheduling work from other threads
             @run_queue = Queue.new
-            @queue_proc = proc do
-                # ensure we only execute what was required for this tick
-                length = @run_queue.length
-                length.times do
-                    begin
-                        run = @run_queue.pop true  # pop non-block
-                        run.call
-                    rescue Exception => e
-                        @loop.log :error, :next_tick_cb, e
-                    end
-                end
-            end
-            @process_queue = Async.new(@loop, @queue_proc)
+            @process_queue = Async.new @loop, method(:process_queue_cb)
 
             # Create a next tick timer
-            @next_tick = @loop.timer do
-                @next_tick_scheduled = false
-                @queue_proc.call
-            end
+            @next_tick = @loop.timer method(:next_tick_cb)
 
             # Create an async call for ending the loop
-            @stop_loop = Async.new @loop do
-                LOOPS.delete(@reactor_thread)
-                @reactor_thread = nil
-                @process_queue.close
-                @stop_loop.close
-                @next_tick.close
+            @stop_loop = Async.new @loop, method(:stop_cb)
+        end
 
-                ::Libuv::Ext.stop(@pointer)
+
+        protected
+
+
+        def stop_cb
+            LOOPS.delete(@reactor_thread)
+            @reactor_thread = nil
+            @process_queue.close
+            @stop_loop.close
+            @next_tick.close
+
+            ::Libuv::Ext.stop(@pointer)
+        end
+
+        def next_tick_cb
+            @next_tick_scheduled = false
+            process_queue_cb
+        end
+
+        def process_queue_cb
+            # ensure we only execute what was required for this tick
+            length = @run_queue.length
+            length.times do
+                process_item
             end
         end
+
+        def process_item
+            begin
+                run = @run_queue.pop true  # pop non-block
+                run.call
+            rescue Exception => e
+                @loop.log :error, :next_tick_cb, e
+            end
+        end
+
+
+        public
+
 
         def handle; @pointer; end
 
