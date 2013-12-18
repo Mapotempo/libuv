@@ -6,6 +6,7 @@ module Libuv
 
 
         LOOPS = ThreadSafe::Cache.new
+        CRITICAL = Mutex.new
 
 
         module ClassMethods
@@ -13,7 +14,10 @@ module Libuv
             # 
             # @return [::Libuv::Loop]
             def default
-                return @default ||= create(::Libuv::Ext.default_loop)
+                return @default unless @default.nil?
+                CRITICAL.synchronize {
+                    return @default ||= create(::Libuv::Ext.default_loop)
+                }
             end
 
             # Create new Libuv loop
@@ -122,6 +126,13 @@ module Libuv
             @loop
         end
 
+
+        # Provides a promise notifier for receiving un-handled exceptions
+        #
+        # @return [::Libuv::Q::Promise]
+        def notifier
+            @loop_notify.promise
+        end
 
         # Creates a deferred result object for where the result of an operation may only be returned 
         # at some point in the future or is being processed on a different thread (thread safe)

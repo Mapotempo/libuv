@@ -13,9 +13,11 @@ file 'ext/libuv/build' do
 end
 
 file 'ext/libuv/build/gyp' => 'ext/libuv/build' do
+    result = true
     if not File.directory?('ext/libuv/build/gyp')
-        system "svn", "export", "-r1214", "http://gyp.googlecode.com/svn/trunk", "ext/libuv/build/gyp"
+        result = system "svn", "export", "-r1214", "http://gyp.googlecode.com/svn/trunk", "ext/libuv/build/gyp"
     end
+    raise 'unable to download gyp' unless result
 end
 
 CLEAN.include('ext/libuv/build/gyp')
