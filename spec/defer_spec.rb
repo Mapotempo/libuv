@@ -30,7 +30,7 @@ describe Libuv::Q do
 				end
 			}
 
-			@log.should == [:foo]
+			expect(@log).to eq([:foo])
 		end
 		
 		
@@ -52,7 +52,7 @@ describe Libuv::Q do
 					end
 				end
 			}
-			@log.should == [:foo, :foo]
+			expect(@log).to eq([:foo, :foo])
 		end
 		
 		
@@ -73,7 +73,7 @@ describe Libuv::Q do
 					@loop.stop
 				end
 			}
-			@log.should == [:first, :second]
+			expect(@log).to eq([:first, :second])
 		end
 		
 		
@@ -81,7 +81,7 @@ describe Libuv::Q do
 			@loop.run {
 				@promise.then nil, @default_fail do |result|
 					@log << result
-					@log.should == [:foo]
+					expect(@log).to eq([:foo])
 					@deferred.resolve(:bar)
 				end
 				
@@ -101,7 +101,7 @@ describe Libuv::Q do
 					end
 				end
 			}
-			@log.should == [:foo]
+			expect(@log).to eq([:foo])
 		end
 		
 		
@@ -116,7 +116,7 @@ describe Libuv::Q do
 				@deferred.resolve(deferred2.promise)
 				deferred2.resolve(:foo)
 			}
-			@log.should == [:foo]
+			expect(@log).to eq([:foo])
 		end
 		
 		
@@ -138,7 +138,7 @@ describe Libuv::Q do
 				end
 			}
 
-			@log.should == [:outer, :inner]
+			expect(@log).to eq([:outer, :inner])
 		end
 		
 		
@@ -158,7 +158,7 @@ describe Libuv::Q do
 				end
 			}
 
-			@log.should == ['Hello Robin Hood', 'Hello Robin Hood?']
+			expect(@log).to eq(['Hello Robin Hood', 'Hello Robin Hood?'])
 		end
 	
 	end
@@ -181,7 +181,7 @@ describe Libuv::Q do
 					@loop.stop
 				end
 			}
-			@log.should == [:first, :second]
+			expect(@log).to eq([:first, :second])
 		end
 		
 		
@@ -208,7 +208,7 @@ describe Libuv::Q do
 					end
 				end
 			}
-			@log.should == [:baz]
+			expect(@log).to eq([:baz])
 		end
 		
 		
@@ -224,7 +224,7 @@ describe Libuv::Q do
 				end
 			}
 
-			@log.should == [true]
+			expect(@log).to eq([true])
 		end
 		
 	end
@@ -248,7 +248,7 @@ describe Libuv::Q do
 				end
 			}
 
-			@log.should == [:first, :second]
+			expect(@log).to eq([:first, :second])
 		end
 
 		it "should do nothing if a promise was previously resolved" do
@@ -276,7 +276,7 @@ describe Libuv::Q do
 				end
 			}
 
-			@log.should == []
+			expect(@log).to eq([])
 		end
 
 		it "should do nothing if a promise was previously rejected" do
@@ -304,7 +304,7 @@ describe Libuv::Q do
 				end
 			}
 
-			@log.should == []
+			expect(@log).to eq([])
 		end
 
 
@@ -322,7 +322,7 @@ describe Libuv::Q do
 				end
 			}
 
-			@log.should == [true]
+			expect(@log).to eq([true])
 		end
 
 
@@ -342,7 +342,7 @@ describe Libuv::Q do
 				@loop.stop	# Stop will run through the next tick before stopping
 			}
 
-			@log.should == [0, :first, :second]
+			expect(@log).to eq([0, :first, :second])
 		end
 
 		it "should ignore notifications sent out in the same turn before listener registration" do
@@ -362,7 +362,7 @@ describe Libuv::Q do
 				end
 			}
 
-			@log.should == []
+			expect(@log).to eq([])
 		end
 	end
 	
@@ -384,7 +384,7 @@ describe Libuv::Q do
 					end
 				}
 
-				@log.should == [:foo]
+				expect(@log).to eq([:foo])
 			end
 			
 			
@@ -401,7 +401,7 @@ describe Libuv::Q do
 					end
 				}
 
-				@log.should == []
+				expect(@log).to eq([])
 			end
 			
 			
@@ -418,7 +418,7 @@ describe Libuv::Q do
 					end
 				}
 
-				@log.should == [:foo]
+				expect(@log).to eq([:foo])
 			end
 			
 			
@@ -435,7 +435,7 @@ describe Libuv::Q do
 					end
 				}
 
-				@log.should == []
+				expect(@log).to eq([])
 			end
 			
 			
@@ -465,7 +465,7 @@ describe Libuv::Q do
 					end
 				}
 
-				@log.should == [:foo, :foo, :foo, :foo]
+				expect(@log).to eq([:foo, :foo, :foo, :foo])
 			end
 
 
@@ -504,7 +504,7 @@ describe Libuv::Q do
 					end
 				}
 
-				@log.should == [:foo, :foo, :foo, :foo]
+				expect(@log).to eq([:foo, :foo, :foo, :foo])
 			end
 			
 			
@@ -534,7 +534,7 @@ describe Libuv::Q do
 					end
 				}
 
-				@log.should == [:foo, :foo, :foo, :foo]
+				expect(@log).to eq([:foo, :foo, :foo, :foo])
 			end
 			
 			
@@ -573,7 +573,7 @@ describe Libuv::Q do
 					end
 				}
 
-				@log.should == [:foo, :bar, 'baz', 'bob', :done]
+				expect(@log).to eq([:foo, :bar, 'baz', 'bob', :done])
 			end
 
 
@@ -619,7 +619,7 @@ describe Libuv::Q do
 					end
 				}
 
-				@log.should == [:foo, :bar, :bar, :bar, :done]
+				expect(@log).to eq([:foo, :bar, :bar, :bar, :done])
 			end
 
 
@@ -664,7 +664,7 @@ describe Libuv::Q do
 					end
 				}
 
-				@log.should == [:foo, :bar, :q_progress_cb]
+				expect(@log).to eq([:foo, :bar, :q_progress_cb])
 			end
 			
 			
@@ -681,7 +681,7 @@ describe Libuv::Q do
 					end
 				}
 
-				@log.should == [:foo]
+				expect(@log).to eq([:foo])
 			end
 			
 			
@@ -705,7 +705,7 @@ describe Libuv::Q do
 						end
 					}
 
-					@log.should == [:finally]
+					expect(@log).to eq([:finally])
 				end
 
 				it "should fulfill with the original value" do
@@ -727,7 +727,7 @@ describe Libuv::Q do
 						end
 					}
 
-					@log.should == [:finally, :foo]
+					expect(@log).to eq([:finally, :foo])
 				end
 
 				it "should fulfill with the original value (larger test)" do
@@ -775,7 +775,7 @@ describe Libuv::Q do
 						end
 					}
 
-					@log.should == [:foo, :finally, :foo, :change, :finally, :change]
+					expect(@log).to eq([:foo, :finally, :foo, :change, :finally, :change])
 				end
 
 				describe "when the callback throws an exception" do
@@ -797,7 +797,7 @@ describe Libuv::Q do
 							end
 						}
 
-						@log.should == [:finally, true]
+						expect(@log).to eq([:finally, true])
 					end
 				end
 
@@ -832,7 +832,7 @@ describe Libuv::Q do
 							end
 						}
 
-						@log.should == [:finally, :resolving, :foo]
+						expect(@log).to eq([:finally, :resolving, :foo])
 					end
 
 
@@ -866,7 +866,7 @@ describe Libuv::Q do
 							end
 						}
 
-						@log.should == [:finally, :rejecting, :rejected]
+						expect(@log).to eq([:finally, :rejecting, :rejected])
 					end
 				end
 
@@ -895,7 +895,7 @@ describe Libuv::Q do
 				end
 			}
 
-			@log.should == ['not gonna happen']
+			expect(@log).to eq(['not gonna happen'])
 		end
 		
 		
@@ -916,7 +916,7 @@ describe Libuv::Q do
 				end
 			}
 
-			@log.should == ['not gonna happen']
+			expect(@log).to eq(['not gonna happen'])
 		end
 		
 	end
@@ -936,7 +936,7 @@ describe Libuv::Q do
 				end
 			}
 
-			@log.should == [[]]
+			expect(@log).to eq([[]])
 		end
 		
 		it "should take an array of promises and return a promise for an array of results" do
@@ -954,7 +954,7 @@ describe Libuv::Q do
 				@loop.work { deferred1.resolve(:bar) }
 			}
 
-			@log.should == [:foo, :bar, :baz]
+			expect(@log).to eq([:foo, :bar, :baz])
 		end
 		
 		
@@ -972,7 +972,7 @@ describe Libuv::Q do
 				@loop.work { deferred2.reject(:baz) }
 			}
 
-			@log.should == [:baz]
+			expect(@log).to eq([:baz])
 		end
 		
 	end

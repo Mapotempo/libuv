@@ -87,8 +87,8 @@ describe Libuv::TCP do
 				end
 			}
 
-			@general_failure.should == []
-			@log.should == ['ping', 'pong']
+			expect(@general_failure).to eq([])
+			expect(@log).to eq(['ping', 'pong'])
 		end
 	end
 
@@ -196,8 +196,8 @@ describe Libuv::TCP do
 			end
 		}
 
-		@general_failure.should == []
-		@log.should == ['ping', 'pong']
+		expect(@general_failure).to eq([])
+		expect(@log).to eq(['ping', 'pong'])
 	end
 
 	describe 'basic TLS client and server' do
@@ -259,8 +259,8 @@ describe Libuv::TCP do
 				end
 			}
 
-			@general_failure.should == []
-			@log.should == ['ping', 'pong']
+			expect(@general_failure).to eq([])
+			expect(@log).to eq(['ping', 'pong'])
 		end
 	end
 

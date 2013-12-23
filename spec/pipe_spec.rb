@@ -96,8 +96,8 @@ describe Libuv::Pipe do
 				end
 			}
 
-			@general_failure.should == []
-			@log.should == ['ping', 'pong']
+			expect(@general_failure).to eq([])
+			expect(@log).to eq(['ping', 'pong'])
 		end
 	end
 
@@ -153,8 +153,8 @@ describe Libuv::Pipe do
 				timeout.start(1000)
 			}
 
-			@general_failure.should == []
-			@log.should == 'workload'
+			expect(@general_failure).to eq([])
+			expect(@log).to eq('workload')
 		end
 	end
 end

@@ -38,8 +38,8 @@ describe Libuv::Dns do
 			}
 		}
 
-		@general_failure.should == []
-		@result.should == '127.0.0.1'
+		expect(@general_failure).to eq([])
+		expect(@result).to eq('127.0.0.1')
 	end
 
 	it "should resolve localhost using IP6", :network => true do
@@ -61,8 +61,8 @@ describe Libuv::Dns do
 			}
 		}
 
-		@general_failure.should == []
-		@result.should == '::1'
+		expect(@general_failure).to eq([])
+		expect(@result).to eq('::1')
 	end
 
 	it "should resolve loop back" do
@@ -84,7 +84,7 @@ describe Libuv::Dns do
 			}
 		}
 
-		@general_failure.should == []
-		@result.should == '127.0.0.1'
+		expect(@general_failure).to eq([])
+		expect(@result).to eq('127.0.0.1')
 	end
 end

@@ -48,8 +48,8 @@ describe Libuv::Filesystem do
 				end
 			}
 
-			@general_failure.should == []
-			(@log.length > 0).should == true
+			expect(@general_failure).to eq([])
+			expect((@log.length > 0)).to eq(true)
 		end
 	end
 
@@ -75,8 +75,8 @@ describe Libuv::Filesystem do
 				end
 			}
 
-			@general_failure.should == []
-			@log.should == :success
+			expect(@general_failure).to eq([])
+			expect(@log).to eq(:success)
 		end
 
 		it "should read from a file" do
@@ -98,8 +98,8 @@ describe Libuv::Filesystem do
 				end
 			}
 
-			@general_failure.should == []
-			@log.should == 'write some data to a file'
+			expect(@general_failure).to eq([])
+			expect(@log).to eq('write some data to a file')
 		end
 
 		it "should delete a file" do
@@ -117,8 +117,8 @@ describe Libuv::Filesystem do
 				end
 			}
 
-			@general_failure.should == []
-			@log.should == :success
+			expect(@general_failure).to eq([])
+			expect(@log).to eq(:success)
 		end
 	end
 
@@ -181,8 +181,8 @@ describe Libuv::Filesystem do
 				end
 			}
 
-			@general_failure.should == []
-			@log.should == ["--format progress\n"]
+			expect(@general_failure).to eq([])
+			expect(@log).to eq(["--format progress\n"])
 		end
 
 		it "should send a file as a HTTP chunked response", :network => true do
@@ -243,8 +243,8 @@ describe Libuv::Filesystem do
 				end
 			}
 
-			@general_failure.should == []
-			@log.should == ["12\r\n--format progress\n\r\n", "0\r\n\r\n"]
+			expect(@general_failure).to eq([])
+			expect(@log).to eq(["12\r\n--format progress\n\r\n", "0\r\n\r\n"])
 		end
 	end
 end

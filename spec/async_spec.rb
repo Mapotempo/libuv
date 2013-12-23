@@ -54,7 +54,7 @@ describe Libuv::Async do
 			end
 		}
 
-		@general_failure.should == []
-		(@count < 7 && @count > 3).should == true
+		expect(@general_failure).to eq([])
+		expect(@count < 7 && @count > 3).to eq(true)
 	end
 end

@@ -50,7 +50,7 @@ describe Libuv::Idle do
 			stopper.start(1000, 0)
 		}
 
-		@general_failure.should == []
-		(@idle_calls > 0).should == true
+		expect(@general_failure).to eq([])
+		expect((@idle_calls > 0)).to eq(true)
 	end
 end
