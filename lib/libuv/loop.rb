@@ -350,7 +350,7 @@ module Libuv
             assert_block(callback)
 
             if reactor_thread?
-                block.call
+                callback.call
             else
                 @run_queue << callback
                 @process_queue.call
