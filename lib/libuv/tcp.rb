@@ -129,10 +129,7 @@ module Libuv
 
         alias_method :do_shutdown, :shutdown
         def shutdown
-            return if @closed
-            if @tls.nil?
-                do_shutdown
-            elsif @handshake == false && @pending_writes.length > 0
+            if @pending_writes && @pending_writes.length > 0
                 @pending_writes[-1][0].finally method(:do_shutdown)
             else
                 do_shutdown
