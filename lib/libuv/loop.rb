@@ -67,9 +67,6 @@ module Libuv
         def stop_cb
             LOOPS.delete(@reactor_thread)
             @reactor_thread = nil
-            @process_queue.close
-            @stop_loop.close
-            @next_tick.close
 
             ::Libuv::Ext.stop(@pointer)
         end
