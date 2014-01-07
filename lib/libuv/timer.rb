@@ -1,11 +1,5 @@
 module Libuv
     class Timer < Handle
-        include Assertions
-
-
-        TIMEOUT_ERROR = "timeout must be an Integer".freeze
-        REPEAT_ERROR = "repeat must be an Integer".freeze
-
 
         # @param loop [::Libuv::Loop] loop this timer will be associated
         # @param callback [Proc] callback to be called when the timer is triggered
@@ -27,8 +21,8 @@ module Libuv
             return if @closed
             @stopped = false
 
-            assert_type(Integer, timeout, TIMEOUT_ERROR)
-            assert_type(Integer, repeat, REPEAT_ERROR)
+            timeout = timeout.to_i
+            repeat = repeat.to_i
 
             error = check_result ::Libuv::Ext.timer_start(handle, callback(:on_timer), timeout, repeat)
             reject(error) if error
@@ -52,7 +46,7 @@ module Libuv
         # Updates the repeat timeout
         def repeat=(repeat)
             return if @closed
-            assert_type(Integer, repeat, REPEAT_ERROR)
+            repeat = repeat.to_i
             check_result ::Libuv::Ext.timer_set_repeat(handle, repeat)
             reject(error) if error
         end
