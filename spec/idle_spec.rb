@@ -6,7 +6,7 @@ describe Libuv::Idle do
 		@log = []
 		@general_failure = []
 
-		@loop = Libuv::Loop.new
+		@loop = Libuv::Loop.default
 		@server = @loop.pipe
 		@client = @loop.pipe
 		@timeout = @loop.timer do

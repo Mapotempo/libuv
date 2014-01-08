@@ -6,7 +6,7 @@ describe Libuv::Async do
 		@log = []
 		@general_failure = []
 
-		@loop = Libuv::Loop.new
+		@loop = Libuv::Loop.default
 		@call = @loop.pipe
 		@timeout = @loop.timer do
 			@loop.stop

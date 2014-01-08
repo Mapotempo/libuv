@@ -6,7 +6,7 @@ describe Libuv::Dns do
 		@log = []
 		@general_failure = []
 
-		@loop = Libuv::Loop.new
+		@loop = Libuv::Loop.default
 		@timeout = @loop.timer do
 			@loop.stop
 			@general_failure << "test timed out"

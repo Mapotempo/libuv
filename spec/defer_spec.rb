@@ -4,7 +4,7 @@ require 'libuv'
 describe Libuv::Q do
 	
 	before :each do
-		@loop = Libuv::Loop.new
+		@loop = Libuv::Loop.default
 		@deferred = @loop.defer
 		@promise = @deferred.promise
 		@log = []

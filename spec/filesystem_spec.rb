@@ -7,7 +7,7 @@ describe Libuv::Filesystem do
 		@log = []
 		@general_failure = []
 
-		@loop = Libuv::Loop.new
+		@loop = Libuv::Loop.default
 		@filesystem = @loop.filesystem
 		@timeout = @loop.timer do
 			@loop.stop
