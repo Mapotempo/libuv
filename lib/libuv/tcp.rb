@@ -253,12 +253,18 @@ module Libuv
 
         def on_connect(req, status)
             ::Libuv::Ext.free(req)
-            @connected = true
+            e = check_result(status)
 
-            begin
-                @callback.call(self)
-            rescue Exception => e
-                @loop.log :error, :connect_cb, e
+            if e
+                reject(e)
+            else
+                @connected = true
+
+                begin
+                    @callback.call(self)
+                rescue Exception => e
+                    @loop.log :error, :connect_cb, e
+                end
             end
         end
 
