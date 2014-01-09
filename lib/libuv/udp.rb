@@ -195,23 +195,35 @@ module Libuv
         end
 
 
+        def on_close(pointer)
+            if @receive_buff
+                ::Libuv::Ext.free(@receive_buff)
+                @receive_buff = nil
+                @receive_size = nil
+            end
+
+            super(pointer)
+        end
+
         def on_allocate(client, suggested_size, buffer)
-            buffer[:len] = suggested_size
-            buffer[:base] = ::Libuv::Ext.malloc(suggested_size)
+            if @receive_buff.nil?
+                @receive_buff = ::Libuv::Ext.malloc(suggested_size)
+                @receive_size = suggested_size
+            end
+            
+            buffer[:base] = @receive_buff
+            buffer[:len] = @receive_size
         end
 
         def on_recv(handle, nread, buf, sockaddr, flags)
             e = check_result(nread)
-            base = buf[:base]
 
             if e
-                ::Libuv::Ext.free(base)
-                reject(e)
-            else
-                data = base.read_string(nread)
-                ::Libuv::Ext.free(base)
+                reject(e)   # Will call close
+            elsif nread > 0
+                data = @receive_buff.read_string(nread)
                 unless sockaddr.null?
-                    ip, port = get_ip_and_port(UV::Sockaddr.new(sockaddr))
+                    ip, port = get_ip_and_port(sockaddr)
                 end
                 
                 begin
@@ -219,6 +231,10 @@ module Libuv
                 rescue Exception => e
                     @loop.log :error, :udp_progress_cb, e
                 end
+            else
+                ::Libuv::Ext.free(@receive_buff)
+                @receive_buff = nil
+                @receive_size = nil
             end
         end
     end
