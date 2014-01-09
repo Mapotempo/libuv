@@ -44,7 +44,7 @@ module Libuv
         def close
             return if @closed
             @closed = true
-            Libuv::Ext.close(handle, callback(:on_close))
+            ::Libuv::Ext.close(handle, callback(:on_close))
         end
 
         def active?

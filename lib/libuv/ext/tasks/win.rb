@@ -1,6 +1,9 @@
 file "ext/libuv/Release/libuv.#{FFI::Platform::LIBSUFFIX}" do
+    target_arch = 'ia32'
+    target_arch = 'x64' if FFI::Platform.x64?
+
     Dir.chdir("ext/libuv") do |path|
-        system 'vcbuild.bat', 'shared', 'release'
+        system 'vcbuild.bat', 'shared', 'release', target_arch
     end
 end
 
