@@ -11,7 +11,7 @@ module Libuv
         class Sockaddr < FFI::Struct
             layout :sa_len, :uint8,
                    :sa_family, :sa_family_t,
-                   :sa_data, [:char, 14]
+                   :sa_data, [:char, 15]
         end
 
         class UvAddrinfo < FFI::Struct
