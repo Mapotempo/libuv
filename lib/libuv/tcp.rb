@@ -7,7 +7,6 @@ module Libuv
         include Stream, Net
 
 
-        KEEPALIVE_ARGUMENT_ERROR = "delay must be an Integer".freeze
         TLS_ERROR = "TLS write failed".freeze
 
 
@@ -219,9 +218,8 @@ module Libuv
         end
 
         def enable_keepalive(delay)
-            return if @closed
-            assert_type(Integer, delay, KEEPALIVE_ARGUMENT_ERROR)
-            check_result ::Libuv::Ext.tcp_keepalive(handle, 1, delay)
+            return if @closed                   # The to_i asserts integer
+            check_result ::Libuv::Ext.tcp_keepalive(handle, 1, delay.to_i)
         end
 
         def disable_keepalive
