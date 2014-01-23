@@ -53,7 +53,8 @@ or
 
 ### Prerequisites
 
-* The installation requires __subversion__ to be installed on your system and available on the PATH
+* The installation requires [subversion](http://subversion.apache.org/packages.html) to be installed on your system and available on the PATH
+* The installation also requires [python 2.x](http://www.python.org/getit/) to be installed and available on the PATH
 * setting the environmental variable `USE_GLOBAL_LIBUV` will prevent compiling the packaged version.
   * if you have a compatible `libuv.(so | dylib | dll)` on the PATH already
 
@@ -73,7 +74,7 @@ Windows users will additionally require:
 * TCP (with TLS support)
 * UDP
 * TTY
-* Pipe
+* Pipes
 * Timer
 * Prepare
 * Check
@@ -84,5 +85,5 @@ Windows users will additionally require:
 * Filesystem Events
 * Filesystem manipulation
 * File manipulation
-* Errors
+* Errors (with a catch-all fallback for anything unhandled on the event loop)
 * Work queue (thread pool)
