@@ -272,6 +272,7 @@ module Libuv
 
             def initialize(loop, tcp, ip, port)
                 @tcp, @sockaddr = tcp, ip_addr(ip, port)
+                @loop = loop
             end
 
             def bind
