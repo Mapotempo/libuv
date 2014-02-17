@@ -14,12 +14,12 @@ module Libuv
             :IPv6 => ::Libuv::Ext::UvAddrinfo.new
         }
         HINTS[:IPv4].tap do |hint|
-            hint[:family] = Socket::Constants::AF_INET
+            hint[:family] = FFI::Platform.windows? ? 2 : Socket::Constants::AF_INET
             hint[:socktype] = Socket::Constants::SOCK_STREAM
             hint[:protocol] = Socket::Constants::IPPROTO_TCP
         end
         HINTS[:IPv6].tap do |hint|
-            hint[:family] = Socket::Constants::AF_INET6
+            hint[:family] = FFI::Platform.windows? ? 23 : Socket::Constants::AF_INET6
             hint[:socktype] = Socket::Constants::SOCK_STREAM
             hint[:protocol] = Socket::Constants::IPPROTO_TCP
         end

@@ -182,7 +182,12 @@ describe Libuv::Filesystem do
 			}
 
 			expect(@general_failure).to eq([])
-			expect(@log).to eq(["--format progress\n"])
+			# Windows GIT adds the carriage return
+			if FFI::Platform.windows?
+				expect(@log).to eq(["--format progress\r\n"])
+			else
+				expect(@log).to eq(["--format progress\n"])
+			end
 		end
 
 		it "should send a file as a HTTP chunked response", :network => true do
@@ -244,7 +249,13 @@ describe Libuv::Filesystem do
 			}
 
 			expect(@general_failure).to eq([])
-			expect(@log).to eq(["12\r\n--format progress\n\r\n", "0\r\n\r\n"])
+
+			# Windows GIT adds the carriage return
+			if FFI::Platform.windows?
+				expect(@log.join('')).to eq("13\r\n--format progress\r\n\r\n0\r\n\r\n")
+			else
+				expect(@log.join('')).to eq("12\r\n--format progress\n\r\n0\r\n\r\n")
+			end
 		end
 	end
 end

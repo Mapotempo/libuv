@@ -91,6 +91,9 @@ module Libuv
         # overwrite the default close to ensure
         # pending writes are rejected
         def close
+            return if @closed
+
+            @tls.cleanup if @tls  # Free tls memory
             @connected = false
 
             if not @pending_writes.nil?

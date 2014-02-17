@@ -31,6 +31,7 @@ module Libuv
         class EDESTADDRREQ < Error; end
         class EEXIST < Error; end
         class EFAULT < Error; end
+        class EFBIG < Error; end
         class EHOSTUNREACH < Error; end
         class EINTR < Error; end
         class EINVAL < Error; end
