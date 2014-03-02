@@ -15,3 +15,5 @@ Gemfile.lock
 bin
 Gemfile-custom
 ext/*
+
+*.gem
