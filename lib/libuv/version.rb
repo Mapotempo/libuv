@@ -1,3 +1,3 @@
 module Libuv
-    VERSION = '0.11.24'
+    VERSION = '0.12.0'
 end
