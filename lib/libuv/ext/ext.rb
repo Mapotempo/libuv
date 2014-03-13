@@ -91,7 +91,6 @@ module Libuv
         attach_function :accept, :uv_accept, [:uv_stream_t, :uv_stream_t], :int, :blocking => true
         attach_function :read_start, :uv_read_start, [:uv_stream_t, :uv_alloc_cb, :uv_read_cb], :int, :blocking => true
         attach_function :read_stop, :uv_read_stop, [:uv_stream_t], :int, :blocking => true
-        attach_function :read2_start, :uv_read2_start, [:uv_stream_t, :uv_alloc_cb, :uv_read2_cb], :int, :blocking => true
         attach_function :write, :uv_write, [:uv_write_t, :uv_stream_t, :pointer, :uint, :uv_write_cb], :int, :blocking => true
         attach_function :write2, :uv_write2, [:uv_write_t, :uv_stream_t, :pointer, :uint, :uv_stream_t, :uv_write_cb], :int, :blocking => true
         attach_function :is_readable, :uv_is_readable, [:uv_stream_t], :int, :blocking => true
@@ -133,6 +132,9 @@ module Libuv
         attach_function :pipe_bind, :uv_pipe_bind, [:uv_pipe_t, :string], :int, :blocking => true
         attach_function :pipe_connect, :uv_pipe_connect, [:uv_connect_t, :uv_pipe_t, :string, :uv_connect_cb], :void, :blocking => true
         attach_function :pipe_pending_instances, :uv_pipe_pending_instances, [:uv_pipe_t, :int], :void, :blocking => true
+        attach_function :pipe_pending_count, :uv_pipe_pending_count, [:uv_pipe_t], :int, :blocking => true
+        attach_function :pipe_pending_type, :uv_pipe_pending_type, [:uv_pipe_t], :uv_handle_type, :blocking => true
+        attach_function :pipe_getsockname, :uv_pipe_getsockname, [:uv_pipe_t, :pointer, :pointer], :int, :blocking => true
 
         attach_function :prepare_init, :uv_prepare_init, [:uv_loop_t, :uv_prepare_t], :int, :blocking => true
         attach_function :prepare_start, :uv_prepare_start, [:uv_prepare_t, :uv_prepare_cb], :int, :blocking => true

@@ -119,17 +119,39 @@ module Libuv
             deferred.promise
         end
 
-        def start_read2
-            return if @closed
-            error = check_result ::Libuv::Ext.read2_start(handle, callback(:on_allocate), callback(:on_read2))
-            reject(error) if error
-        end
-
         # Windows only
         def pending_instances=(count)
             return 0 if @closed
             assert_type(Integer, count, "count must be an Integer")
             ::Libuv::Ext.pipe_pending_instances(handle, count)
+        end
+
+        def check_pending(expecting = nil)
+            return nil if ::Libuv::Ext.pipe_pending_count(handle) <= 0
+
+            pending = ::Libuv::Ext.pipe_pending_type(handle)
+            raise TypeError, "IPC expecting #{expecting} and received #{pending}" if expecting && expecting != pending
+
+            # Hide the accept logic
+            remote = nil
+            case pending
+            when :uv_tcp
+                remote = TCP.new(loop, handle)
+            when :uv_pipe
+                remote = Pipe.new(loop, @ipc, handle)
+            else
+                raise NotImplementedError, "IPC for handle #{pending} not supported"
+            end
+            remote
+        end
+
+        def getsockname
+            size = 256
+            len = FFI::MemoryPointer.new(:size_t)
+            len.put_int(0, size)
+            buffer = FFI::MemoryPointer.new(size)
+            check_result! ::Libuv::Ext.pipe_getsockname(handle, buffer, len)
+            buffer.read_string
         end
 
 
@@ -147,47 +169,6 @@ module Libuv
                     @callback.call(self)
                 rescue Exception => e
                     @loop.log :error, :pipe_connect_cb, e
-                end
-            end
-        end
-
-        def on_read2(handle, nread, buf, pending)
-            if pending != :uv_unknown_handle
-                # similar to regular read in stream
-                e = check_result(nread)
-                base = buf[:base]
-
-                if e
-                    ::Libuv::Ext.free(base)
-                    reject(e)
-                else
-                    data = base.read_string(nread)
-                    ::Libuv::Ext.free(base)
-                    
-                    # Hide the accept logic
-                    remote = nil
-                    begin
-                        case pending
-                        when :uv_tcp
-                            remote = TCP.new(loop, handle)
-                        when :uv_pipe
-                            remote = Pipe.new(loop, @ipc, handle)
-                        else
-                            raise NotImplementedError, "IPC for handle #{pending} not supported"
-                        end
-                    rescue Exception => e
-                        remote = nil
-                        @loop.log :info, :pipe_read2_failed, e
-                        reject(e)  # if accept fails we should close the socket to avoid a stale pipe
-                    end
-                    if remote
-                        # stream the data and new socket
-                        begin
-                            @progress.call data, remote
-                        rescue Exception => e
-                            @loop.log :error, :stream_progress_cb, e
-                        end
-                    end
                 end
             end
         end

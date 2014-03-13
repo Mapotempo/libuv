@@ -139,6 +139,8 @@ describe Libuv::TCP do
 						@client.write('ping')
 					end
 				end
+
+				@pipeserve.getsockname
 			end
 
 			# start listening
@@ -175,7 +177,9 @@ describe Libuv::TCP do
 			
 					# connect client to server
 					@pipeclient.connect(@pipefile) do |client|
-						@pipeclient.progress do |data, connection|
+						@pipeclient.progress do |data|
+							connection = @pipeclient.check_pending
+
 							connection.progress do |data|
 								@sync.synchronize {
 									@log << data
@@ -190,7 +194,7 @@ describe Libuv::TCP do
 							end
 						end
 
-						@pipeclient.start_read2
+						@pipeclient.start_read
 					end
 				end
 			end
