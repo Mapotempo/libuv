@@ -50,6 +50,7 @@ module Libuv
         class ENOENT < Error; end
         class ENOMEM < Error; end
         class ENONET < Error; end
+        class ENOPROTOOPT < Error; end
         class ENOSPC < Error; end
         class ENOSYS < Error; end
         class ENOTCONN < Error; end
@@ -62,11 +63,14 @@ module Libuv
         class EPROTO < Error; end
         class EPROTONOSUPPORT < Error; end
         class EPROTOTYPE < Error; end
+        class ERANGE < Error; end
+        class ENXIO < Error; end
         class EROFS < Error; end
         class ESHUTDOWN < Error; end
         class ESPIPE < Error; end
         class ESRCH < Error; end
         class ETIMEDOUT < Error; end
+        class ETXTBSY < Error; end
         class EXDEV < Error; end
         class UNKNOWN < Error; end
         class EOF < Error; end

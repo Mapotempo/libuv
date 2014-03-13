@@ -34,9 +34,11 @@ module Libuv
         def pre_check(deferrable, request, result)
             error = check_result result
             if error
+                @request_refs.delete request.address
                 ::Libuv::Ext.free(request)
                 deferrable.reject(error)
             end
+            deferrable.promise
         end
 
         def cleanup(req)

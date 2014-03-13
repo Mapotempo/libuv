@@ -44,6 +44,7 @@ describe Libuv::Filesystem do
 					@general_failure << error
 				end
 				listing.finally do
+					@timeout.close
 					@loop.stop
 				end
 			}
@@ -63,6 +64,7 @@ describe Libuv::Filesystem do
 					file.write('write some data to a file').then do
 						file.chmod(777).then do
 							file.close
+							@timeout.close
 							@loop.stop
 							@log = :success
 						end
@@ -70,6 +72,7 @@ describe Libuv::Filesystem do
 				end
 				file.catch do |error|
 					@general_failure << error
+					@timeout.close
 					file.close
 					@loop.stop
 				end
@@ -87,12 +90,14 @@ describe Libuv::Filesystem do
 				file.progress do 
 					file.read(100).then do |result|
 						file.close
+						@timeout.close
 						@loop.stop
 						@log = result
 					end
 				end
 				file.catch do |error|
 					@general_failure << error
+					@timeout.close
 					file.close
 					@loop.stop
 				end
@@ -108,11 +113,13 @@ describe Libuv::Filesystem do
 
 				op = @loop.filesystem.unlink(@thefile)
 				op.then do
+					@timeout.close
 					@loop.stop
 					@log = :success
 				end
 				op.catch do |error|
 					@general_failure << error
+					@timeout.close
 					@loop.stop
 				end
 			}
@@ -150,6 +157,7 @@ describe Libuv::Filesystem do
 						end
 						client.start_read
 						client.finally do
+							@timeout.close
 							@server.close
 							@loop.stop
 						end
@@ -217,6 +225,7 @@ describe Libuv::Filesystem do
 						end
 						client.start_read
 						client.finally do
+							@timeout.close
 							@server.close
 							@loop.stop
 						end

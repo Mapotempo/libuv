@@ -42,6 +42,7 @@ describe Libuv::Async do
 					timer.close
 					callback.close
 					stopper.close
+					@timeout.close
 					@loop.stop
 				end
 				stopper.start(1000)

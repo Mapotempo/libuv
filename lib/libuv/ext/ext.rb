@@ -92,8 +92,8 @@ module Libuv
         attach_function :read_start, :uv_read_start, [:uv_stream_t, :uv_alloc_cb, :uv_read_cb], :int, :blocking => true
         attach_function :read_stop, :uv_read_stop, [:uv_stream_t], :int, :blocking => true
         attach_function :read2_start, :uv_read2_start, [:uv_stream_t, :uv_alloc_cb, :uv_read2_cb], :int, :blocking => true
-        attach_function :write, :uv_write, [:uv_write_t, :uv_stream_t, :pointer, :int, :uv_write_cb], :int, :blocking => true
-        attach_function :write2, :uv_write2, [:uv_write_t, :uv_stream_t, :pointer, :int, :uv_stream_t, :uv_write_cb], :int, :blocking => true
+        attach_function :write, :uv_write, [:uv_write_t, :uv_stream_t, :pointer, :uint, :uv_write_cb], :int, :blocking => true
+        attach_function :write2, :uv_write2, [:uv_write_t, :uv_stream_t, :pointer, :uint, :uv_stream_t, :uv_write_cb], :int, :blocking => true
         attach_function :is_readable, :uv_is_readable, [:uv_stream_t], :int, :blocking => true
         attach_function :is_writable, :uv_is_writable, [:uv_stream_t], :int, :blocking => true
         attach_function :shutdown, :uv_shutdown, [:uv_shutdown_t, :uv_stream_t, :uv_shutdown_cb], :int, :blocking => true
@@ -179,9 +179,9 @@ module Libuv
         attach_function :fs_req_cleanup, :uv_fs_req_cleanup, [:uv_fs_t], :void, :blocking => true
         attach_function :fs_close, :uv_fs_close, [:uv_loop_t, :uv_fs_t, :uv_file, :uv_fs_cb], :int, :blocking => true
         attach_function :fs_open, :uv_fs_open, [:uv_loop_t, :uv_fs_t, :string, :int, :int, :uv_fs_cb], :int, :blocking => true
-        attach_function :fs_read, :uv_fs_read, [:uv_loop_t, :uv_fs_t, :uv_file, :pointer, :size_t, :off_t, :uv_fs_cb], :int, :blocking => true
+        attach_function :fs_read, :uv_fs_read, [:uv_loop_t, :uv_fs_t, :uv_file, :pointer, :uint, :off_t, :uv_fs_cb], :int, :blocking => true
         attach_function :fs_unlink, :uv_fs_unlink, [:uv_loop_t, :uv_fs_t, :string, :uv_fs_cb], :int, :blocking => true
-        attach_function :fs_write, :uv_fs_write, [:uv_loop_t, :uv_fs_t, :uv_file, :pointer, :size_t, :off_t, :uv_fs_cb], :int, :blocking => true
+        attach_function :fs_write, :uv_fs_write, [:uv_loop_t, :uv_fs_t, :uv_file, :pointer, :uint, :off_t, :uv_fs_cb], :int, :blocking => true
         attach_function :fs_mkdir, :uv_fs_mkdir, [:uv_loop_t, :uv_fs_t, :string, :int, :uv_fs_cb], :int, :blocking => true
         attach_function :fs_rmdir, :uv_fs_rmdir, [:uv_loop_t, :uv_fs_t, :string, :uv_fs_cb], :int, :blocking => true
         attach_function :fs_readdir, :uv_fs_readdir, [:uv_loop_t, :uv_fs_t, :string, :int, :uv_fs_cb], :int, :blocking => true

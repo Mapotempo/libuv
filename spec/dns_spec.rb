@@ -31,9 +31,11 @@ describe Libuv::Dns do
 
 			@loop.lookup('localhost').then proc { |addrinfo|
 				@result = addrinfo[0][0]
+				@timeout.close
 				@loop.stop
 			}, proc { |err|
 				@general_failure << err
+				@timeout.close
 				@loop.stop
 			}
 		}
@@ -54,9 +56,11 @@ describe Libuv::Dns do
 
 			@loop.lookup('localhost', :IPv6).then proc { |addrinfo|
 				@result = addrinfo[0][0]
+				@timeout.close
 				@loop.stop
 			}, proc { |err|
 				@general_failure << err
+				@timeout.close
 				@loop.stop
 			}
 		}
@@ -77,9 +81,11 @@ describe Libuv::Dns do
 
 			@loop.lookup('127.0.0.1').then proc { |addrinfo|
 				@result = addrinfo[0][0]
+				@timeout.close
 				@loop.stop
 			}, proc { |err|
 				@general_failure << err
+				@timeout.close
 				@loop.stop
 			}
 		}
