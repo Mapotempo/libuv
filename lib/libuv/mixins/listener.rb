@@ -16,7 +16,7 @@ module Libuv
         end
 
         def callback(name)
-            const_name = "#{name}_#{object_id}".to_sym
+            const_name = "#{name}_#{object_id}"
             unless CALLBACKS[const_name]
                 callbacks << const_name
                 CALLBACKS[const_name] = method(name)
