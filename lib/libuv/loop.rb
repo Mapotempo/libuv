@@ -97,6 +97,13 @@ module Libuv
         public
 
 
+        # Overwrite as errors in jRuby can literally hang VM when inspecting
+        # as many many classes will reference this class
+        def inspect
+            "#<#{self.class}:0x#{self.__id__.to_s(16)} NT=#{@run_queue.length}>"
+        end
+
+
         def handle; @pointer; end
 
         # Run the actual event loop. This method will block until the loop is stopped.
