@@ -39,17 +39,11 @@ module Libuv
         private
 
 
-        def on_idle(handle, status)
-            e = check_result(status)
-
-            if e
-                reject(e)
-            else
-                begin
-                    @callback.call
-                rescue Exception => e
-                    @loop.log :error, :idle_cb, e
-                end
+        def on_idle(handle)
+            begin
+                @callback.call
+            rescue Exception => e
+                @loop.log :error, :idle_cb, e
             end
         end
     end

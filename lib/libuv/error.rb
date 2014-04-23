@@ -65,6 +65,7 @@ module Libuv
         class EPROTOTYPE < Error; end
         class ERANGE < Error; end
         class ENXIO < Error; end
+        class EMLINK < Error; end
         class EROFS < Error; end
         class ESHUTDOWN < Error; end
         class ESPIPE < Error; end

@@ -219,12 +219,12 @@ module Libuv
         callback :uv_connection_cb,  [:uv_stream_t, :status],                            :void
         callback :uv_close_cb,       [:uv_handle_t],                                     :void
         callback :uv_poll_cb,        [:uv_poll_t, :status, :events],                     :void
-        callback :uv_timer_cb,       [:uv_timer_t, :status],                             :void
+        callback :uv_timer_cb,       [:uv_timer_t],                                      :void
         callback :uv_signal_cb,      [:uv_signal_t, :signal],                            :void
-        callback :uv_async_cb,       [:uv_async_t, :status],                             :void
-        callback :uv_prepare_cb,     [:uv_prepare_t, :status],                           :void
-        callback :uv_check_cb,       [:uv_check_t, :status],                             :void
-        callback :uv_idle_cb,        [:uv_idle_t, :status],                              :void
+        callback :uv_async_cb,       [:uv_async_t],                                      :void
+        callback :uv_prepare_cb,     [:uv_prepare_t],                                    :void
+        callback :uv_check_cb,       [:uv_check_t],                                      :void
+        callback :uv_idle_cb,        [:uv_idle_t],                                       :void
         callback :uv_getaddrinfo_cb, [:uv_getaddrinfo_t, :status, UvAddrinfo.by_ref],    :void
         callback :uv_exit_cb,        [:uv_process_t, :int, :int],                        :void
         callback :uv_walk_cb,        [:uv_handle_t, :pointer],                           :void

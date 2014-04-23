@@ -68,17 +68,11 @@ module Libuv
         private
 
 
-        def on_timer(handle, status)
-            e = check_result(status)
-
-            if e
-                reject(e)
-            else
-                begin
-                    @callback.call
-                rescue Exception => e
-                    @loop.log :error, :timer_cb, e
-                end
+        def on_timer(handle)
+            begin
+                @callback.call
+            rescue Exception => e
+                @loop.log :error, :timer_cb, e
             end
         end
     end

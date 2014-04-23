@@ -200,12 +200,17 @@ module Libuv
         # @return [::Libuv::Error]
         def lookup_error(err)
             name = ::Libuv::Ext.err_name(err)
-            msg  = ::Libuv::Ext.strerror(err)
 
-            ::Libuv::Error.const_get(name.to_sym).new(msg)
+            if name
+                msg  = ::Libuv::Ext.strerror(err)
+                ::Libuv::Error.const_get(name.to_sym).new(msg)
+            else
+                # We want a back-trace in this case
+                raise "error lookup failed for code #{err}"
+            end
         rescue Exception => e
             @loop.log :warn, :error_lookup_failed, e
-            ::Libuv::Error::UNKNOWN.new("error lookup failed for code #{err} #{name} #{msg}")
+            e
         end
 
         # Get a new TCP instance

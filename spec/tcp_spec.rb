@@ -35,9 +35,9 @@ describe Libuv::TCP do
 			@loop.run { |logger|
 				logger.progress do |level, errorid, error|
 					begin
-						@general_failure << "Log called: #{level}: #{errorid}\n#{error.message}\n#{error.backtrace.join("\n")}\n"
-					rescue Exception
-						@general_failure << 'error in logger'
+						@general_failure << "Log called: #{level}: #{errorid}\n#{error.message}\n#{error.backtrace.join("\n") if error.backtrace}\n"
+					rescue Exception => e
+						@general_failure << "error in logger #{e.inspect}"
 					end
 				end
 
@@ -98,9 +98,9 @@ describe Libuv::TCP do
 		@loop.run { |logger|
 			logger.progress do |level, errorid, error|
 				begin
-					@general_failure << "Log called: #{level}: #{errorid}\n#{error.message}\n#{error.backtrace.join("\n")}\n"
+					@general_failure << "Log called: #{level}: #{errorid}\n#{error.message}\n#{error.backtrace.join("\n") if error.backtrace}\n"
 				rescue Exception
-					@general_failure << 'error in logger'
+					@general_failure << "error in logger #{e.inspect}"
 				end
 			end
 
@@ -169,9 +169,9 @@ describe Libuv::TCP do
 				@loop2.run do  |logger|
 					logger.progress do |level, errorid, error|
 						begin
-							@general_failure << "Log called: #{level}: #{errorid}\n#{error.message}\n#{error.backtrace.join("\n")}\n"
+							@general_failure << "Log called: #{level}: #{errorid}\n#{error.message}\n#{error.backtrace.join("\n") if error.backtrace}\n"
 						rescue Exception
-							@general_failure << 'error in logger'
+							@general_failure << "error in logger #{e.inspect}"
 						end
 					end
 			
@@ -209,9 +209,9 @@ describe Libuv::TCP do
 			@loop.run { |logger|
 				logger.progress do |level, errorid, error|
 					begin
-						@general_failure << "Log called: #{level}: #{errorid}\n#{error.message}\n#{error.backtrace.join("\n")}\n"
+						@general_failure << "Log called: #{level}: #{errorid}\n#{error.message}\n#{error.backtrace.join("\n") if error.backtrace}\n"
 					rescue Exception
-						@general_failure << 'error in logger'
+						@general_failure << "error in logger #{e.inspect}"
 					end
 				end
 

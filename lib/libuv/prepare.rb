@@ -39,17 +39,11 @@ module Libuv
         private
 
 
-        def on_prepare(handle, status)
-            e = check_result(status)
-
-            if e
-                reject(e)
-            else
-                begin
-                    @callback.call
-                rescue Exception => e
-                    @loop.log :error, :prepare_cb, e
-                end
+        def on_prepare(handle)
+            begin
+                @callback.call
+            rescue Exception => e
+                @loop.log :error, :prepare_cb, e
             end
         end
     end

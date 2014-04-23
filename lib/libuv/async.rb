@@ -30,17 +30,11 @@ module Libuv
         private
 
 
-        def on_async(handle, status)
-            e = check_result(status)
-
-            if e
-                reject(e)
-            else
-                begin
-                    @callback.call
-                rescue Exception => e
-                    @loop.log :error, :async_cb, e
-                end
+        def on_async(handle)
+            begin
+                @callback.call
+            rescue Exception => e
+                @loop.log :error, :async_cb, e
             end
         end
     end
