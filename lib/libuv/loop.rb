@@ -51,13 +51,16 @@ module Libuv
 
             # Create an async call for scheduling work from other threads
             @run_queue = Queue.new
-            @process_queue = Async.new @loop, method(:process_queue_cb)
+            @process_queue = @loop.async method(:process_queue_cb)
+            @process_queue.unref
 
             # Create a next tick timer
             @next_tick = @loop.timer method(:next_tick_cb)
+            @next_tick.unref
 
             # Create an async call for ending the loop
-            @stop_loop = Async.new @loop, method(:stop_cb)
+            @stop_loop = @loop.async method(:stop_cb)
+            @stop_loop.unref
         end
 
 
@@ -73,6 +76,7 @@ module Libuv
 
         def next_tick_cb
             @next_tick_scheduled = false
+            @next_tick.unref
             process_queue_cb
         end
 
@@ -380,6 +384,7 @@ module Libuv
                 if not @next_tick_scheduled
                     @next_tick.start(0)
                     @next_tick_scheduled = true
+                    @next_tick.ref
                 end
             else
                 @process_queue.call
