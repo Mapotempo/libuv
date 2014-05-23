@@ -15,6 +15,7 @@ module Libuv
 
             udp_ptr = ::Libuv::Ext.create_handle(:uv_udp)
             error = check_result(::Libuv::Ext.udp_init(loop.handle, udp_ptr))
+            @request_refs = {}
 
             super(udp_ptr, error)
         end
@@ -87,34 +88,22 @@ module Libuv
 
                     sockaddr = create_sockaddr(ip, port)
 
-                    # local as this variable will be avaliable until the handle is closed
-                    @sent_callbacks ||= []
+                    # Save a reference to this request
+                    req = send_req
+                    @request_refs[req.address] = deferred
 
-                    #
-                    # create the curried callback
-                    #
-                    callback = FFI::Function.new(:void, [:pointer, :int]) do |req, status|
-                        ::Libuv::Ext.free(req)
-                        # remove the callback from the array
-                        # assumes sends are done in order
-                        promise = @sent_callbacks.shift[0]
-                        resolve promise, status
-                    end
-
-                    #
                     # Save the callback and return the promise
-                    #
-                    @sent_callbacks << [deferred, callback]
                     error = check_result ::Libuv::Ext.udp_send(
-                        send_req,
+                        req,
                         handle,
                         buf_init(data),
                         1,
                         sockaddr,
-                        callback
+                        callback(:send_complete)
                     )
                     if error
-                        @sent_callbacks.pop
+                        @request_refs.delete req.address
+                        ::Libuv::Ext.free(req)
                         deferred.reject(error)
                         reject(error)       # close the handle
                     end
@@ -236,6 +225,12 @@ module Libuv
                 @receive_buff = nil
                 @receive_size = nil
             end
+        end
+
+        def send_complete(req, status)
+            promise = @request_refs.delete req.address
+            ::Libuv::Ext.free(req)
+            resolve promise, status
         end
     end
 end
