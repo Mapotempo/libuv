@@ -1,6 +1,6 @@
 # Libuv FFI bindings for Ruby
 
-[![Build Status](https://travis-ci.org/cotag/libuv.png?branch=master)](https://travis-ci.org/cotag/libuv)
+[![Build Status](https://travis-ci.org/cotag/libuv.svg?branch=master)](https://travis-ci.org/cotag/libuv)
 
 [Libuv](https://github.com/joyent/libuv) is a cross platform asynchronous IO implementation that powers NodeJS. It supports sockets, both UDP and TCP, filesystem watch, TTY, Pipes and other asynchronous primitives like timer, check, prepare and idle.
 
@@ -21,7 +21,6 @@ Create a new libuv loop or use a default one
     timer = loop.timer do
       puts "5 seconds passed"
       timer.close
-      loop.stop
     end
     timer.catch do |error|
       puts "error with timer: #{error}"
