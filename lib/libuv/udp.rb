@@ -40,7 +40,7 @@ module Libuv
             return [] if @closed
             sockaddr, len = get_sockaddr_and_len
             check_result! ::Libuv::Ext.udp_getsockname(handle, sockaddr, len)
-            get_ip_and_port(UV::Sockaddr.new(sockaddr), len.get_int(0))
+            get_ip_and_port(::Libuv::Ext::Sockaddr.new(sockaddr), len.get_int(0))
         end
 
         def join(multicast_address, interface_address)
