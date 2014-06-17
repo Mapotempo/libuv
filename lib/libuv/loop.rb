@@ -124,10 +124,10 @@ module Libuv
                     @reactor_thread = Thread.current
                     LOOPS[@reactor_thread] = @loop
                     if block_given?
-                        if @@use_fibers.nil?
-                            yield @loop_notify.promise
-                        else
+                        if @@use_fibers
                             Fiber.new { yield @loop_notify.promise }.resume
+                        else
+                            yield @loop_notify.promise
                         end
                     end
                     ::Libuv::Ext.run(@pointer, run_type)  # This is blocking
@@ -136,10 +136,10 @@ module Libuv
                     @run_queue.clear
                 end
             elsif block_given?
-                if @@use_fibers.nil?
-                    schedule { yield @loop_notify.promise }
-                else
+                if @@use_fibers
                     schedule { Fiber.new { yield @loop_notify.promise }.resume }
+                else
+                    schedule { yield @loop_notify.promise }
                 end
             end
             @loop
