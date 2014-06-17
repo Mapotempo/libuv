@@ -4,11 +4,11 @@
 
 [Libuv](https://github.com/joyent/libuv) is a cross platform asynchronous IO implementation that powers NodeJS. It supports sockets, both UDP and TCP, filesystem watch, TTY, Pipes and other asynchronous primitives like timer, check, prepare and idle.
 
-The Libuv gem contains Libuv and a Ruby wrapper that implements [pipelined promises](http://en.wikipedia.org/wiki/Futures_and_promises#Promise_pipelining) for asynchronous flow control
+The Libuv gem contains Libuv and a Ruby wrapper that implements [pipelined promises](http://en.wikipedia.org/wiki/Futures_and_promises#Promise_pipelining) for asynchronous flow control and [coroutines](http://en.wikipedia.org/wiki/Coroutine) for untangling evented code
 
 ## Usage
 
-Create a new libuv loop or use a default one
+using promises
 
 ```ruby
   require 'libuv'
@@ -29,6 +29,31 @@ Create a new libuv loop or use a default one
       puts "timer handle was closed"
     end
     timer.start(5000)
+  end
+```
+
+using coroutines (if a somewhat abstract example)
+
+```ruby
+  require 'libuv'
+  require 'libuv/coroutines'
+
+  loop = Libuv::Loop.default
+  loop.run do
+    begin
+      timer = loop.timer do
+        puts "5 seconds passed"
+        timer.close
+      end
+      timer.start(5000)
+
+      # co-routine waits for timer to close
+      co timer
+
+      puts "timer handle was closed"
+    rescue => error
+      puts "error with timer: #{error}"
+    end
   end
 ```
 
@@ -68,7 +93,7 @@ Windows users will additionally require:
 
 
 
-## Libuv features supported
+## Features
 
 * TCP (with TLS support)
 * UDP
@@ -86,3 +111,4 @@ Windows users will additionally require:
 * File manipulation
 * Errors (with a catch-all fallback for anything unhandled on the event loop)
 * Work queue (thread pool)
+* Coroutines (optional - makes use of Fibers)

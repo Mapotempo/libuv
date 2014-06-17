@@ -7,6 +7,7 @@ module Libuv
 
         LOOPS = ThreadSafe::Cache.new
         CRITICAL = Mutex.new
+        @@use_fibers = false
 
 
         module ClassMethods
@@ -122,14 +123,24 @@ module Libuv
                 begin
                     @reactor_thread = Thread.current
                     LOOPS[@reactor_thread] = @loop
-                    yield  @loop_notify.promise if block_given?
+                    if block_given?
+                        if @@use_fibers.nil?
+                            yield @loop_notify.promise
+                        else
+                            Fiber.new { yield @loop_notify.promise }.resume
+                        end
+                    end
                     ::Libuv::Ext.run(@pointer, run_type)  # This is blocking
                 ensure
                     @reactor_thread = nil
                     @run_queue.clear
                 end
             elsif block_given?
-                schedule { yield  @loop_notify.promise }
+                if @@use_fibers.nil?
+                    schedule { yield @loop_notify.promise }
+                else
+                    schedule { Fiber.new { yield @loop_notify.promise }.resume }
+                end
             end
             @loop
         end
