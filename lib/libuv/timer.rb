@@ -21,6 +21,10 @@ module Libuv
             return if @closed
             @stopped = false
 
+            # prevent timeouts less than 0 (very long time otherwise as cast to an unsigned)
+            # and you probably don't want to wait a few lifetimes
+            timeout = 0 if timeout < 0
+
             timeout = timeout.to_i
             repeat = repeat.to_i
 
