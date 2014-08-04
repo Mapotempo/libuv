@@ -36,6 +36,20 @@ module Libuv
             reject(error) if error
         end
 
+        def try_write(data)
+            assert_type(String, data, WRITE_ERROR)
+
+            buffer1 = ::FFI::MemoryPointer.from_string(data)
+            buffer  = ::Libuv::Ext.buf_init(buffer1, data.respond_to?(:bytesize) ? data.bytesize : data.size)
+
+            result = ::Libuv::Ext.try_write(handle, buffer, 1)
+            buffer1.free
+
+            error = check_result result
+            raise error if error
+            return result
+        end
+
         def write(data)
             # NOTE:: Similar to udp.rb -> send
             deferred = @loop.defer
@@ -43,10 +57,8 @@ module Libuv
                 begin
                     assert_type(String, data, WRITE_ERROR)
 
-                    size        = data.respond_to?(:bytesize) ? data.bytesize : data.size
-                    buffer1     = ::Libuv::Ext.malloc size
-                    buffer1.write_string data
-                    buffer      = ::Libuv::Ext.buf_init(buffer1, size)
+                    buffer1 = ::FFI::MemoryPointer.from_string(data)
+                    buffer  = ::Libuv::Ext.buf_init(buffer1, data.respond_to?(:bytesize) ? data.bytesize : data.size)
 
                     # local as this variable will be available until the handle is closed
                     @write_callbacks ||= {}
@@ -57,7 +69,7 @@ module Libuv
                     if error
                         @write_callbacks.delete req.address
                         ::Libuv::Ext.free(req)
-                        ::Libuv::Ext.free(buffer1)
+                        buffer1.free
                         deferred.reject(error)
 
                         reject(error)       # close the handle
@@ -112,7 +124,7 @@ module Libuv
             deferred, buffer1 = @write_callbacks.delete req.address
 
             ::Libuv::Ext.free(req)
-            ::Libuv::Ext.free(buffer1)
+            buffer1.free
 
             resolve deferred, status
         end

@@ -91,6 +91,7 @@ module Libuv
         attach_function :accept, :uv_accept, [:uv_stream_t, :uv_stream_t], :int, :blocking => true
         attach_function :read_start, :uv_read_start, [:uv_stream_t, :uv_alloc_cb, :uv_read_cb], :int, :blocking => true
         attach_function :read_stop, :uv_read_stop, [:uv_stream_t], :int, :blocking => true
+        attach_function :try_write, :uv_try_write, [:uv_stream_t, :pointer, :uint], :int, :blocking => true
         attach_function :write, :uv_write, [:uv_write_t, :uv_stream_t, :pointer, :uint, :uv_write_cb], :int, :blocking => true
         attach_function :write2, :uv_write2, [:uv_write_t, :uv_stream_t, :pointer, :uint, :uv_stream_t, :uv_write_cb], :int, :blocking => true
         attach_function :is_readable, :uv_is_readable, [:uv_stream_t], :int, :blocking => true
@@ -116,6 +117,7 @@ module Libuv
         attach_function :udp_set_multicast_ttl, :uv_udp_set_multicast_ttl, [:uv_udp_t, :int], :int, :blocking => true
         attach_function :udp_set_broadcast, :uv_udp_set_broadcast, [:uv_udp_t, :int], :int, :blocking => true
         attach_function :udp_set_ttl, :uv_udp_set_ttl, [:uv_udp_t, :int], :int, :blocking => true
+        attach_function :udp_try_send, :uv_udp_try_send, [:uv_udp_t, :pointer, :int, :sockaddr_in], :int, :blocking => true
         attach_function :udp_send, :uv_udp_send, [:uv_udp_send_t, :uv_udp_t, :pointer, :int, :sockaddr_in, :uv_udp_send_cb], :int, :blocking => true
         attach_function :udp_recv_start, :uv_udp_recv_start, [:uv_udp_t, :uv_alloc_cb, :uv_udp_recv_cb], :int, :blocking => true
         attach_function :udp_recv_stop, :uv_udp_recv_stop, [:uv_udp_t], :int, :blocking => true

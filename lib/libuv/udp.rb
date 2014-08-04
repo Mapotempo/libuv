@@ -77,6 +77,29 @@ module Libuv
             reject(error) if error
         end
 
+        def try_send(ip, port, data)
+            assert_type(String, ip, IP_ARGUMENT_ERROR)
+            assert_type(Integer, port, PORT_ARGUMENT_ERROR)
+            assert_type(String, data, SEND_DATA_ERROR)
+
+            sockaddr = create_sockaddr(ip, port)
+
+            buffer1 = ::FFI::MemoryPointer.from_string(data)
+            buffer  = ::Libuv::Ext.buf_init(buffer1, data.respond_to?(:bytesize) ? data.bytesize : data.size)
+
+            result = ::Libuv::Ext.udp_try_send(
+                handle,
+                buffer,
+                1,
+                sockaddr
+            )
+            buffer1.free
+
+            error = check_result result
+            raise error if error
+            return result
+        end
+
         def send(ip, port, data)
             # NOTE:: Similar to stream.rb -> write
             deferred = @loop.defer
@@ -90,13 +113,15 @@ module Libuv
 
                     # Save a reference to this request
                     req = send_req
-                    @request_refs[req.address] = deferred
+                    buffer1 = ::FFI::MemoryPointer.from_string(data)
+                    buffer  = ::Libuv::Ext.buf_init(buffer1, data.respond_to?(:bytesize) ? data.bytesize : data.size)
+                    @request_refs[req.address] = [deferred, buffer1]
 
                     # Save the callback and return the promise
                     error = check_result ::Libuv::Ext.udp_send(
                         req,
                         handle,
-                        buf_init(data),
+                        buffer,
                         1,
                         sockaddr,
                         callback(:send_complete)
@@ -104,6 +129,7 @@ module Libuv
                     if error
                         @request_refs.delete req.address
                         ::Libuv::Ext.free(req)
+                        buffer1.free
                         deferred.reject(error)
                         reject(error)       # close the handle
                     end
@@ -166,10 +192,6 @@ module Libuv
             ::Libuv::Ext.create_request(:uv_udp_send)
         end
 
-        def buf_init(data)
-            ::Libuv::Ext.buf_init(FFI::MemoryPointer.from_string(data), data.respond_to?(:bytesize) ? data.bytesize : data.size)
-        end
-
         def create_sockaddr(ip, port)
             ips = IPAddr.new(ip)
             if ips.ipv4?
@@ -228,9 +250,12 @@ module Libuv
         end
 
         def send_complete(req, status)
-            promise = @request_refs.delete req.address
+            deferred, buffer1 = @request_refs.delete req.address
+
             ::Libuv::Ext.free(req)
-            resolve promise, status
+            buffer1.free
+
+            resolve deferred, status
         end
     end
 end
