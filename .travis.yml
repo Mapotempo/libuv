@@ -4,7 +4,7 @@ rvm:
   - "2.0.0"
   - ruby-head
   - rbx-2
-  - jruby-head
+  - jruby-19mode
 branches:
   only:
     - master
