@@ -3,14 +3,14 @@ rvm:
   - "1.9.3"
   - "2.0.0"
   - ruby-head
-  - rbx-2.2.1
-  - jruby-head
+  - rbx-2
+  - jruby-19mode
 branches:
   only:
     - master
 before_install:
   - sudo apt-get install subversion
   - git submodule update --init --recursive
-  - echo "yes" | gem uninstall ffi -a
+  - gem install ffi
 before_script:
   - rake compile
