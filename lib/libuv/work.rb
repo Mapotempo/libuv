@@ -14,7 +14,7 @@ module Libuv
 
             @work = work
             @complete = false
-            @pointer = ::Libuv::Ext.create_request(:uv_work)
+            @pointer = ::Libuv::Ext.allocate_request_work
             @error = nil    # error in callback
 
             error = check_result ::Libuv::Ext.queue_work(@loop, @pointer, callback(:on_work), callback(:on_complete))

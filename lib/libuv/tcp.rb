@@ -18,7 +18,7 @@ module Libuv
         def initialize(loop, acceptor = nil)
             @loop = loop
 
-            tcp_ptr = ::Libuv::Ext.create_handle(:uv_tcp)
+            tcp_ptr = ::Libuv::Ext.allocate_handle_tcp
             error = check_result(::Libuv::Ext.tcp_init(loop.handle, tcp_ptr))
 
             if acceptor && error.nil?
@@ -291,7 +291,7 @@ module Libuv
 
 
             def connect_req
-                ::Libuv::Ext.create_request(:uv_connect)
+                ::Libuv::Ext.allocate_request_connect
             end
 
             def tcp_connect(callback)

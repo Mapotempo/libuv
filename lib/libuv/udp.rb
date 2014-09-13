@@ -13,7 +13,7 @@ module Libuv
         def initialize(loop)
             @loop = loop
 
-            udp_ptr = ::Libuv::Ext.create_handle(:uv_udp)
+            udp_ptr = ::Libuv::Ext.allocate_handle_udp
             error = check_result(::Libuv::Ext.udp_init(loop.handle, udp_ptr))
             @request_refs = {}
 
@@ -189,7 +189,7 @@ module Libuv
 
 
         def send_req
-            ::Libuv::Ext.create_request(:uv_udp_send)
+            ::Libuv::Ext.allocate_request_udp_send
         end
 
         def create_sockaddr(ip, port)

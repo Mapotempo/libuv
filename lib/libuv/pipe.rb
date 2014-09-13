@@ -9,7 +9,7 @@ module Libuv
         def initialize(loop, ipc, acceptor = nil)
             @loop, @ipc = loop, ipc
 
-            pipe_ptr = ::Libuv::Ext.create_handle(:uv_pipe)
+            pipe_ptr = ::Libuv::Ext.allocate_handle_pipe
             error = check_result(::Libuv::Ext.pipe_init(loop.handle, pipe_ptr, ipc ? 1 : 0))
             error = check_result(::Libuv::Ext.accept(acceptor, pipe_ptr)) if acceptor && error.nil?
             
@@ -68,7 +68,7 @@ module Libuv
             assert_type(String, name, "name must be a String")
             begin
                 name = windows_path name if FFI::Platform.windows?
-                ::Libuv::Ext.pipe_connect(::Libuv::Ext.create_request(:uv_connect), handle, name, callback(:on_connect))
+                ::Libuv::Ext.pipe_connect(::Libuv::Ext.allocate_request_connect, handle, name, callback(:on_connect))
             rescue Exception => e
                 reject(e)
             end
@@ -100,7 +100,7 @@ module Libuv
 
 
                     @write_callbacks << [deferred, callback]
-                    req = ::Libuv::Ext.create_request(:uv_write)
+                    req = ::Libuv::Ext.allocate_request_write
                     error = check_result ::Libuv::Ext.write2(req, handle, buffer, 1, fd.handle, callback)
 
                     if error
@@ -135,9 +135,9 @@ module Libuv
             # Hide the accept logic
             remote = nil
             case pending
-            when :uv_tcp
+            when :tcp
                 remote = TCP.new(loop, handle)
-            when :uv_pipe
+            when :pipe
                 remote = Pipe.new(loop, @ipc, handle)
             else
                 raise NotImplementedError, "IPC for handle #{pending} not supported"

@@ -8,7 +8,7 @@ module Libuv
         def initialize(loop, path)
             @loop = loop
 
-            fs_event_ptr = ::Libuv::Ext.create_handle(:uv_fs_event)
+            fs_event_ptr = ::Libuv::Ext.allocate_handle_fs_event
             error = check_result ::Libuv::Ext.fs_event_init(loop.handle, fs_event_ptr, path, callback(:on_fs_event), 0)
 
             super(fs_event_ptr, error)

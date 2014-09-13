@@ -8,7 +8,7 @@ module Libuv
             @loop = loop
             @callback = callback || blk
 
-            idle_ptr = ::Libuv::Ext.create_handle(:uv_idle)
+            idle_ptr = ::Libuv::Ext.allocate_handle_idle
             error = check_result(::Libuv::Ext.idle_init(loop.handle, idle_ptr))
 
             super(idle_ptr, error)

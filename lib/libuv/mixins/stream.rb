@@ -32,7 +32,7 @@ module Libuv
         # Shutsdown the writes on the handle waiting until the last write is complete before triggering the callback
         def shutdown
             return if @closed
-            error = check_result ::Libuv::Ext.shutdown(::Libuv::Ext.create_request(:uv_shutdown), handle, callback(:on_shutdown))
+            error = check_result ::Libuv::Ext.shutdown(::Libuv::Ext.allocate_request_shutdown, handle, callback(:on_shutdown))
             reject(error) if error
         end
 
@@ -62,7 +62,7 @@ module Libuv
 
                     # local as this variable will be available until the handle is closed
                     @write_callbacks ||= {}
-                    req = ::Libuv::Ext.create_request(:uv_write)
+                    req = ::Libuv::Ext.allocate_request_write
                     @write_callbacks[req.address] = [deferred, buffer1]
                     error = check_result ::Libuv::Ext.write(req, handle, buffer, 1, callback(:write_complete))
 

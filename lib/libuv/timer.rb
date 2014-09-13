@@ -6,7 +6,7 @@ module Libuv
         def initialize(loop, callback = nil)
             @loop, @callback = loop, callback
             
-            timer_ptr = ::Libuv::Ext.create_handle(:uv_timer)
+            timer_ptr = ::Libuv::Ext.allocate_handle_timer
             error = check_result(::Libuv::Ext.timer_init(loop.handle, timer_ptr))
             @stopped = true
 

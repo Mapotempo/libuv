@@ -19,7 +19,7 @@ module Libuv
         def initialize(loop)
             @loop = loop
 
-            signal_ptr = ::Libuv::Ext.create_handle(:uv_signal)
+            signal_ptr = ::Libuv::Ext.allocate_handle_signal
             error = check_result(::Libuv::Ext.signal_init(loop.handle, signal_ptr))
 
             super(signal_ptr, error)

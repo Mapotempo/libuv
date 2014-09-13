@@ -48,7 +48,7 @@ module Libuv
 
         # We need to calculate where the FS request data is located using req_size
         class FsRequest < FFI::Struct
-            layout :req_data, [:uint8, Ext.req_size(:uv_req)],
+            layout :req_data, [:uint8, Ext.req_size(:req)],
                    :fs_type, :uv_fs_type,
                    :loop, :uv_loop_t,
                    :fs_callback, :pointer,
@@ -252,12 +252,15 @@ module Libuv
         attach_function :thread_join, :uv_thread_join, [:uv_thread_t], :int, :blocking => true
 
 
-        def self.create_handle(type)
-            LIBC.malloc(Ext.handle_size(type))
+        # Predetermine the handle sizes
+        enum_type(:uv_handle_type).symbols.each do |handle_type|
+            handle_size = Ext.handle_size(handle_type)
+            define_singleton_method(:"allocate_handle_#{handle_type}") { LIBC.malloc(handle_size) }
         end
 
-        def self.create_request(type)
-            LIBC.malloc(Ext.req_size(type))
+        enum_type(:uv_req_type).symbols.each do |request_type|
+            request_size = Ext.req_size(request_type)
+            define_singleton_method(:"allocate_request_#{request_type}") { LIBC.malloc(request_size) }
         end
     end
 end

@@ -35,7 +35,7 @@ module Libuv
             @port = port
             @hint = hint
             @complete = false
-            @pointer = ::Libuv::Ext.create_request(:uv_getaddrinfo)
+            @pointer = ::Libuv::Ext.allocate_request_getaddrinfo
             @error = nil    # error in callback
 
             error = check_result ::Libuv::Ext.getaddrinfo(@loop, @pointer, callback(:on_complete), domain, port.to_s, HINTS[hint])

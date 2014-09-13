@@ -6,7 +6,7 @@ module Libuv
         def stat
             @stat_deferred = @loop.defer
 
-            request = ::Libuv::Ext.create_request(:uv_fs)
+            request = ::Libuv::Ext.allocate_request_fs
             pre_check @stat_deferred, request, ::Libuv::Ext.fs_fstat(@loop.handle, request, @fileno, callback(:on_stat))
             @stat_deferred.promise
         end

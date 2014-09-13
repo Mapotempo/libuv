@@ -6,7 +6,7 @@ module Libuv
         def initialize(loop, callback = nil, &blk)
             @loop = loop
             @callback = callback || blk
-            async_ptr = ::Libuv::Ext.create_handle(:uv_async)
+            async_ptr = ::Libuv::Ext.allocate_handle_async
             error = check_result(::Libuv::Ext.async_init(loop.handle, async_ptr, callback(:on_async)))
 
             super(async_ptr, error)

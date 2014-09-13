@@ -8,7 +8,7 @@ module Libuv
             @loop = loop
             @callback = callback || blk
 
-            check_ptr = ::Libuv::Ext.create_handle(:uv_check)
+            check_ptr = ::Libuv::Ext.allocate_handle_check
             error = check_result(::Libuv::Ext.check_init(loop.handle, check_ptr))
 
             super(check_ptr, error)

@@ -18,14 +18,14 @@ module Libuv
             @path, @flags, @mode = path, flags, mode
             @request_refs = {}
 
-            request = ::Libuv::Ext.create_request(:uv_fs)
+            request = ::Libuv::Ext.allocate_request_fs
             pre_check @defer, request, ::Libuv::Ext.fs_open(@loop, request, @path, @flags, @mode, callback(:on_open))
             nil
         end
 
         def close
             @closed = true
-            request = ::Libuv::Ext.create_request(:uv_fs)
+            request = ::Libuv::Ext.allocate_request_fs
             pre_check(@defer, request, ::Libuv::Ext.fs_close(@loop.handle, request, @fileno, callback(:on_close)))
             nil # pre-check returns a promise
         end
@@ -37,7 +37,7 @@ module Libuv
 
             buffer1 = FFI::MemoryPointer.new(length)
             buffer  = ::Libuv::Ext.buf_init(buffer1, length)
-            request = ::Libuv::Ext.create_request(:uv_fs)
+            request = ::Libuv::Ext.allocate_request_fs
 
             @request_refs[request.address] = [deferred, buffer1]
 
@@ -53,7 +53,7 @@ module Libuv
 
             buffer1 = FFI::MemoryPointer.from_string(data)
             buffer  = ::Libuv::Ext.buf_init(buffer1, length)
-            request = ::Libuv::Ext.create_request(:uv_fs)
+            request = ::Libuv::Ext.allocate_request_fs
 
             @request_refs[request.address] = [deferred, buffer1]
 
@@ -63,7 +63,7 @@ module Libuv
         def sync
             deferred = @loop.defer
 
-            request = ::Libuv::Ext.create_request(:uv_fs)
+            request = ::Libuv::Ext.allocate_request_fs
             @request_refs[request.address] = deferred
 
             pre_check deferred, request, ::Libuv::Ext.fs_fsync(@loop.handle, request, @fileno, callback(:on_sync))
@@ -72,7 +72,7 @@ module Libuv
         def datasync
             deferred = @loop.defer
 
-            request = ::Libuv::Ext.create_request(:uv_fs)
+            request = ::Libuv::Ext.allocate_request_fs
             @request_refs[request.address] = deferred
 
             pre_check deferred, request, ::Libuv::Ext.fs_fdatasync(@loop.handle, request, @fileno, callback(:on_datasync))
@@ -82,7 +82,7 @@ module Libuv
             assert_type(Integer, offset, "offset must be an Integer")
             deferred = @loop.defer
 
-            request = ::Libuv::Ext.create_request(:uv_fs)
+            request = ::Libuv::Ext.allocate_request_fs
             @request_refs[request.address] = deferred
 
             pre_check deferred, request, ::Libuv::Ext.fs_ftruncate(@loop.handle, request, @fileno, offset, callback(:on_truncate))
@@ -93,7 +93,7 @@ module Libuv
             assert_type(Integer, mtime, "mtime must be an Integer")
             deferred = @loop.defer
 
-            request = ::Libuv::Ext.create_request(:uv_fs)
+            request = ::Libuv::Ext.allocate_request_fs
             @request_refs[request.address] = deferred
 
             pre_check deferred, request, ::Libuv::Ext.fs_futime(@loop.handle, request, @fileno, atime, mtime, callback(:on_utime))
@@ -103,7 +103,7 @@ module Libuv
             assert_type(Integer, mode, "mode must be an Integer")
             deferred = @loop.defer
 
-            request = ::Libuv::Ext.create_request(:uv_fs)
+            request = ::Libuv::Ext.allocate_request_fs
             @request_refs[request.address] = deferred
 
             pre_check deferred, request, ::Libuv::Ext.fs_fchmod(@loop.handle, request, @fileno, mode, callback(:on_chmod))
@@ -114,7 +114,7 @@ module Libuv
             assert_type(Integer, gid, "gid must be an Integer")
             deferred = @loop.defer
 
-            request = ::Libuv::Ext.create_request(:uv_fs)
+            request = ::Libuv::Ext.allocate_request_fs
             @request_refs[request.address] = deferred
 
             pre_check deferred, request, ::Libuv::Ext.fs_fchown(@loop.handle, request, @fileno, uid, gid, callback(:on_chown))

@@ -11,7 +11,7 @@ module Libuv
             assert_type(String, path, "path must be a String")
             @unlink_deferred = @loop.defer
 
-            request = ::Libuv::Ext.create_request(:uv_fs)
+            request = ::Libuv::Ext.allocate_request_fs
             pre_check @unlink_deferred, request, ::Libuv::Ext.fs_unlink(@loop, request, path, callback(:on_unlink))
             @unlink_deferred.promise
         end
@@ -21,7 +21,7 @@ module Libuv
             assert_type(Integer, mode, "mode must be an Integer")
             @mkdir_deferred = @loop.defer
 
-            request = ::Libuv::Ext.create_request(:uv_fs)
+            request = ::Libuv::Ext.allocate_request_fs
             pre_check @mkdir_deferred, request, ::Libuv::Ext.fs_mkdir(@loop, request, path, mode, callback(:on_mkdir))
             @mkdir_deferred.promise
         end
@@ -30,7 +30,7 @@ module Libuv
             assert_type(String, path, "path must be a String")
             @rmdir_deferred = @loop.defer
 
-            request = ::Libuv::Ext.create_request(:uv_fs)
+            request = ::Libuv::Ext.allocate_request_fs
             pre_check @rmdir_deferred, request, ::Libuv::Ext.fs_rmdir(@loop, request, path, callback(:on_rmdir))
             @rmdir_deferred.promise
         end
@@ -39,7 +39,7 @@ module Libuv
             assert_type(String, path, "path must be a String")
             @readdir_deferred = @loop.defer
 
-            request = ::Libuv::Ext.create_request(:uv_fs)
+            request = ::Libuv::Ext.allocate_request_fs
             pre_check @readdir_deferred, request, ::Libuv::Ext.fs_readdir(@loop, request, path, 0, callback(:on_readdir))
             @readdir_deferred.promise
         end
@@ -49,7 +49,7 @@ module Libuv
             assert_type(String, new_path, "new_path must be a String")
             @rename_deferred = @loop.defer
 
-            request = ::Libuv::Ext.create_request(:uv_fs)
+            request = ::Libuv::Ext.allocate_request_fs
             pre_check @rename_deferred, request, ::Libuv::Ext.fs_rename(@loop, request, old_path, new_path, callback(:on_rename))
             @rename_deferred.promise
         end
@@ -59,7 +59,7 @@ module Libuv
             assert_type(Integer, mode, "mode must be an Integer")
             @chmod_deferred = @loop.defer
 
-            request = ::Libuv::Ext.create_request(:uv_fs)
+            request = ::Libuv::Ext.allocate_request_fs
             pre_check @chmod_deferred, request, ::Libuv::Ext.fs_chmod(@loop, request, path, mode, callback(:on_chmod))
             @chmod_deferred.promise
         end
@@ -70,7 +70,7 @@ module Libuv
             assert_type(Integer, mtime, "mtime must be an Integer")
             @utime_deferred = @loop.defer
 
-            request = ::Libuv::Ext.create_request(:uv_fs)
+            request = ::Libuv::Ext.allocate_request_fs
             pre_check @utime_deferred, request, ::Libuv::Ext.fs_utime(@loop, request, path, atime, mtime, callback(:on_utime))
             @utime_deferred.promise
         end
@@ -79,7 +79,7 @@ module Libuv
             assert_type(String, path, "path must be a String")
             @stat_deferred = @loop.defer
 
-            request = ::Libuv::Ext.create_request(:uv_fs)
+            request = ::Libuv::Ext.allocate_request_fs
             pre_check @stat_deferred, request, ::Libuv::Ext.fs_lstat(@loop, request, path, callback(:on_stat))
             @stat_deferred.promise
         end
@@ -89,7 +89,7 @@ module Libuv
             assert_type(String, new_path, "new_path must be a String")
             @link_deferred = @loop.defer
 
-            request = ::Libuv::Ext.create_request(:uv_fs)
+            request = ::Libuv::Ext.allocate_request_fs
             pre_check @link_deferred, request, ::Libuv::Ext.fs_link(@loop, request, old_path, new_path, callback(:on_link))
             @link_deferred.promise
         end
@@ -99,7 +99,7 @@ module Libuv
             assert_type(String, new_path, "new_path must be a String")
             @symlink_deferred = @loop.defer
 
-            request = ::Libuv::Ext.create_request(:uv_fs)
+            request = ::Libuv::Ext.allocate_request_fs
             pre_check @symlink_deferred, request, ::Libuv::Ext.fs_symlink(@loop, request, old_path, new_path, 0, callback(:on_symlink))
             @symlink_deferred.promise
         end
@@ -108,7 +108,7 @@ module Libuv
             assert_type(String, path, "path must be a String")
             @readlink_deferred = @loop.defer
 
-            request = ::Libuv::Ext.create_request(:uv_fs)
+            request = ::Libuv::Ext.allocate_request_fs
             pre_check @readlink_deferred, request, ::Libuv::Ext.fs_readlink(@loop, request, path, callback(:on_readlink))
             @readlink_deferred.promise
         end
@@ -119,7 +119,7 @@ module Libuv
             assert_type(Integer, gid, "gid must be an Integer")
             @chown_deferred = @loop.defer
 
-            request = ::Libuv::Ext.create_request(:uv_fs)
+            request = ::Libuv::Ext.allocate_request_fs
             pre_check @chown_deferred, request, ::Libuv::Ext.fs_chown(@loop, request, path, uid, gid, callback(:on_chown))
             @chown_deferred.promise
         end
