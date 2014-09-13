@@ -84,6 +84,11 @@ module Libuv
         attach_function :walk, :uv_walk, [:uv_loop_t, :uv_walk_cb, :pointer], :void, :blocking => true
         attach_function :close, :uv_close, [:uv_handle_t, :uv_close_cb], :void, :blocking => true
         attach_function :is_closing, :uv_is_closing, [:uv_handle_t], :int, :blocking => true
+        # TODO:: Implement https://github.com/joyent/libuv/commit/0ecee213eac91beca141130cff2c7826242dab5a
+        # uv_recv_buffer_size
+        # uv_send_buffer_size
+        # https://github.com/joyent/libuv/commit/4ca9a363897cfa60f4e2229e4f15ac5abd7fd103
+        # uv_fileno
 
         attach_function :buf_init, :uv_buf_init, [:pointer, :size_t], UvBuf.by_value, :blocking => true
 
@@ -159,7 +164,7 @@ module Libuv
         attach_function :timer_again, :uv_timer_again, [:uv_timer_t], :int, :blocking => true
         attach_function :timer_set_repeat, :uv_timer_set_repeat, [:uv_timer_t, :int64_t], :void, :blocking => true
         attach_function :timer_get_repeat, :uv_timer_get_repeat, [:uv_timer_t], :int64_t, :blocking => true
-#:addrinfo
+        #:addrinfo
         attach_function :getaddrinfo, :uv_getaddrinfo, [:uv_loop_t, :uv_getaddrinfo_t, :uv_getaddrinfo_cb, :string, :string, UvAddrinfo.by_ref], :int, :blocking => true
         attach_function :freeaddrinfo, :uv_freeaddrinfo, [UvAddrinfo.by_ref], :void, :blocking => true
 
@@ -189,6 +194,7 @@ module Libuv
         attach_function :fs_mkdir, :uv_fs_mkdir, [:uv_loop_t, :uv_fs_t, :string, :int, :uv_fs_cb], :int, :blocking => true
         attach_function :fs_rmdir, :uv_fs_rmdir, [:uv_loop_t, :uv_fs_t, :string, :uv_fs_cb], :int, :blocking => true
         attach_function :fs_readdir, :uv_fs_readdir, [:uv_loop_t, :uv_fs_t, :string, :int, :uv_fs_cb], :int, :blocking => true
+        attach_function :fs_readdir_next, :uv_fs_readdir_next, [:uv_fs_t, :uv_dirent_t], :int, :blocking => true
         attach_function :fs_stat, :uv_fs_stat, [:uv_loop_t, :uv_fs_t, :string, :uv_fs_cb], :int, :blocking => true
         attach_function :fs_fstat, :uv_fs_fstat, [:uv_loop_t, :uv_fs_t, :uv_file, :uv_fs_cb], :int, :blocking => true
         attach_function :fs_rename, :uv_fs_rename, [:uv_loop_t, :uv_fs_t, :string, :string, :uv_fs_cb], :int, :blocking => true

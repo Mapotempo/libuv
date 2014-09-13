@@ -91,6 +91,23 @@ module Libuv
             :UV_RUN_ONCE,
             :UV_RUN_NOWAIT
         ]
+        enum :uv_dirent_type, [
+            :UV_DIRENT_UNKNOWN, 0,
+            :UV_DIRENT_FILE,
+            :UV_DIRENT_DIR,
+            :UV_DIRENT_LINK,
+            :UV_DIRENT_FIFO,
+            :UV_DIRENT_SOCKET,
+            :UV_DIRENT_CHAR,
+            :UV_DIRENT_BLOCK
+        ]
+
+        class UvDirent < FFI::Struct
+            layout  :name, :string,
+                    :type, :uv_dirent_type
+        end
+        typedef UvDirent.by_ref, :uv_dirent_t
+
 
         typedef UvBuf.by_ref, :uv_buf_t
         typedef SockaddrIn.by_ref, :sockaddr_in4

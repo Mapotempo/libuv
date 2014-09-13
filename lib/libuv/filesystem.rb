@@ -158,8 +158,17 @@ module Libuv
         def on_readdir(req)
             if post_check(req, @readdir_deferred)
                 num_files = req[:result]
-                string_ptr = req[:ptr]
-                files = string_ptr.null? ? [] : string_ptr.read_array_of_type(FFI::TYPE_STRING, :read_string, num_files)
+
+                info = ::Libuv::Ext::UvDirent.new
+                files = []
+                ret = 1
+                loop do
+                    ret = ::Libuv::Ext.fs_readdir_next(req, info)
+                    files << [info.name, info.type]
+                    # EOF is the alternative
+                    break unless ret == 0
+                end
+
                 cleanup(req)
                 @readdir_deferred.resolve(files)
             end
