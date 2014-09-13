@@ -164,7 +164,8 @@ module Libuv
                 ret = 1
                 loop do
                     ret = ::Libuv::Ext.fs_readdir_next(req, info)
-                    files << [info.name, info.type]
+                    files << [info[:name], info[:type]]
+
                     # EOF is the alternative
                     break unless ret == 0
                 end
