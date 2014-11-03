@@ -93,7 +93,13 @@ module Libuv
         def close
             return if @closed
 
-            @tls.cleanup if @tls  # Free tls memory
+            # Free tls memory
+            # Next tick as may recieve data after closing
+            if @tls
+                @loop.next_tick do
+                    @tls.cleanup
+                end
+            end
             @connected = false
 
             if not @pending_writes.nil?
