@@ -193,8 +193,8 @@ module Libuv
         attach_function :fs_write, :uv_fs_write, [:uv_loop_t, :uv_fs_t, :uv_file, :pointer, :uint, :off_t, :uv_fs_cb], :int, :blocking => true
         attach_function :fs_mkdir, :uv_fs_mkdir, [:uv_loop_t, :uv_fs_t, :string, :int, :uv_fs_cb], :int, :blocking => true
         attach_function :fs_rmdir, :uv_fs_rmdir, [:uv_loop_t, :uv_fs_t, :string, :uv_fs_cb], :int, :blocking => true
-        attach_function :fs_readdir, :uv_fs_readdir, [:uv_loop_t, :uv_fs_t, :string, :int, :uv_fs_cb], :int, :blocking => true
-        attach_function :fs_readdir_next, :uv_fs_readdir_next, [:uv_fs_t, :uv_dirent_t], :int, :blocking => true
+        attach_function :fs_readdir, :uv_fs_scandir, [:uv_loop_t, :uv_fs_t, :string, :int, :uv_fs_cb], :int, :blocking => true
+        attach_function :fs_readdir_next, :uv_fs_scandir_next, [:uv_fs_t, :uv_dirent_t], :int, :blocking => true
         attach_function :fs_stat, :uv_fs_stat, [:uv_loop_t, :uv_fs_t, :string, :uv_fs_cb], :int, :blocking => true
         attach_function :fs_fstat, :uv_fs_fstat, [:uv_loop_t, :uv_fs_t, :uv_file, :uv_fs_cb], :int, :blocking => true
         attach_function :fs_rename, :uv_fs_rename, [:uv_loop_t, :uv_fs_t, :string, :string, :uv_fs_cb], :int, :blocking => true
@@ -205,6 +205,7 @@ module Libuv
         attach_function :fs_chmod, :uv_fs_chmod, [:uv_loop_t, :uv_fs_t, :string, :int, :uv_fs_cb], :int, :blocking => true
         attach_function :fs_utime, :uv_fs_utime, [:uv_loop_t, :uv_fs_t, :string, :double, :double, :uv_fs_cb], :int, :blocking => true
         attach_function :fs_futime, :uv_fs_futime, [:uv_loop_t, :uv_fs_t, :uv_file, :double, :double, :uv_fs_cb], :int, :blocking => true
+        attach_function :fs_access, :uv_fs_access, [:uv_loop_t, :uv_fs_t, :string, :int, :uv_fs_cb], :int, :blocking => true
         attach_function :fs_lstat, :uv_fs_lstat, [:uv_loop_t, :uv_fs_t, :string, :uv_fs_cb], :int, :blocking => true
         attach_function :fs_link, :uv_fs_link, [:uv_loop_t, :uv_fs_t, :string, :string, :uv_fs_cb], :int, :blocking => true
         attach_function :fs_symlink, :uv_fs_symlink, [:uv_loop_t, :uv_fs_t, :string, :string, :int, :uv_fs_cb], :int, :blocking => true
