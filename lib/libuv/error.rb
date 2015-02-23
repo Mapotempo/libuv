@@ -1,5 +1,6 @@
 module Libuv
     class Error < StandardError
+        class E2BIG < Error; end
         class EACCES < Error; end
         class EADDRINUSE < Error; end
         class EADDRNOTAVAIL < Error; end
@@ -19,7 +20,6 @@ module Libuv
         class EAI_PROTOCOL < Error; end
         class EAI_SERVICE < Error; end
         class EAI_SOCKTYPE < Error; end
-        class EAI_SYSTEM < Error; end
         class EALREADY < Error; end
         class EBADF < Error; end
         class EBUSY < Error; end
@@ -64,8 +64,6 @@ module Libuv
         class EPROTONOSUPPORT < Error; end
         class EPROTOTYPE < Error; end
         class ERANGE < Error; end
-        class ENXIO < Error; end
-        class EMLINK < Error; end
         class EROFS < Error; end
         class ESHUTDOWN < Error; end
         class ESPIPE < Error; end
@@ -75,5 +73,8 @@ module Libuv
         class EXDEV < Error; end
         class UNKNOWN < Error; end
         class EOF < Error; end
+        class ENXIO < Error; end
+        class EMLINK < Error; end
+        class EHOSTDOWN < Error; end
     end
 end
