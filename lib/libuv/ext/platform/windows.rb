@@ -39,8 +39,7 @@ module Libuv
         end
 
         class SockaddrIn < FFI::Struct
-            layout :sin_len, :uint8,
-                   :sin_family, :sa_family_t,
+            layout :sin_family, :sa_family_t,
                    :sin_port, :in_port_t,
                    :sin_addr, InAddr,
                    :sin_zero, [:char, 8]
