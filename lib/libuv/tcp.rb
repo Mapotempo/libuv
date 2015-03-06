@@ -39,10 +39,12 @@ module Libuv
         def start_tls(args = {})
             return unless @connected && @tls.nil?
 
+            args[:verify_peer] = true if @on_verify
+
             @handshake = false
             @pending_writes = []
-            @tls = ::RubyTls::Connection.new(self)
-            @tls.start(args)
+            @tls = ::RubyTls::SSL::Box.new(args[:server], self, args)
+            @tls.start
         end
 
         # Push through any pending writes when handshake has completed
@@ -69,7 +71,7 @@ module Libuv
         # We resolve the existing tls write promise with a the
         #  real writes promise (a close may have occurred)
         def transmit_cb(data)
-            if not @pending_write.nil?
+            if @pending_write
                 @pending_write.resolve(direct_write(data))
                 @pending_write = nil
             else
@@ -79,13 +81,26 @@ module Libuv
 
         # Close can be called multiple times
         def close_cb
-            if not @pending_write.nil?
+            if @pending_write
                 @pending_write.reject(TLS_ERROR)
                 @pending_write = nil
             end
 
             # Shutdown the stream
             close
+        end
+
+        def verify_cb(cert)
+            if @on_verify
+                begin
+                    return @on_verify.call cert
+                rescue => e
+                    @loop.log :warn, :tls_verify_callback_failed, e
+                    return false
+                end
+            end
+
+            true
         end
 
         # overwrite the default close to ensure
@@ -102,7 +117,7 @@ module Libuv
             end
             @connected = false
 
-            if not @pending_writes.nil?
+            if @pending_writes
                 @pending_writes.each do |deferred, data|
                     deferred.reject(TLS_ERROR)
                 end
@@ -113,8 +128,8 @@ module Libuv
         end
 
         # Verify peers will be called for each cert in the chain
-        def verify_peer(&block)
-            @tls.verify_cb &block
+        def verify_peer(callback = nil, &blk)
+            @on_verify = callback || blk
         end
 
         alias_method :direct_write, :write

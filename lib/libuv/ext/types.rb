@@ -45,7 +45,8 @@ module Libuv
             :udp_send,
             :fs,
             :work,
-            :getaddrinfo, # end UV_REQ_TYPE_MAP
+            :getaddrinfo, 
+            :getnameinfo, # end UV_REQ_TYPE_MAP
             :req_type_private,
             :req_type_max
         ]

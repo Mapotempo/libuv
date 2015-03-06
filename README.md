@@ -86,7 +86,6 @@ Windows users will additionally require:
 
 - A copy of Visual Studio 2010 or later. [Visual Studio Express](http://www.microsoft.com/visualstudio/eng/products/visual-studio-express-products) works fine.
 - A copy of [OpenSSL](http://slproweb.com/products/Win32OpenSSL.html) matching the installed ruby (x86 / x64)
-  - with the environmental variable `OPENSSL_CONF` Set `OPENSSL_CONF=X:\path_to\OpenSSL\bin\openssl.cfg`
 - If using jRuby then [GCC](http://win-builds.org/stable/) is also required
   - Setup the paths as described on the gcc page
   - Add required environmental variable `set LIBRARY_PATH=X:\win-builds-64\lib;X:\win-builds-64\x86_64-w64-mingw32\lib`
