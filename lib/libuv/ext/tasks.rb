@@ -15,7 +15,7 @@ end
 file 'ext/libuv/build/gyp' => 'ext/libuv/build' do
     result = true
     if not File.directory?('ext/libuv/build/gyp')
-        result = system "svn", "export", "-r1824", "http://gyp.googlecode.com/svn/trunk", "ext/libuv/build/gyp"
+        result = system "git", "clone", "https://chromium.googlesource.com/external/gyp", "ext/libuv/build/gyp"
     end
     raise 'unable to download gyp' unless result
 end
