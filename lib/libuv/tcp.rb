@@ -11,6 +11,8 @@ module Libuv
 
 
         attr_reader :connected
+        attr_reader :protocol
+
         # Check if tls active on the socket
         def tls?; !@tls.nil?; end
 
@@ -48,14 +50,27 @@ module Libuv
         end
 
         # Push through any pending writes when handshake has completed
-        def handshake_cb
+        def handshake_cb(protocol = nil)
             @handshake = true
+            @protocol = protocol
+
             writes = @pending_writes
             @pending_writes = nil
             writes.each do |deferred, data|
                 @pending_write = deferred
                 @tls.encrypt(data)
             end
+
+            begin
+                @on_handshake.call(self, protocol) if @on_handshake
+            rescue => e
+                @loop.log :warn, :tls_handshake_callback_error, e
+            end
+        end
+
+        # Provide a callback once the TLS handshake has completed
+        def on_handshake(callback = nil, &blk)
+            @on_handshake = callback || blk
         end
 
         # This is clear text data that has been decrypted
