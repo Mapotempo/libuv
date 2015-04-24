@@ -7,15 +7,21 @@ module Libuv
         attr_reader :result
 
 
-        # @param loop [::Libuv::Loop] loop this work request will be associated
+        define_callback function: :on_work
+        define_callback function: :on_complete, params: [:pointer, :int]
+
+
+        # @param thread [::Libuv::Loop] thread this work request will be associated
         # @param work [Proc] callback to be called in the thread pool
-        def initialize(loop, work)
-            super(loop, loop.defer)
+        def initialize(thread, work)
+            super(thread, thread.defer)
 
             @work = work
             @complete = false
             @pointer = ::Libuv::Ext.allocate_request_work
             @error = nil    # error in callback
+
+            @instance_id = @pointer.address
 
             error = check_result ::Libuv::Ext.queue_work(@loop, @pointer, callback(:on_work), callback(:on_complete))
             if error
@@ -62,7 +68,7 @@ module Libuv
             end
             
             # Clean up references
-            clear_callbacks
+            cleanup_callbacks @instance_id
         end
 
         def on_work(req)

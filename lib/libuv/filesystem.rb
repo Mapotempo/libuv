@@ -3,8 +3,26 @@ module Libuv
         include Assertions, Resource, Listener, FsChecks
 
 
-        def initialize(loop)
-            @loop = loop
+        fs_params = {
+            params: [Ext::FsRequest.by_ref],
+            lookup: :fs_lookup
+        }
+        define_callback function: :on_unlink, **fs_params
+        define_callback function: :on_mkdir, **fs_params
+        define_callback function: :on_rmdir, **fs_params
+        define_callback function: :on_readdir, **fs_params
+        define_callback function: :on_rename, **fs_params
+        define_callback function: :on_chmod, **fs_params
+        define_callback function: :on_utime, **fs_params
+        define_callback function: :on_stat, **fs_params
+        define_callback function: :on_link, **fs_params
+        define_callback function: :on_symlink, **fs_params
+        define_callback function: :on_readlink, **fs_params
+        define_callback function: :on_chown, **fs_params
+
+
+        def initialize(thread)
+            @loop = thread
         end
 
         def unlink(path)
@@ -12,7 +30,7 @@ module Libuv
             @unlink_deferred = @loop.defer
 
             request = ::Libuv::Ext.allocate_request_fs
-            pre_check @unlink_deferred, request, ::Libuv::Ext.fs_unlink(@loop, request, path, callback(:on_unlink))
+            pre_check @unlink_deferred, request, ::Libuv::Ext.fs_unlink(@loop, request, path, callback(:on_unlink, request.address))
             @unlink_deferred.promise
         end
 
@@ -22,7 +40,7 @@ module Libuv
             @mkdir_deferred = @loop.defer
 
             request = ::Libuv::Ext.allocate_request_fs
-            pre_check @mkdir_deferred, request, ::Libuv::Ext.fs_mkdir(@loop, request, path, mode, callback(:on_mkdir))
+            pre_check @mkdir_deferred, request, ::Libuv::Ext.fs_mkdir(@loop, request, path, mode, callback(:on_mkdir, request.address))
             @mkdir_deferred.promise
         end
 
@@ -31,7 +49,7 @@ module Libuv
             @rmdir_deferred = @loop.defer
 
             request = ::Libuv::Ext.allocate_request_fs
-            pre_check @rmdir_deferred, request, ::Libuv::Ext.fs_rmdir(@loop, request, path, callback(:on_rmdir))
+            pre_check @rmdir_deferred, request, ::Libuv::Ext.fs_rmdir(@loop, request, path, callback(:on_rmdir, request.address))
             @rmdir_deferred.promise
         end
 
@@ -40,7 +58,7 @@ module Libuv
             @readdir_deferred = @loop.defer
 
             request = ::Libuv::Ext.allocate_request_fs
-            pre_check @readdir_deferred, request, ::Libuv::Ext.fs_readdir(@loop, request, path, 0, callback(:on_readdir))
+            pre_check @readdir_deferred, request, ::Libuv::Ext.fs_readdir(@loop, request, path, 0, callback(:on_readdir, request.address))
             @readdir_deferred.promise
         end
 
@@ -50,7 +68,7 @@ module Libuv
             @rename_deferred = @loop.defer
 
             request = ::Libuv::Ext.allocate_request_fs
-            pre_check @rename_deferred, request, ::Libuv::Ext.fs_rename(@loop, request, old_path, new_path, callback(:on_rename))
+            pre_check @rename_deferred, request, ::Libuv::Ext.fs_rename(@loop, request, old_path, new_path, callback(:on_rename, request.address))
             @rename_deferred.promise
         end
 
@@ -60,7 +78,7 @@ module Libuv
             @chmod_deferred = @loop.defer
 
             request = ::Libuv::Ext.allocate_request_fs
-            pre_check @chmod_deferred, request, ::Libuv::Ext.fs_chmod(@loop, request, path, mode, callback(:on_chmod))
+            pre_check @chmod_deferred, request, ::Libuv::Ext.fs_chmod(@loop, request, path, mode, callback(:on_chmod, request.address))
             @chmod_deferred.promise
         end
 
@@ -71,7 +89,7 @@ module Libuv
             @utime_deferred = @loop.defer
 
             request = ::Libuv::Ext.allocate_request_fs
-            pre_check @utime_deferred, request, ::Libuv::Ext.fs_utime(@loop, request, path, atime, mtime, callback(:on_utime))
+            pre_check @utime_deferred, request, ::Libuv::Ext.fs_utime(@loop, request, path, atime, mtime, callback(:on_utime, request.address))
             @utime_deferred.promise
         end
 
@@ -80,7 +98,7 @@ module Libuv
             @stat_deferred = @loop.defer
 
             request = ::Libuv::Ext.allocate_request_fs
-            pre_check @stat_deferred, request, ::Libuv::Ext.fs_lstat(@loop, request, path, callback(:on_stat))
+            pre_check @stat_deferred, request, ::Libuv::Ext.fs_lstat(@loop, request, path, callback(:on_stat, request.address))
             @stat_deferred.promise
         end
 
@@ -90,7 +108,7 @@ module Libuv
             @link_deferred = @loop.defer
 
             request = ::Libuv::Ext.allocate_request_fs
-            pre_check @link_deferred, request, ::Libuv::Ext.fs_link(@loop, request, old_path, new_path, callback(:on_link))
+            pre_check @link_deferred, request, ::Libuv::Ext.fs_link(@loop, request, old_path, new_path, callback(:on_link, request.address))
             @link_deferred.promise
         end
 
@@ -100,7 +118,7 @@ module Libuv
             @symlink_deferred = @loop.defer
 
             request = ::Libuv::Ext.allocate_request_fs
-            pre_check @symlink_deferred, request, ::Libuv::Ext.fs_symlink(@loop, request, old_path, new_path, 0, callback(:on_symlink))
+            pre_check @symlink_deferred, request, ::Libuv::Ext.fs_symlink(@loop, request, old_path, new_path, 0, callback(:on_symlink, request.address))
             @symlink_deferred.promise
         end
 
@@ -109,7 +127,7 @@ module Libuv
             @readlink_deferred = @loop.defer
 
             request = ::Libuv::Ext.allocate_request_fs
-            pre_check @readlink_deferred, request, ::Libuv::Ext.fs_readlink(@loop, request, path, callback(:on_readlink))
+            pre_check @readlink_deferred, request, ::Libuv::Ext.fs_readlink(@loop, request, path, callback(:on_readlink, request.address))
             @readlink_deferred.promise
         end
 
@@ -120,7 +138,7 @@ module Libuv
             @chown_deferred = @loop.defer
 
             request = ::Libuv::Ext.allocate_request_fs
-            pre_check @chown_deferred, request, ::Libuv::Ext.fs_chown(@loop, request, path, uid, gid, callback(:on_chown))
+            pre_check @chown_deferred, request, ::Libuv::Ext.fs_chown(@loop, request, path, uid, gid, callback(:on_chown, request.address))
             @chown_deferred.promise
         end
 

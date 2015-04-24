@@ -2,14 +2,17 @@ module Libuv
     class Idle < Handle
 
 
-        # @param loop [::Libuv::Loop] loop this idle handler will be associated
+        define_callback function: :on_idle
+
+
+        # @param thread [::Libuv::Loop] loop this idle handler will be associated
         # @param callback [Proc] callback to be called when the loop is idle
-        def initialize(loop, callback = nil, &blk)
-            @loop = loop
+        def initialize(thread, callback = nil, &blk)
+            @loop = thread
             @callback = callback || blk
 
             idle_ptr = ::Libuv::Ext.allocate_handle_idle
-            error = check_result(::Libuv::Ext.idle_init(loop.handle, idle_ptr))
+            error = check_result(::Libuv::Ext.idle_init(thread.handle, idle_ptr))
 
             super(idle_ptr, error)
         end

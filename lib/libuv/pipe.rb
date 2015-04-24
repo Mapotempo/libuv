@@ -3,6 +3,10 @@ module Libuv
         include Stream
 
 
+        define_callback function: :on_connect, params: [:pointer, :int]
+        define_callback function: :write2_complete, params: [:pointer, :int]
+
+
         WRITE2_ERROR = "data must be a String".freeze
 
 
@@ -68,7 +72,8 @@ module Libuv
             assert_type(String, name, "name must be a String")
             begin
                 name = windows_path name if FFI::Platform.windows?
-                ::Libuv::Ext.pipe_connect(::Libuv::Ext.allocate_request_connect, handle, name, callback(:on_connect))
+                req = ::Libuv::Ext.allocate_request_connect
+                ::Libuv::Ext.pipe_connect(req, handle, name, callback(:on_connect, req.address))
             rescue Exception => e
                 reject(e)
             end
@@ -85,26 +90,13 @@ module Libuv
                     buffer       = ::Libuv::Ext.buf_init(FFI::MemoryPointer.from_string(data), size)
 
                     # local as this variable will be avaliable until the handle is closed
-                    @write_callbacks = @write_callbacks || []
-
-                    #
-                    # create the curried callback
-                    #
-                    callback = FFI::Function.new(:void, [:pointer, :int]) do |req, status|
-                        ::Libuv::Ext.free(req)
-                        # remove the callback from the array
-                        # assumes writes are done in order
-                        promise = @write_callbacks.shift[0]
-                        resolve promise, status
-                    end
-
-
-                    @write_callbacks << [deferred, callback]
                     req = ::Libuv::Ext.allocate_request_write
-                    error = check_result ::Libuv::Ext.write2(req, handle, buffer, 1, fd.handle, callback)
+                    @write_callbacks ||= {}
+                    @write_callbacks[req.address] = deferred
+                    error = check_result ::Libuv::Ext.write2(req, handle, buffer, 1, fd.handle, callback(:write2_complete, req.address))
 
                     if error
-                        @write_callbacks.pop
+                        @write_callbacks.delete(req.address)
                         ::Libuv::Ext.free(req)
                         deferred.reject(error)
 
@@ -159,6 +151,7 @@ module Libuv
 
 
         def on_connect(req, status)
+            cleanup_callbacks req.address
             ::Libuv::Ext.free(req)
             e = check_result(status)
 
@@ -171,6 +164,15 @@ module Libuv
                     @loop.log :error, :pipe_connect_cb, e
                 end
             end
+        end
+
+        def write2_complete(req, status)
+            promise = @write_callbacks.delete(req.address)
+            cleanup_callbacks req.address
+
+            ::Libuv::Ext.free(req)
+            
+            resolve promise, status
         end
 
         def windows_path(name)

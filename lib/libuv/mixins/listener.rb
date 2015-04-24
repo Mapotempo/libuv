@@ -8,27 +8,59 @@ module Libuv
         private
 
 
-        CALLBACKS = ThreadSafe::Cache.new
+        module ClassMethods
+            def dispatch_callback(func_name, lookup, args)
+                instance_id = __send__(lookup, *args)
+                inst = @callback_lookup[instance_id]
+                inst.__send__(func_name, *args)
+            end
+
+            def define_callback(function:, params: [:pointer], ret_val: :void, lookup: :default_lookup)
+                @callback_funcs[function] = FFI::Function.new(ret_val, params) do |*args|
+                    dispatch_callback(function, lookup, args)
+                end
+            end
+
+            # Much like include to support inheritance properly
+            # We keep existing callbacks and inherit the lookup (as this will never clash)
+            def inherited(subclass)
+                subclass.instance_variable_set(:@callback_funcs, {}.merge(@callback_funcs))
+                subclass.instance_variable_set(:@callback_lookup, @callback_lookup)
+            end
 
 
-        def callbacks
-            @callbacks ||= Set.new
+            # Provide accessor methods to the class level instance variables
+            def callback_lookup
+                @callback_lookup
+            end
+
+            def callback_funcs
+                @callback_funcs
+            end
+
+
+            # This function is used to work out the instance the callback is for
+            def default_lookup(req, *args)
+                req.address
+            end
         end
 
-        def callback(name)
-            const_name = "#{name}_#{object_id}"
-            unless CALLBACKS[const_name]
-                callbacks << const_name
-                CALLBACKS[const_name] = method(name)
-            end
-            CALLBACKS[const_name]
+        def self.included(base)
+            base.instance_variable_set(:@callback_funcs, {})
+            base.instance_variable_set(:@callback_lookup, ThreadSafe::Cache.new)
+            base.extend(ClassMethods)
         end
 
-        def clear_callbacks
-            callbacks.each do |name|
-                CALLBACKS.delete(name)
-            end
-            callbacks.clear
+
+
+        def callback(name, instance_id = @instance_id)
+            klass = self.class
+            klass.callback_lookup[instance_id] ||= self
+            klass.callback_funcs[name]
+        end
+
+        def cleanup_callbacks(instance_id = @instance_id)
+            self.class.callback_lookup.delete(instance_id)
         end
     end
 end

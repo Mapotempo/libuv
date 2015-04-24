@@ -2,6 +2,9 @@ module Libuv
     class Prepare < Handle
 
 
+        define_callback function: :on_prepare
+
+
         # @param loop [::Libuv::Loop] loop this prepare handle will be associated
         # @param callback [Proc] callback to be called on loop preparation
         def initialize(loop, callback = nil, &blk)

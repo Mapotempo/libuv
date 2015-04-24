@@ -2,6 +2,9 @@ module Libuv
     class Signal < Handle
 
 
+        define_callback function: :on_sig, params: [:pointer, :int]
+
+
         SIGNALS = {
             :HUP => 1,
             :SIGHUP => 1,

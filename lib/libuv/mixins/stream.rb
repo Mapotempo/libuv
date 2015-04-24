@@ -2,6 +2,17 @@ module Libuv
     module Stream
 
 
+        def self.included(base)
+            base.define_callback function: :on_listen,      params: [:pointer, :int]
+            base.define_callback function: :write_complete, params: [:pointer, :int]
+            base.define_callback function: :on_shutdown,    params: [:pointer, :int]
+
+            base.define_callback function: :on_allocate, params: [:pointer, :size_t, Ext::UvBuf.by_ref]
+            base.define_callback function: :on_read,     params: [:pointer, :ssize_t, Ext::UvBuf.by_ref]
+        end
+
+
+
         BACKLOG_ERROR = "backlog must be an Integer".freeze
         WRITE_ERROR = "data must be a String".freeze
         STREAM_CLOSED_ERROR = "unable to write to a closed stream".freeze
@@ -64,10 +75,12 @@ module Libuv
                     @write_callbacks ||= {}
                     req = ::Libuv::Ext.allocate_request_write
                     @write_callbacks[req.address] = [deferred, buffer1]
-                    error = check_result ::Libuv::Ext.write(req, handle, buffer, 1, callback(:write_complete))
+                    error = check_result ::Libuv::Ext.write(req, handle, buffer, 1, callback(:write_complete, req.address))
 
                     if error
                         @write_callbacks.delete req.address
+                        cleanup_callbacks req.address
+
                         ::Libuv::Ext.free(req)
                         buffer1.free
                         deferred.reject(error)
@@ -122,6 +135,7 @@ module Libuv
 
         def write_complete(req, status)
             deferred, buffer1 = @write_callbacks.delete req.address
+            cleanup_callbacks req.address
 
             ::Libuv::Ext.free(req)
             buffer1.free

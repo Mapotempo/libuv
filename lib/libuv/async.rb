@@ -2,12 +2,17 @@ module Libuv
     class Async < Handle
 
 
-        # @param loop [::Libuv::Loop] loop this async callback will be associated
-        def initialize(loop, callback = nil, &blk)
-            @loop = loop
+        define_callback function: :on_async
+
+
+        # @param thread [::Libuv::Loop] loop this async callback will be associated
+        def initialize(thread, callback = nil, &blk)
+            @loop = thread
             @callback = callback || blk
+
             async_ptr = ::Libuv::Ext.allocate_handle_async
-            error = check_result(::Libuv::Ext.async_init(loop.handle, async_ptr, callback(:on_async)))
+            on_async = callback(:on_async, async_ptr.address)
+            error = check_result(::Libuv::Ext.async_init(loop.handle, async_ptr, on_async))
 
             super(async_ptr, error)
         end

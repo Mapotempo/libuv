@@ -3,6 +3,23 @@ module Libuv
         include Assertions, Resource, Listener, FsChecks
 
 
+        fs_params = {
+            params: [Ext::FsRequest.by_ref],
+            lookup: :fs_lookup
+        }
+        define_callback function: :on_open, **fs_params
+        define_callback function: :on_close, **fs_params
+        define_callback function: :on_read, **fs_params
+        define_callback function: :on_write, **fs_params
+        define_callback function: :on_sync, **fs_params
+        define_callback function: :on_datasync, **fs_params
+        define_callback function: :on_truncate, **fs_params
+        define_callback function: :on_utime, **fs_params
+        define_callback function: :on_chmod, **fs_params
+        define_callback function: :on_chown, **fs_params
+        define_callback function: :on_stat, **fs_params
+
+
         EOF = "0\r\n\r\n".freeze
         CRLF = "\r\n".freeze
 
@@ -10,8 +27,8 @@ module Libuv
         attr_reader :fileno, :closed
 
 
-        def initialize(loop, path, flags = 0, mode = 0)
-            super(loop, loop.defer)
+        def initialize(thread, path, flags = 0, mode = 0)
+            super(thread, thread.defer)
 
             @fileno = -1
             @closed = true 
@@ -19,14 +36,14 @@ module Libuv
             @request_refs = {}
 
             request = ::Libuv::Ext.allocate_request_fs
-            pre_check @defer, request, ::Libuv::Ext.fs_open(@loop, request, @path, @flags, @mode, callback(:on_open))
+            pre_check @defer, request, ::Libuv::Ext.fs_open(@loop, request, @path, @flags, @mode, callback(:on_open, request.address))
             nil
         end
 
         def close
             @closed = true
             request = ::Libuv::Ext.allocate_request_fs
-            pre_check(@defer, request, ::Libuv::Ext.fs_close(@loop.handle, request, @fileno, callback(:on_close)))
+            pre_check(@defer, request, ::Libuv::Ext.fs_close(@loop.handle, request, @fileno, callback(:on_close, request.address)))
             nil # pre-check returns a promise
         end
 
@@ -41,7 +58,7 @@ module Libuv
 
             @request_refs[request.address] = [deferred, buffer1]
 
-            pre_check(deferred, request, ::Libuv::Ext.fs_read(@loop.handle, request, @fileno, buffer, 1, offset, callback(:on_read)))
+            pre_check(deferred, request, ::Libuv::Ext.fs_read(@loop.handle, request, @fileno, buffer, 1, offset, callback(:on_read, request.address)))
         end
 
         def write(data, offset = 0)
@@ -57,7 +74,7 @@ module Libuv
 
             @request_refs[request.address] = [deferred, buffer1]
 
-            pre_check(deferred, request, ::Libuv::Ext.fs_write(@loop.handle, request, @fileno, buffer, 1, offset, callback(:on_write)))
+            pre_check(deferred, request, ::Libuv::Ext.fs_write(@loop.handle, request, @fileno, buffer, 1, offset, callback(:on_write, request.address)))
         end
 
         def sync
@@ -66,7 +83,7 @@ module Libuv
             request = ::Libuv::Ext.allocate_request_fs
             @request_refs[request.address] = deferred
 
-            pre_check deferred, request, ::Libuv::Ext.fs_fsync(@loop.handle, request, @fileno, callback(:on_sync))
+            pre_check deferred, request, ::Libuv::Ext.fs_fsync(@loop.handle, request, @fileno, callback(:on_sync, request.address))
         end
 
         def datasync
@@ -75,7 +92,7 @@ module Libuv
             request = ::Libuv::Ext.allocate_request_fs
             @request_refs[request.address] = deferred
 
-            pre_check deferred, request, ::Libuv::Ext.fs_fdatasync(@loop.handle, request, @fileno, callback(:on_datasync))
+            pre_check deferred, request, ::Libuv::Ext.fs_fdatasync(@loop.handle, request, @fileno, callback(:on_datasync, request.address))
         end
 
         def truncate(offset)
@@ -85,7 +102,7 @@ module Libuv
             request = ::Libuv::Ext.allocate_request_fs
             @request_refs[request.address] = deferred
 
-            pre_check deferred, request, ::Libuv::Ext.fs_ftruncate(@loop.handle, request, @fileno, offset, callback(:on_truncate))
+            pre_check deferred, request, ::Libuv::Ext.fs_ftruncate(@loop.handle, request, @fileno, offset, callback(:on_truncate, request.address))
         end
 
         def utime(atime, mtime)
@@ -96,7 +113,7 @@ module Libuv
             request = ::Libuv::Ext.allocate_request_fs
             @request_refs[request.address] = deferred
 
-            pre_check deferred, request, ::Libuv::Ext.fs_futime(@loop.handle, request, @fileno, atime, mtime, callback(:on_utime))
+            pre_check deferred, request, ::Libuv::Ext.fs_futime(@loop.handle, request, @fileno, atime, mtime, callback(:on_utime, request.address))
         end
 
         def chmod(mode)
@@ -106,7 +123,7 @@ module Libuv
             request = ::Libuv::Ext.allocate_request_fs
             @request_refs[request.address] = deferred
 
-            pre_check deferred, request, ::Libuv::Ext.fs_fchmod(@loop.handle, request, @fileno, mode, callback(:on_chmod))
+            pre_check deferred, request, ::Libuv::Ext.fs_fchmod(@loop.handle, request, @fileno, mode, callback(:on_chmod, request.address))
         end
 
         def chown(uid, gid)
@@ -117,7 +134,7 @@ module Libuv
             request = ::Libuv::Ext.allocate_request_fs
             @request_refs[request.address] = deferred
 
-            pre_check deferred, request, ::Libuv::Ext.fs_fchown(@loop.handle, request, @fileno, uid, gid, callback(:on_chown))
+            pre_check deferred, request, ::Libuv::Ext.fs_fchown(@loop.handle, request, @fileno, uid, gid, callback(:on_chown, request.address))
         end
 
         def send_file(stream, type = :raw, chunk_size = 4096)

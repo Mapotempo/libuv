@@ -8,8 +8,12 @@ module Libuv
         attr_reader :loop
 
 
+        define_callback function: :on_close
+
+
         def initialize(pointer, error)
             @pointer = pointer
+            @instance_id = @pointer.address
 
             # Initialise the promise
             super(loop, loop.defer)
@@ -61,6 +65,7 @@ module Libuv
 
         def handle; @pointer; end
         def defer; @defer; end
+        def instance_id; @instance_id; end
 
 
         private
@@ -74,7 +79,8 @@ module Libuv
 
         def on_close(pointer)
             ::Libuv::Ext.free(pointer)
-            clear_callbacks
+            #clear_callbacks
+            cleanup_callbacks
 
             if @close_error
                 defer.reject(@close_error)

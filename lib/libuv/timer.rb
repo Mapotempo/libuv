@@ -1,6 +1,10 @@
 module Libuv
     class Timer < Handle
 
+
+        define_callback function: :on_timer
+
+
         # @param loop [::Libuv::Loop] loop this timer will be associated
         # @param callback [Proc] callback to be called when the timer is triggered
         def initialize(loop, callback = nil)

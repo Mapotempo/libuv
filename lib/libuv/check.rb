@@ -2,6 +2,9 @@ module Libuv
     class Check < Handle
 
 
+        define_callback function: :on_check
+
+
         # @param loop [::Libuv::Loop] loop this check will be associated
         # @param callback [Proc] callback to be called on loop check
         def initialize(loop, callback = nil, &blk)

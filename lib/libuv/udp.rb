@@ -3,6 +3,11 @@ module Libuv
         include Net
 
 
+        define_callback function: :on_allocate, params: [:pointer, :size_t, Ext::UvBuf.by_ref]
+        define_callback function: :on_recv, params: [:pointer, :ssize_t, Ext::UvBuf.by_ref, Ext::Sockaddr.by_ref, :uint]
+        define_callback function: :send_complete, params: [:pointer, :int]
+
+
         SEND_DATA_ERROR = "data must be a String".freeze
         TTL_ARGUMENT_ERROR = "ttl must be an Integer".freeze
         MULTICAST_ARGUMENT_ERROR = "multicast_address must be a String".freeze
@@ -124,10 +129,11 @@ module Libuv
                         buffer,
                         1,
                         sockaddr,
-                        callback(:send_complete)
+                        callback(:send_complete, req.address)
                     )
                     if error
                         @request_refs.delete req.address
+                        cleanup_callbacks req.address
                         ::Libuv::Ext.free(req)
                         buffer1.free
                         deferred.reject(error)
@@ -251,6 +257,7 @@ module Libuv
 
         def send_complete(req, status)
             deferred, buffer1 = @request_refs.delete req.address
+            cleanup_callbacks req.address
 
             ::Libuv::Ext.free(req)
             buffer1.free

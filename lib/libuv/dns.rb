@@ -3,6 +3,9 @@ module Libuv
         include Resource, Listener, Net
 
 
+        define_callback function: :on_complete, params: [:pointer, :int, Ext::UvAddrinfo.by_ref]
+
+
         attr_reader :results
         attr_reader :domain
         attr_reader :port
@@ -38,7 +41,9 @@ module Libuv
             @pointer = ::Libuv::Ext.allocate_request_getaddrinfo
             @error = nil    # error in callback
 
+            @instance_id = @pointer.address
             error = check_result ::Libuv::Ext.getaddrinfo(@loop, @pointer, callback(:on_complete), domain, port.to_s, HINTS[hint])
+
             if error
                 ::Libuv::Ext.free(@pointer)
                 @complete = true
@@ -80,7 +85,7 @@ module Libuv
             end
 
             # Clean up references
-            clear_callbacks
+            cleanup_callbacks
         end
     end
 end

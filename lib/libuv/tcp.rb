@@ -7,6 +7,9 @@ module Libuv
         include Stream, Net
 
 
+        define_callback function: :on_connect, params: [:pointer, :int]
+
+
         TLS_ERROR = "TLS write failed".freeze
 
 
@@ -226,7 +229,7 @@ module Libuv
             
             begin
                 @tcp_socket = create_socket(IPAddr.new(ip), port)
-                @tcp_socket.connect(callback(:on_connect))
+                @tcp_socket.connect(callback(:on_connect, @tcp_socket.connect_req.address))
             rescue Exception => e
                 reject(e)
             end
@@ -289,6 +292,7 @@ module Libuv
         end
 
         def on_connect(req, status)
+            cleanup_callbacks req.address
             ::Libuv::Ext.free(req)
             e = check_result(status)
 
@@ -322,13 +326,14 @@ module Libuv
                 check_result!(tcp_connect(callback))
             end
 
+            def connect_req
+                @req ||= ::Libuv::Ext.allocate_request_connect
+                @req
+            end
+
 
             protected
 
-
-            def connect_req
-                ::Libuv::Ext.allocate_request_connect
-            end
 
             def tcp_connect(callback)
                 ::Libuv::Ext.tcp_connect(

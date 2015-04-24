@@ -3,11 +3,22 @@ module Libuv
     module FsChecks
 
 
+        module ClassMethods
+            def fs_lookup(ref)
+                ref.to_ptr.address
+            end
+        end
+
+        def self.included(base)
+            base.extend(ClassMethods)
+        end
+
+
         def stat
             @stat_deferred = @loop.defer
 
             request = ::Libuv::Ext.allocate_request_fs
-            pre_check @stat_deferred, request, ::Libuv::Ext.fs_fstat(@loop.handle, request, @fileno, callback(:on_stat))
+            pre_check @stat_deferred, request, ::Libuv::Ext.fs_fstat(@loop.handle, request, @fileno, callback(:on_stat, request.address))
             @stat_deferred.promise
         end
 
@@ -42,6 +53,8 @@ module Libuv
         end
 
         def cleanup(req)
+            cleanup_callbacks req.to_ptr.address
+
             ::Libuv::Ext.fs_req_cleanup(req)
             ::Libuv::Ext.free(req)
         end
