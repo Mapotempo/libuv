@@ -14,3 +14,6 @@ before_install:
   - gem install ffi
 before_script:
   - rake compile
+env:
+  global:
+    - JRUBY_OPTS="--2.1"
