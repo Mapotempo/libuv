@@ -142,6 +142,7 @@ module Libuv
         attach_function :pipe_pending_count, :uv_pipe_pending_count, [:uv_pipe_t], :int, :blocking => true
         attach_function :pipe_pending_type, :uv_pipe_pending_type, [:uv_pipe_t], :uv_handle_type, :blocking => true
         attach_function :pipe_getsockname, :uv_pipe_getsockname, [:uv_pipe_t, :pointer, :pointer], :int, :blocking => true
+        attach_function :pipe_getpeername, :uv_pipe_getpeername, [:uv_pipe_t, :pointer, :pointer], :int, :blocking => true
 
         attach_function :prepare_init, :uv_prepare_init, [:uv_loop_t, :uv_prepare_t], :int, :blocking => true
         attach_function :prepare_start, :uv_prepare_start, [:uv_prepare_t, :uv_prepare_cb], :int, :blocking => true
