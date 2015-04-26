@@ -4,7 +4,7 @@ rvm:
   - "2.2"
   - ruby-head
   - rbx-2
-  - jruby-20mode
+  - jruby-head
 branches:
   only:
     - master
@@ -14,6 +14,3 @@ before_install:
   - gem install ffi
 before_script:
   - rake compile
-env:
-  global:
-    - JRUBY_OPTS="--2.1"
