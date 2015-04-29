@@ -425,7 +425,7 @@ module Libuv
                 promises.each_index do |index|
                     ref(loop, promises[index]).then(proc {|result|
                         if results[index].nil?
-                            results[index] = [result, false]
+                            results[index] = [result, true]
                             counter -= 1
                             deferred.resolve(results) if counter <= 0
                         end
