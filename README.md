@@ -77,7 +77,6 @@ or
 
 ### Prerequisites
 
-* The installation requires [subversion](http://subversion.apache.org/packages.html) to be installed on your system and available on the PATH
 * The installation also requires [python 2.x](http://www.python.org/getit/) to be installed and available on the PATH
 * setting the environmental variable `USE_GLOBAL_LIBUV` will prevent compiling the packaged version.
   * if you have a compatible `libuv.(so | dylib | dll)` on the PATH already

@@ -9,7 +9,6 @@ branches:
   only:
     - master
 before_install:
-  - sudo apt-get install subversion
   - git submodule update --init --recursive
   - gem install ffi
 before_script:
