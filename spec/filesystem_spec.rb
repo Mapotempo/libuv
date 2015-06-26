@@ -82,6 +82,32 @@ describe Libuv::Filesystem do
 			expect(@log).to eq(:success)
 		end
 
+		it "should return stats on the file" do
+			@loop.run { |logger|
+				logger.progress &@logger
+
+				file = @loop.file(@thefile, File::RDONLY)
+				file.progress do 
+					file.stat.then do |stats|
+						file.close
+						@timeout.close
+						@loop.stop
+						@log << stats[:st_mtim][:tv_sec]
+					end
+				end
+				file.catch do |error|
+					@general_failure << error
+					@timeout.close
+					file.close
+					@loop.stop
+				end
+			}
+
+			expect(@general_failure).to eq([])
+			expect(@log[0]).to be > 0
+			expect(@log.length).to eql(1)
+		end
+
 		it "should read from a file" do
 			@loop.run { |logger|
 				logger.progress &@logger
