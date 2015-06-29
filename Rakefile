@@ -26,6 +26,6 @@ end
 
 
 desc "Compile libuv from submodule"
-task :compile => ["ext/libuv.#{FFI::Platform::LIBSUFFIX}"]
+task :compile => ["ext/libuv/lib/libuv.#{FFI::Platform::LIBSUFFIX}"]
 
-CLOBBER.include("ext/libuv.#{FFI::Platform::LIBSUFFIX}")
+CLOBBER.include("ext/libuv/lib/libuv.#{FFI::Platform::LIBSUFFIX}")
