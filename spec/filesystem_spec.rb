@@ -104,7 +104,7 @@ describe Libuv::Filesystem do
 			}
 
 			expect(@general_failure).to eq([])
-			expect(@log[0]).to be > 0
+			expect(@log[0]).to be_kind_of(Integer)
 			expect(@log.length).to eql(1)
 		end
 
