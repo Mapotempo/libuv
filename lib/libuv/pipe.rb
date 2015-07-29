@@ -22,7 +22,9 @@ module Libuv
 
         def bind(name, callback = nil, &blk)
             return if @closed
-            @on_listen = callback || blk
+            @on_accept = callback || blk
+            @on_listen = method(:accept)
+
             assert_type(String, name, "name must be a String")
             name = windows_path name if FFI::Platform.windows?
 
@@ -30,34 +32,17 @@ module Libuv
             reject(error) if error
         end
 
-        def accept(callback = nil, &blk)
-            pipe = nil
-            begin
-                raise RuntimeError, CLOSED_HANDLE_ERROR if @closed
-                pipe = Pipe.new(loop, @ipc, handle)
-            rescue Exception => e
-                @loop.log :info, :pipe_accept_failed, e
-            end
-            if pipe
-                begin
-                    (callback || blk).call(pipe)
-                rescue Exception => e
-                    @loop.log :error, :pipe_accept_cb, e
-                end
-            end
-            nil
-        end
-
         def open(fileno, callback = nil, &blk)
             @callback = callback || blk
-            assert_type(Integer, fileno, "io#fileno must return an integer file descriptor")
+            assert_type(Integer, fileno, 'fileno must be an integer file descriptor'.freeze)
+
             begin
                 raise RuntimeError, CLOSED_HANDLE_ERROR if @closed
                 check_result! ::Libuv::Ext.pipe_open(handle, fileno)
 
                 # Emulate on_connect behavior
                 begin
-                    @callback.call(self)
+                    @callback.call(self) if @callback
                 rescue Exception => e
                     @loop.log :error, :pipe_connect_cb, e
                 end
@@ -121,8 +106,8 @@ module Libuv
         def check_pending(expecting = nil)
             return nil if ::Libuv::Ext.pipe_pending_count(handle) <= 0
 
-            pending = ::Libuv::Ext.pipe_pending_type(handle)
-            raise TypeError, "IPC expecting #{expecting} and received #{pending}" if expecting && expecting != pending
+            pending = ::Libuv::Ext.pipe_pending_type(handle).to_sym
+            raise TypeError, "IPC expecting #{expecting} and received #{pending}" if expecting && expecting.to_sym != pending
 
             # Hide the accept logic
             remote = nil
@@ -148,7 +133,24 @@ module Libuv
 
 
         private
+        
 
+        def accept(_)
+            pipe = nil
+            begin
+                raise RuntimeError, CLOSED_HANDLE_ERROR if @closed
+                pipe = Pipe.new(loop, @ipc, handle)
+            rescue Exception => e
+                @loop.log :info, :pipe_accept_failed, e
+            end
+            if pipe
+                begin
+                    @on_accept.call(pipe)
+                rescue Exception => e
+                    @loop.log :error, :pipe_accept_cb, e
+                end
+            end
+        end
 
         def on_connect(req, status)
             cleanup_callbacks req.address

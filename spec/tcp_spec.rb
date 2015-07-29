@@ -42,15 +42,13 @@ describe Libuv::TCP do
 				end
 
 
-				@server.bind('127.0.0.1', 34567) do |server|
-					server.accept do |client|
-						client.progress do |data|
-							@log << data
+				@server.bind('127.0.0.1', 34567) do |client|
+					client.progress do |data|
+						@log << data
 
-							client.write('pong')
-						end
-						client.start_read
+						client.write('pong')
 					end
+					client.start_read
 				end
 
 				# catch errors
@@ -106,10 +104,8 @@ describe Libuv::TCP do
 
 
 			@remote = nil
-			@server.bind('127.0.0.1', 45678) do |server|
-				server.accept do |client|
-					@remote.write2(client)
-				end
+			@server.bind('127.0.0.1', 45678) do |client|
+				@remote.write2(client)
 			end
 
 			# catch errors
@@ -119,25 +115,23 @@ describe Libuv::TCP do
 
 
 			@pipeserve = @loop.pipe(true)
-			@pipeserve.bind(@pipefile) do |connection|
-				connection.accept do |client|
-					@remote = client
+			@pipeserve.bind(@pipefile) do |client|
+				@remote = client
 
-					# start listening on TCP server
-					@server.listen(1024)
+				# start listening on TCP server
+				@server.listen(1024)
 
-					# connect client to server
-					@client.connect('127.0.0.1', 45678) do |client|
-						client.progress do |data|
-							@sync.synchronize {
-								@log << data
-							}
-							@client.shutdown
-						end
-
-						@client.start_read
-						@client.write('ping')
+				# connect client to server
+				@client.connect('127.0.0.1', 45678) do |client|
+					client.progress do |data|
+						@sync.synchronize {
+							@log << data
+						}
+						@client.shutdown
 					end
+
+					@client.start_read
+					@client.write('ping')
 				end
 
 				@pipeserve.getsockname
@@ -216,16 +210,14 @@ describe Libuv::TCP do
 				end
 
 
-				@server.bind('127.0.0.1', 34567) do |server|
-					server.accept do |client|
-						client.start_tls(server: true)
-						client.progress do |data|
-							@log << data
+				@server.bind('127.0.0.1', 34567) do |client|
+					client.start_tls(server: true)
+					client.progress do |data|
+						@log << data
 
-							client.write('pong')
-						end
-						client.start_read
+						client.write('pong')
 					end
+					client.start_read
 				end
 
 				# catch errors

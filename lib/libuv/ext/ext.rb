@@ -23,10 +23,27 @@ module Libuv
         begin
             # bias the library discovery to a path inside the gem first, then
             # to the usual system paths
-            path_to_internal_libuv = File.dirname(__FILE__) + '/../../../ext/libuv/lib'
-            LIBUV_PATHS = [
-            path_to_internal_libuv, '/usr/local/lib', '/opt/local/lib', '/usr/lib64'
-            ].map{|path| "#{path}/libuv.#{FFI::Platform::LIBSUFFIX}"}
+
+            path_to_internal_libuv = ::File.dirname(__FILE__) + '/../../../ext/libuv/lib'
+
+            paths = [
+                path_to_internal_libuv,
+                '/usr/local/lib',
+                '/opt/local/lib',
+                '/usr/lib64'
+            ]
+
+            if FFI::Platform.mac?
+                # Using home/user/lib is the best we can do on OSX
+                # Primarily a dev platform so that is OK
+                paths.unshift "#{ENV['HOME']}/lib"
+            elsif FFI::Platform.windows?
+                # TODO:: AddDllDirectory function to point to path_to_internal_libuv
+            else # UNIX
+                # TODO:: ??
+            end
+
+            LIBUV_PATHS = paths.map{|path| "#{path}/libuv.#{FFI::Platform::LIBSUFFIX}"}
             libuv = ffi_lib(LIBUV_PATHS + %w{libuv}).first
         rescue LoadError
             warn <<-WARNING
@@ -36,6 +53,11 @@ module Libuv
             #{LIBUV_PATHS.inspect}
             WARNING
             exit 255
+        end
+
+
+        def self.path_to_internal_libuv
+            @path_to_internal_libuv ||= ::File.expand_path("../../../../ext/libuv/lib/libuv.#{FFI::Platform::LIBSUFFIX}", __FILE__)
         end
 
 

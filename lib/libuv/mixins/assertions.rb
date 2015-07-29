@@ -1,6 +1,6 @@
 module Libuv
     module Assertions
-        MSG_NO_PROC = 'no block given'
+        MSG_NO_PROC = 'no block given'.freeze
 
         def assert_block(proc, msg = MSG_NO_PROC)
             raise ArgumentError, msg, caller unless proc.respond_to? :call

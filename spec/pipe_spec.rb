@@ -47,14 +47,12 @@ describe Libuv::Pipe do
 					end
 				end
 
-				@server.bind(@pipefile) do |connection|
-					connection.accept do |client|
-						client.progress do |data|
-							@log << data
-							client.write('pong')
-						end
-						client.start_read
+				@server.bind(@pipefile) do |client|
+					client.progress do |data|
+						@log << data
+						client.write('pong')
 					end
+					client.start_read
 				end
 
 				# catch server errors

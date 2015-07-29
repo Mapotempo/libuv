@@ -95,6 +95,7 @@ module Libuv
             end
             deferred.promise
         end
+        alias_method :puts, :write
 
         def readable?
             return false if @closed

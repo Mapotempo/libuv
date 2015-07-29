@@ -17,7 +17,9 @@ end
 
 file "ext/libuv/lib/libuv.#{FFI::Platform::LIBSUFFIX}" => "ext/libuv/out/Release/lib.target/libuv.#{FFI::Platform::LIBSUFFIX}" do
     FileUtils.mkdir('ext/libuv/lib') unless File.directory?('ext/libuv/lib')
-    FileUtils.cp("ext/libuv/out/Release/lib.target/libuv.#{FFI::Platform::LIBSUFFIX}", "ext/libuv/lib/libuv.#{FFI::Platform::LIBSUFFIX}")
+
+    
+    FileUtils.cp("ext/libuv/out/Release/lib.target/libuv.#{FFI::Platform::LIBSUFFIX}", "ext/libuv/lib/libuv.#{FFI::Platform::LIBSUFFIX}", force: true)
 end
 
 CLEAN.include('ext/libuv/out')

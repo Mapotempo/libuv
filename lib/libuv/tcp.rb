@@ -183,7 +183,9 @@ module Libuv
 
         def bind(ip, port, callback = nil, &blk)
             return if @closed
-            @on_listen = callback || blk
+            @on_accept = callback || blk
+            @on_listen = method(:accept)
+
             assert_type(String, ip, IP_ARGUMENT_ERROR)
             assert_type(Integer, port, PORT_ARGUMENT_ERROR)
 
@@ -204,21 +206,6 @@ module Libuv
             end
             error = check_result UV.tcp_open(handle, fd)
             reject(error) if error
-        end
-
-        def accept(callback = nil, &blk)
-            begin
-                raise RuntimeError, CLOSED_HANDLE_ERROR if @closed
-                tcp = TCP.new(loop, handle)
-                begin
-                    (callback || blk).call(tcp)
-                rescue Exception => e
-                    @loop.log :error, :tcp_accept_cb, e
-                end
-            rescue Exception => e
-                @loop.log :info, :tcp_accept_failed, e
-            end
-            nil
         end
 
         def connect(ip, port, callback = nil, &blk)
@@ -306,6 +293,20 @@ module Libuv
                 rescue Exception => e
                     @loop.log :error, :connect_cb, e
                 end
+            end
+        end
+
+        def accept(_)
+            begin
+                raise RuntimeError, CLOSED_HANDLE_ERROR if @closed
+                tcp = TCP.new(loop, handle)
+                begin
+                    @on_accept.call(tcp)
+                rescue Exception => e
+                    @loop.log :error, :tcp_accept_cb, e
+                end
+            rescue Exception => e
+                @loop.log :info, :tcp_accept_failed, e
             end
         end
 

@@ -163,30 +163,28 @@ describe Libuv::Filesystem do
 				@server = @loop.tcp
 				@client = @loop.tcp
 
-				@server.bind('127.0.0.1', 34570) do |server|
-					server.accept do |client|
-						client.progress do |data|
-							file = @loop.file('.rspec', File::RDONLY)
-							file.progress do
-								file.send_file(client).then(proc {
-									file.close
-									client.close
-								}, proc { |error|
-									@general_failure << error
-								})
-							end
-							file.catch do |error|
-								@general_failure << error.inspect
+				@server.bind('127.0.0.1', 34570) do |client|
+					client.progress do |data|
+						file = @loop.file('.rspec', File::RDONLY)
+						file.progress do
+							file.send_file(client).then(proc {
 								file.close
 								client.close
-							end
+							}, proc { |error|
+								@general_failure << error
+							})
 						end
-						client.start_read
-						client.finally do
-							@timeout.close
-							@server.close
-							@loop.stop
+						file.catch do |error|
+							@general_failure << error.inspect
+							file.close
+							client.close
 						end
+					end
+					client.start_read
+					client.finally do
+						@timeout.close
+						@server.close
+						@loop.stop
 					end
 				end
 				# catch errors
@@ -231,30 +229,28 @@ describe Libuv::Filesystem do
 				@server = @loop.tcp
 				@client = @loop.tcp
 
-				@server.bind('127.0.0.1', 34568) do |server|
-					server.accept do |client|
-						client.progress do |data|
-							file = @loop.file('.rspec', File::RDONLY)
-							file.progress do
-								file.send_file(client, :http).then(proc {
-									file.close
-									client.close
-								}, proc { |error|
-									@general_failure << error
-								})
-							end
-							file.catch do |error|
-								@general_failure << error.inspect
+				@server.bind('127.0.0.1', 34568) do |client|
+					client.progress do |data|
+						file = @loop.file('.rspec', File::RDONLY)
+						file.progress do
+							file.send_file(client, :http).then(proc {
 								file.close
 								client.close
-							end
+							}, proc { |error|
+								@general_failure << error
+							})
 						end
-						client.start_read
-						client.finally do
-							@timeout.close
-							@server.close
-							@loop.stop
+						file.catch do |error|
+							@general_failure << error.inspect
+							file.close
+							client.close
 						end
+					end
+					client.start_read
+					client.finally do
+						@timeout.close
+						@server.close
+						@loop.stop
 					end
 				end
 				# catch errors
