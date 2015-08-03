@@ -22,10 +22,10 @@ file "ext/libuv/lib/libuv.#{FFI::Platform::LIBSUFFIX}" => "ext/libuv/build/Relea
     FileUtils.mkdir(user_lib) unless File.directory?(user_lib)
 
     # Useful for building other libraries that wish to use Libuv
-    FileUtils.cp("ext/libuv/build/Release/libuv.#{FFI::Platform::LIBSUFFIX}", "ext/libuv/lib/libuv.#{FFI::Platform::LIBSUFFIX}", force: true)
+    FileUtils.cp("ext/libuv/build/Release/libuv.#{FFI::Platform::LIBSUFFIX}", "ext/libuv/lib/libuv.#{FFI::Platform::LIBSUFFIX}")
 
     # Primrary load location - falls back to above if not available
-    FileUtils.cp("ext/libuv/build/Release/libuv.#{FFI::Platform::LIBSUFFIX}", "#{user_lib}/libuv.#{FFI::Platform::LIBSUFFIX}", force: true)
+    FileUtils.cp("ext/libuv/build/Release/libuv.#{FFI::Platform::LIBSUFFIX}", "#{user_lib}/libuv.#{FFI::Platform::LIBSUFFIX}")
 end
 
 CLEAN.include('ext/libuv/uv.xcodeproj')
