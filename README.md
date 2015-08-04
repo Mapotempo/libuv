@@ -2,7 +2,7 @@
 
 [![Build Status](https://travis-ci.org/cotag/libuv.svg?branch=master)](https://travis-ci.org/cotag/libuv)
 
-[Libuv](https://github.com/joyent/libuv) is a cross platform asynchronous IO implementation that powers NodeJS. It supports sockets, both UDP and TCP, filesystem watch, TTY, Pipes and other asynchronous primitives like timer, check, prepare and idle.
+[Libuv](https://github.com/libuv/libuv) is a cross platform asynchronous IO implementation that powers NodeJS. It supports sockets, both UDP and TCP, filesystem watch, TTY, Pipes and other asynchronous primitives like timer, check, prepare and idle.
 
 The Libuv gem contains Libuv and a Ruby wrapper that implements [pipelined promises](http://en.wikipedia.org/wiki/Futures_and_promises#Promise_pipelining) for asynchronous flow control and [coroutines](http://en.wikipedia.org/wiki/Coroutine) for untangling evented code
 
