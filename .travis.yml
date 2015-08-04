@@ -13,3 +13,4 @@ before_install:
   - gem install ffi
 before_script:
   - rake compile
+sudo: false

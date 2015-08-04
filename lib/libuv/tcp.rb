@@ -152,12 +152,10 @@ module Libuv
 
         alias_method :direct_write, :write
         def write(data)
-            if @tls.nil?
-                direct_write(data)
-            else
+            if @tls
                 deferred = @loop.defer
                 
-                if @handshake == true
+                if @handshake
                     @pending_write = deferred
                     @tls.encrypt(data)
                 else
@@ -165,6 +163,8 @@ module Libuv
                 end
 
                 deferred.promise
+            else
+                direct_write(data)
             end
         end
 
@@ -200,7 +200,8 @@ module Libuv
         def open(fd, binding = true, callback = nil, &blk)
             return if @closed
             if binding
-                @on_listen = callback || blk
+                @on_listen = method(:accept)
+                @on_accept = callback || blk
             else
                 @callback = callback || blk
             end

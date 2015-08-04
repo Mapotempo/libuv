@@ -210,7 +210,7 @@ describe Libuv::TCP do
 				end
 
 
-				@server.bind('127.0.0.1', 34567) do |client|
+				@server.bind('127.0.0.1', 56789) do |client|
 					client.start_tls(server: true)
 					client.progress do |data|
 						@log << data
@@ -231,7 +231,7 @@ describe Libuv::TCP do
 
 
 				# connect client to server
-				@client.connect('127.0.0.1', 34567) do |client|
+				@client.connect('127.0.0.1', 56789) do |client|
 					client.start_tls
 					client.progress do |data|
 						@log << data
