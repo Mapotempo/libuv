@@ -43,7 +43,8 @@ module Libuv
         # Shutsdown the writes on the handle waiting until the last write is complete before triggering the callback
         def shutdown
             return if @closed
-            error = check_result ::Libuv::Ext.shutdown(::Libuv::Ext.allocate_request_shutdown, handle, callback(:on_shutdown))
+            req = ::Libuv::Ext.allocate_request_shutdown
+            error = check_result ::Libuv::Ext.shutdown(req, handle, callback(:on_shutdown, req.address))
             reject(error) if error
         end
 

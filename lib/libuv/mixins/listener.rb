@@ -12,7 +12,7 @@ module Libuv
             def dispatch_callback(func_name, lookup, args)
                 instance_id = __send__(lookup, *args)
                 inst = @callback_lookup[instance_id]
-                inst.__send__(func_name, *args) if inst
+                inst.__send__(func_name, *args)
             end
 
             def define_callback(function:, params: [:pointer], ret_val: :void, lookup: :default_lookup)
@@ -30,13 +30,7 @@ module Libuv
 
 
             # Provide accessor methods to the class level instance variables
-            def callback_lookup
-                @callback_lookup
-            end
-
-            def callback_funcs
-                @callback_funcs
-            end
+            attr_reader :callback_lookup, :callback_funcs
 
 
             # This function is used to work out the instance the callback is for
