@@ -70,7 +70,7 @@ module Libuv
                     assert_type(String, data, WRITE_ERROR)
 
                     buffer1 = ::FFI::MemoryPointer.from_string(data)
-                    buffer  = ::Libuv::Ext.buf_init(buffer1, data.respond_to?(:bytesize) ? data.bytesize : data.size)
+                    buffer  = ::Libuv::Ext.buf_init(buffer1, data.bytesize)
 
                     # local as this variable will be available until the handle is closed
                     @write_callbacks ||= {}
