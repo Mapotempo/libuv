@@ -1,5 +1,4 @@
 require 'thread_safe'
-require 'set'
 
 module Libuv
     module Listener
@@ -26,11 +25,12 @@ module Libuv
             def inherited(subclass)
                 subclass.instance_variable_set(:@callback_funcs, {}.merge(@callback_funcs))
                 subclass.instance_variable_set(:@callback_lookup, @callback_lookup)
+                subclass.instance_variable_set(:@callback_lock, @callback_lock)
             end
 
 
             # Provide accessor methods to the class level instance variables
-            attr_reader :callback_lookup, :callback_funcs
+            attr_reader :callback_lookup, :callback_funcs, :callback_lock
 
 
             # This function is used to work out the instance the callback is for
@@ -42,6 +42,7 @@ module Libuv
         def self.included(base)
             base.instance_variable_set(:@callback_funcs, {})
             base.instance_variable_set(:@callback_lookup, ThreadSafe::Cache.new)
+            base.instance_variable_set(:@callback_lock, Mutex.new)
             base.extend(ClassMethods)
         end
 
@@ -49,12 +50,18 @@ module Libuv
 
         def callback(name, instance_id = @instance_id)
             klass = self.class
-            klass.callback_lookup[instance_id] ||= self
+            klass.callback_lock.synchronize do
+                klass.callback_lookup[instance_id] = self
+            end
             klass.callback_funcs[name]
         end
 
         def cleanup_callbacks(instance_id = @instance_id)
-            self.class.callback_lookup.delete(instance_id)
+            klass = self.class
+            klass.callback_lock.synchronize do
+                inst = klass.callback_lookup[instance_id]
+                klass.callback_lookup.delete(instance_id) if inst == self
+            end
         end
     end
 end
