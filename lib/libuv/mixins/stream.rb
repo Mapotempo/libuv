@@ -174,6 +174,7 @@ module Libuv
         end
 
         def on_shutdown(req, status)
+            cleanup_callbacks(req.address)
             ::Libuv::Ext.free(req)
             @close_error = check_result(status)
             close
