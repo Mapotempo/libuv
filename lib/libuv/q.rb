@@ -156,11 +156,11 @@ module Libuv
             
             
             def pending
-                @defer.instance_eval { @pending }
+                @defer.pending
             end
             
             def value
-                @defer.instance_eval { @value }
+                @defer.value
             end
         end
         
@@ -226,6 +226,8 @@ module Libuv
                 @value = nil
                 @loop = loop
             end
+
+            attr_reader :pending, :value
             
             #
             # resolves the derived promise with the value. If the value is a rejection constructed via
