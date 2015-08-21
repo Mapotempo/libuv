@@ -46,6 +46,7 @@ describe Libuv::Async do
 					@loop.stop
 				end
 				stopper.start(1000)
+				callback.close
 			end
 
 			@loop.work(proc {

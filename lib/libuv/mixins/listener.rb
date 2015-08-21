@@ -15,7 +15,7 @@ module Libuv
             end
 
             def define_callback(function:, params: [:pointer], ret_val: :void, lookup: :default_lookup)
-                @callback_funcs[function] = FFI::Function.new(ret_val, params) do |*args|
+                @callback_funcs[function] = ::FFI::Function.new(ret_val, params) do |*args|
                     dispatch_callback(function, lookup, args)
                 end
             end
@@ -41,8 +41,8 @@ module Libuv
 
         def self.included(base)
             base.instance_variable_set(:@callback_funcs, {})
-            base.instance_variable_set(:@callback_lookup, ThreadSafe::Cache.new)
-            base.instance_variable_set(:@callback_lock, Mutex.new)
+            base.instance_variable_set(:@callback_lookup, ::ThreadSafe::Cache.new)
+            base.instance_variable_set(:@callback_lock, ::Mutex.new)
             base.extend(ClassMethods)
         end
 
