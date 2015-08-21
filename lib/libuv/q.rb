@@ -6,6 +6,9 @@ module Libuv
         class Promise
             private_class_method :new
 
+            # This allows subclasses to make use of the catch feature
+            alias_method :ruby_catch, :catch
+
 
             # Used by finally method
             MAKE_PROMISE = proc { |value, resolved, loop|
