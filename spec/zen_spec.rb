@@ -2,7 +2,7 @@ require 'libuv'
 
 
 describe Libuv::Listener do
-	it "should ensure there are no remaining object references in callbacks" do
+	it "should ensure there are no remaining object references in callbacks", network: true do
 		require 'objspace'
 
 		checked = []
