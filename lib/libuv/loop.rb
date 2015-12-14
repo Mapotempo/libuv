@@ -426,9 +426,7 @@ module Libuv
         # Exposed to allow joining on the thread, when run in a multithreaded environment. Performing other actions on the thread has undefined semantics (read: a dangerous endevor).
         #
         # @return [Thread]
-        def reactor_thread
-            @reactor_thread
-        end
+        attr_reader :reactor_thread
 
         # Tells you whether the Libuv reactor loop is currently running.
         #
