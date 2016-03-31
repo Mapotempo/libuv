@@ -62,11 +62,19 @@ module Libuv
             # Create an async call for ending the loop
             @stop_loop = @loop.async method(:stop_cb)
             @stop_loop.unref
+
+            # Libuv can prevent the application shutting down once the main thread has ended
+            # The addition of a prepare function prevents this from happening.
+            @loop_prep = Libuv::Prepare.new(@loop, method(:noop))
+            @loop_prep.unref
+            @loop_prep.start
         end
 
 
         protected
 
+
+        def noop; end
 
         def stop_cb
             LOOPS.delete(@reactor_thread)

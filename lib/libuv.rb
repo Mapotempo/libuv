@@ -6,35 +6,36 @@ module Libuv
     require 'libuv/error'       # List of errors (matching those in uv.h)
     require 'libuv/q'           # The promise library
 
+    # -- The classes required for a loop instance --
     require 'libuv/mixins/assertions'  # Common code to check arguments
-    require 'libuv/mixins/fs_checks'   # Common code to check file system results
     require 'libuv/mixins/resource'    # Common code to check for errors
     require 'libuv/mixins/listener'    # Common callback code
-    require 'libuv/mixins/stream'      # For all libuv streams (tcp, pipes, tty)
-    require 'libuv/mixins/net'         # Common functions for tcp and udp
 
-    # -- The classes required for a loop instance --
     require 'libuv/handle'      # Base class for most libuv functionality
+    require 'libuv/prepare'     # Called at the end of a loop cycle
     require 'libuv/async'       # Provide a threadsafe way to signal the event loop
     require 'libuv/timer'       # High resolution timer
     require 'libuv/loop'        # The libuv reactor or event loop
     # --
 
-    require 'libuv/filesystem'  # Async directory manipulation
-    require 'libuv/fs_event'    # Notifies of changes to files and folders as they occur
-    require 'libuv/prepare'     # Called at the end of a loop cycle
-    require 'libuv/signal'      # Used to handle OS signals
-    require 'libuv/check'       # Called before processing events on the loop
-    require 'libuv/file'        # Async file reading and writing
-    require 'libuv/idle'        # Called when there are no events to process
-    require 'libuv/work'        # Provide work to be completed on another thread (thread pool)
-    require 'libuv/udp'         # Communicate over UDP
-    require 'libuv/dns'         # Async DNS lookup
+    autoload :FsChecks, 'libuv/mixins/fs_checks'   # Common code to check file system results
+    autoload :Stream,   'libuv/mixins/stream'      # For all libuv streams (tcp, pipes, tty)
+    autoload :Net,      'libuv/mixins/net'         # Common functions for tcp and udp
+
+    autoload :Filesystem, 'libuv/filesystem'  # Async directory manipulation
+    autoload :FSEvent,    'libuv/fs_event'    # Notifies of changes to files and folders as they occur
+    autoload :Signal,     'libuv/signal'      # Used to handle OS signals
+    autoload :Check,      'libuv/check'       # Called before processing events on the loop
+    autoload :File,       'libuv/file'        # Async file reading and writing
+    autoload :Idle,       'libuv/idle'        # Called when there are no events to process
+    autoload :Work,       'libuv/work'        # Provide work to be completed on another thread (thread pool)
+    autoload :UDP,        'libuv/udp'         # Communicate over UDP
+    autoload :Dns,        'libuv/dns'         # Async DNS lookup
 
     # Streams
-    require 'libuv/pipe'        # Communicate over Pipes
-    require 'libuv/tcp'         # Communicate over TCP
-    require 'libuv/tty'         # Terminal output
+    autoload :Pipe, 'libuv/pipe'        # Communicate over Pipes
+    autoload :TCP,  'libuv/tcp'         # Communicate over TCP
+    autoload :TTY,  'libuv/tty'         # Terminal output
 
 
     # Returns the number of CPU cores on the host platform
