@@ -55,7 +55,7 @@ module Libuv
         def repeat=(repeat)
             return if @closed
             repeat = repeat.to_i
-            check_result ::Libuv::Ext.timer_set_repeat(handle, repeat)
+            error = check_result ::Libuv::Ext.timer_set_repeat(handle, repeat)
             reject(error) if error
         end
 
