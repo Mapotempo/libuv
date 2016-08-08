@@ -1,3 +1,6 @@
+require 'ipaddr'
+
+
 module Libuv
     class UDP < Handle
         include Net
