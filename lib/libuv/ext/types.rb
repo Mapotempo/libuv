@@ -82,7 +82,8 @@ module Libuv
             :UV_FS_SYMLINK,
             :UV_FS_READLINK,
             :UV_FS_CHOWN,
-            :UV_FS_FCHOWN
+            :UV_FS_FCHOWN,
+            :UV_FS_REALPATH
         ]
         enum :uv_fs_event, [
             :UV_RENAME, 1,
