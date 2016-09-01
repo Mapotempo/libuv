@@ -17,13 +17,13 @@ module Libuv
         }
 
 
-        # @param loop [::Libuv::Loop] loop this signal handler will be associated
+        # @param reactor [::Libuv::Reactor] reactor this signal handler will be associated
         # @param callback [Proc] callback to be called when the signal is triggered
-        def initialize(loop)
-            @loop = loop
+        def initialize(reactor)
+            @reactor = reactor
 
             signal_ptr = ::Libuv::Ext.allocate_handle_signal
-            error = check_result(::Libuv::Ext.signal_init(loop.handle, signal_ptr))
+            error = check_result(::Libuv::Ext.signal_init(reactor.handle, signal_ptr))
 
             super(signal_ptr, error)
         end

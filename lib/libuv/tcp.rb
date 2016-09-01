@@ -20,11 +20,11 @@ module Libuv
         def tls?; !@tls.nil?; end
 
 
-        def initialize(loop, acceptor = nil)
-            @loop = loop
+        def initialize(reactor, acceptor = nil)
+            @reactor = reactor
 
             tcp_ptr = ::Libuv::Ext.allocate_handle_tcp
-            error = check_result(::Libuv::Ext.tcp_init(loop.handle, tcp_ptr))
+            error = check_result(::Libuv::Ext.tcp_init(reactor.handle, tcp_ptr))
 
             if acceptor && error.nil?
                 error = check_result(::Libuv::Ext.accept(acceptor, tcp_ptr))
@@ -67,7 +67,7 @@ module Libuv
             begin
                 @on_handshake.call(self, protocol) if @on_handshake
             rescue => e
-                @loop.log :warn, :tls_handshake_callback_error, e
+                @reactor.log :warn, :tls_handshake_callback_error, e
             end
         end
 
@@ -82,7 +82,7 @@ module Libuv
             begin
                 @progress.call data, self
             rescue Exception => e
-                @loop.log :error, :stream_progress_cb, e
+                @reactor.log :error, :stream_progress_cb, e
             end
         end
 
@@ -113,7 +113,7 @@ module Libuv
                 begin
                     return @on_verify.call cert
                 rescue => e
-                    @loop.log :warn, :tls_verify_callback_failed, e
+                    @reactor.log :warn, :tls_verify_callback_failed, e
                     return false
                 end
             end
@@ -129,7 +129,7 @@ module Libuv
             # Free tls memory
             # Next tick as may recieve data after closing
             if @tls
-                @loop.next_tick do
+                @reactor.next_tick do
                     @tls.cleanup
                 end
             end
@@ -153,7 +153,7 @@ module Libuv
         alias_method :direct_write, :write
         def write(data)
             if @tls
-                deferred = @loop.defer
+                deferred = @reactor.defer
                 
                 if @handshake
                     @pending_write = deferred
@@ -273,9 +273,9 @@ module Libuv
 
         def create_socket(ip, port)
             if ip.ipv4?
-                Socket4.new(loop, handle, ip.to_s, port)
+                Socket4.new(reactor, handle, ip.to_s, port)
             else
-                Socket6.new(loop, handle, ip.to_s, port)
+                Socket6.new(reactor, handle, ip.to_s, port)
             end
         end
 
@@ -292,7 +292,7 @@ module Libuv
                 begin
                     @callback.call(self)
                 rescue Exception => e
-                    @loop.log :error, :connect_cb, e
+                    @reactor.log :error, :connect_cb, e
                 end
             end
         end
@@ -300,14 +300,14 @@ module Libuv
         def accept(_)
             begin
                 raise RuntimeError, CLOSED_HANDLE_ERROR if @closed
-                tcp = TCP.new(loop, handle)
+                tcp = TCP.new(reactor, handle)
                 begin
                     @on_accept.call(tcp)
                 rescue Exception => e
-                    @loop.log :error, :tcp_accept_cb, e
+                    @reactor.log :error, :tcp_accept_cb, e
                 end
             rescue Exception => e
-                @loop.log :info, :tcp_accept_failed, e
+                @reactor.log :info, :tcp_accept_failed, e
             end
         end
 
@@ -315,9 +315,9 @@ module Libuv
         class SocketBase
             include Resource
 
-            def initialize(loop, tcp, ip, port)
+            def initialize(reactor, tcp, ip, port)
                 @tcp, @sockaddr = tcp, ip_addr(ip, port)
-                @loop = loop
+                @reactor = reactor
             end
 
             def bind

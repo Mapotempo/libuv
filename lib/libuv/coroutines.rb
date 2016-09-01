@@ -1,6 +1,6 @@
 require 'fiber'
 
-class ::Libuv::Loop
+class ::Libuv::Reactor
     @@use_fibers = true
 end
 
@@ -22,7 +22,7 @@ class Object
         if yieldable.length == 1
             promise = yieldable[0]
         else
-            promise = ::Libuv::Loop.current.all(*yieldable)
+            promise = ::Libuv::Reactor.current.all(*yieldable)
         end
 
         # Use the promise to resume the Fiber

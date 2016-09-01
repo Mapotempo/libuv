@@ -6,18 +6,18 @@ describe Libuv::Pipe do
 		@log = []
 		@general_failure = []
 
-		@loop = Libuv::Loop.new
-		@server = @loop.pipe
-		@client = @loop.pipe
-		@timeout = @loop.timer do
-			@loop.stop
+		@reactor = Libuv::Reactor.new
+		@server = @reactor.pipe
+		@client = @reactor.pipe
+		@timeout = @reactor.timer do
+			@reactor.stop
 			@general_failure << "test timed out"
 		end
 		@timeout.start(5000)
 
 		@pipefile = "/tmp/test-pipes.pipe"
 
-		@loop.all(@server, @client, @timeout).catch do |reason|
+		@reactor.all(@server, @client, @timeout).catch do |reason|
 			@general_failure << reason.inspect
 			@general_failure << "Failed with: #{reason.message}\n#{reason.backtrace}\n"
 		end
@@ -38,7 +38,7 @@ describe Libuv::Pipe do
 	describe 'bidirectional inter process communication' do
 
 		it "should send a ping and return a pong" do
-			@loop.run { |logger|
+			@reactor.run { |logger|
 				logger.progress do |level, errorid, error|
 					begin
 						@general_failure << "Log called: #{level}: #{errorid}\n#{error.message}\n#{error.backtrace}\n"
@@ -58,7 +58,7 @@ describe Libuv::Pipe do
 				# catch server errors
 				@server.catch do |reason|
 					@general_failure << reason.inspect
-					@loop.stop
+					@reactor.stop
 
 					@general_failure << "Failed with: #{reason.message}\n#{reason.backtrace}\n"
 				end
@@ -82,15 +82,15 @@ describe Libuv::Pipe do
 
 				@client.catch do |reason|
 					@general_failure << reason.inspect
-					@loop.stop
+					@reactor.stop
 
 					@general_failure << "Failed with: #{reason.message}\n#{reason.backtrace}\n"
 				end
 
-				# Stop the loop once the client handle is closed
+				# Stop the reactor once the client handle is closed
 				@client.finally do
 					@server.close
-					@loop.stop
+					@reactor.stop
 				end
 			}
 
@@ -106,14 +106,14 @@ describe Libuv::Pipe do
 		end
 
 		it "should send work to a consumer" do
-			@loop.run { |logger|
+			@reactor.run { |logger|
 				logger.progress do |level, errorid, error|
 					@general_failure << "Log called: #{level}: #{errorid}\n#{error.message}\n#{error.backtrace.join("\n")}\n"
 				end
 
 
-				heartbeat = @loop.timer
-				@file1 = @loop.file(@pipefile, File::RDWR|File::NONBLOCK)
+				heartbeat = @reactor.timer
+				@file1 = @reactor.file(@pipefile, File::RDWR|File::NONBLOCK)
 				@file1.progress do
 					@server.open(@file1.fileno) do |server|
 						heartbeat.progress  do
@@ -128,7 +128,7 @@ describe Libuv::Pipe do
 					@general_failure << "Log called: #{e.inspect} - #{e.message}\n"
 				end
 
-				@file2 = @loop.file(@pipefile, File::RDWR|File::NONBLOCK)
+				@file2 = @reactor.file(@pipefile, File::RDWR|File::NONBLOCK)
 				@file2.progress do
 					# connect client to server
 					@client.open(@file2.fileno) do |consumer|
@@ -141,12 +141,12 @@ describe Libuv::Pipe do
 				end
 
 
-				timeout = @loop.timer do
+				timeout = @reactor.timer do
 					@server.close
 					@client.close
 					timeout.close
 					heartbeat.close
-					@loop.stop
+					@reactor.stop
 				end
 				timeout.start(1000)
 			}

@@ -7,10 +7,10 @@ describe Libuv::Filesystem do
 		@log = []
 		@general_failure = []
 
-		@loop = Libuv::Loop.default
-		@filesystem = @loop.filesystem
-		@timeout = @loop.timer do
-			@loop.stop
+		@reactor = Libuv::Reactor.default
+		@filesystem = @reactor.filesystem
+		@timeout = @reactor.timer do
+			@reactor.stop
 			@general_failure << "test timed out"
 		end
 		@timeout.start(4000)
@@ -25,14 +25,14 @@ describe Libuv::Filesystem do
 
 		@thefile = "test-file.txt"
 
-		@loop.all(@filesystem, @timeout).catch do |reason|
+		@reactor.all(@filesystem, @timeout).catch do |reason|
 			@general_failure << reason.inspect
 		end
 	end
 	
 	describe 'directory navigation' do
 		it "should list the contents of a folder" do
-			@loop.run { |logger|
+			@reactor.run { |logger|
 				logger.progress &@logger
 
 				currentDir = Dir.pwd
@@ -45,7 +45,7 @@ describe Libuv::Filesystem do
 				end
 				listing.finally do
 					@timeout.close
-					@loop.stop
+					@reactor.stop
 				end
 			}
 
@@ -56,16 +56,16 @@ describe Libuv::Filesystem do
 
 	describe 'file manipulation' do
 		it "should create and write to a file" do
-			@loop.run { |logger|
+			@reactor.run { |logger|
 				logger.progress &@logger
 
-				file = @loop.file(@thefile, File::CREAT|File::WRONLY)
+				file = @reactor.file(@thefile, File::CREAT|File::WRONLY)
 				file.progress do 
 					file.write('write some data to a file').then do
 						file.chmod(777).then do
 							file.close
 							@timeout.close
-							@loop.stop
+							@reactor.stop
 							@log = :success
 						end
 					end
@@ -74,7 +74,7 @@ describe Libuv::Filesystem do
 					@general_failure << error
 					@timeout.close
 					file.close
-					@loop.stop
+					@reactor.stop
 				end
 			}
 
@@ -83,15 +83,15 @@ describe Libuv::Filesystem do
 		end
 
 		it "should return stats on the file" do
-			@loop.run { |logger|
+			@reactor.run { |logger|
 				logger.progress &@logger
 
-				file = @loop.file(@thefile, File::RDONLY)
+				file = @reactor.file(@thefile, File::RDONLY)
 				file.progress do 
 					file.stat.then do |stats|
 						file.close
 						@timeout.close
-						@loop.stop
+						@reactor.stop
 						@log << stats[:st_mtim][:tv_sec]
 					end
 				end
@@ -99,7 +99,7 @@ describe Libuv::Filesystem do
 					@general_failure << error
 					@timeout.close
 					file.close
-					@loop.stop
+					@reactor.stop
 				end
 			}
 
@@ -109,15 +109,15 @@ describe Libuv::Filesystem do
 		end
 
 		it "should read from a file" do
-			@loop.run { |logger|
+			@reactor.run { |logger|
 				logger.progress &@logger
 
-				file = @loop.file(@thefile, File::RDONLY)
+				file = @reactor.file(@thefile, File::RDONLY)
 				file.progress do 
 					file.read(100).then do |result|
 						file.close
 						@timeout.close
-						@loop.stop
+						@reactor.stop
 						@log = result
 					end
 				end
@@ -125,7 +125,7 @@ describe Libuv::Filesystem do
 					@general_failure << error
 					@timeout.close
 					file.close
-					@loop.stop
+					@reactor.stop
 				end
 			}
 
@@ -134,19 +134,19 @@ describe Libuv::Filesystem do
 		end
 
 		it "should delete a file" do
-			@loop.run { |logger|
+			@reactor.run { |logger|
 				logger.progress &@logger
 
-				op = @loop.filesystem.unlink(@thefile)
+				op = @reactor.filesystem.unlink(@thefile)
 				op.then do
 					@timeout.close
-					@loop.stop
+					@reactor.stop
 					@log = :success
 				end
 				op.catch do |error|
 					@general_failure << error
 					@timeout.close
-					@loop.stop
+					@reactor.stop
 				end
 			}
 
@@ -157,15 +157,15 @@ describe Libuv::Filesystem do
 
 	describe 'file streaming' do
 		it "should send a file over a stream", :network => true do
-			@loop.run { |logger|
+			@reactor.run { |logger|
 				logger.progress &@logger
 
-				@server = @loop.tcp
-				@client = @loop.tcp
+				@server = @reactor.tcp
+				@client = @reactor.tcp
 
 				@server.bind('127.0.0.1', 34570) do |client|
 					client.progress do |data|
-						file = @loop.file('.rspec', File::RDONLY)
+						file = @reactor.file('.rspec', File::RDONLY)
 						file.progress do
 							file.send_file(client).then(proc {
 								file.close
@@ -184,13 +184,13 @@ describe Libuv::Filesystem do
 					client.finally do
 						@timeout.close
 						@server.close
-						@loop.stop
+						@reactor.stop
 					end
 				end
 				# catch errors
 				@server.catch do |reason|
 					@general_failure << reason.inspect
-					@loop.stop
+					@reactor.stop
 				end
 				# start listening
 				@server.listen(5)
@@ -209,7 +209,7 @@ describe Libuv::Filesystem do
 				@client.catch do |reason|
 					@general_failure << reason.inspect
 					@server.close
-					@loop.stop
+					@reactor.stop
 				end
 			}
 
@@ -223,15 +223,15 @@ describe Libuv::Filesystem do
 		end
 
 		it "should send a file as a HTTP chunked response", :network => true do
-			@loop.run { |logger|
+			@reactor.run { |logger|
 				logger.progress &@logger
 
-				@server = @loop.tcp
-				@client = @loop.tcp
+				@server = @reactor.tcp
+				@client = @reactor.tcp
 
 				@server.bind('127.0.0.1', 34568) do |client|
 					client.progress do |data|
-						file = @loop.file('.rspec', File::RDONLY)
+						file = @reactor.file('.rspec', File::RDONLY)
 						file.progress do
 							file.send_file(client, :http).then(proc {
 								file.close
@@ -250,13 +250,13 @@ describe Libuv::Filesystem do
 					client.finally do
 						@timeout.close
 						@server.close
-						@loop.stop
+						@reactor.stop
 					end
 				end
 				# catch errors
 				@server.catch do |reason|
 					@general_failure << reason.inspect
-					@loop.stop
+					@reactor.stop
 				end
 				# start listening
 				@server.listen(5)
@@ -275,7 +275,7 @@ describe Libuv::Filesystem do
 				@client.catch do |reason|
 					@general_failure << reason.inspect
 					@server.close
-					@loop.stop
+					@reactor.stop
 				end
 			}
 

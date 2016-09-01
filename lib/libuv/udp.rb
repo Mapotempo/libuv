@@ -18,11 +18,11 @@ module Libuv
         HANDLE_CLOSED_ERROR = "unable to send as handle closed".freeze
 
 
-        def initialize(loop)
-            @loop = loop
+        def initialize(reactor)
+            @reactor = reactor
 
             udp_ptr = ::Libuv::Ext.allocate_handle_udp
-            error = check_result(::Libuv::Ext.udp_init(loop.handle, udp_ptr))
+            error = check_result(::Libuv::Ext.udp_init(reactor.handle, udp_ptr))
             @request_refs = {}
 
             super(udp_ptr, error)
@@ -110,7 +110,7 @@ module Libuv
 
         def send(ip, port, data)
             # NOTE:: Similar to stream.rb -> write
-            deferred = @loop.defer
+            deferred = @reactor.defer
             if !@closed
                 begin
                     assert_type(String, ip, IP_ARGUMENT_ERROR)
@@ -151,15 +151,15 @@ module Libuv
             deferred.promise
         end
 
-        def enable_multicast_loop
+        def enable_multicast_reactor
             return if @closed
-            error = check_result ::Libuv::Ext.udp_set_multicast_loop(handle, 1)
+            error = check_result ::Libuv::Ext.udp_set_multicast_reactor(handle, 1)
             reject(error) if error
         end
 
-        def disable_multicast_loop
+        def disable_multicast_reactor
             return if @closed
-            error = check_result ::Libuv::Ext.udp_set_multicast_loop(handle, 0)
+            error = check_result ::Libuv::Ext.udp_set_multicast_reactor(handle, 0)
             reject(error) if error
         end
 
@@ -249,7 +249,7 @@ module Libuv
                 begin
                     @progress.call data, ip, port, self
                 rescue Exception => e
-                    @loop.log :error, :udp_progress_cb, e
+                    @reactor.log :error, :udp_progress_cb, e
                 end
             else
                 ::Libuv::Ext.free(@receive_buff)

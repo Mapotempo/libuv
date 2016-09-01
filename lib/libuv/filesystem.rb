@@ -21,64 +21,64 @@ module Libuv
         define_callback function: :on_chown, **fs_params
 
 
-        def initialize(thread)
-            @loop = thread
+        def initialize(reactor)
+            @reactor = reactor
         end
 
         def unlink(path)
             assert_type(String, path, "path must be a String")
-            @unlink_deferred = @loop.defer
+            @unlink_deferred = @reactor.defer
 
             request = ::Libuv::Ext.allocate_request_fs
-            pre_check @unlink_deferred, request, ::Libuv::Ext.fs_unlink(@loop, request, path, callback(:on_unlink, request.address))
+            pre_check @unlink_deferred, request, ::Libuv::Ext.fs_unlink(@reactor, request, path, callback(:on_unlink, request.address))
             @unlink_deferred.promise
         end
 
         def mkdir(path, mode = 0777)
             assert_type(String, path, "path must be a String")
             assert_type(Integer, mode, "mode must be an Integer")
-            @mkdir_deferred = @loop.defer
+            @mkdir_deferred = @reactor.defer
 
             request = ::Libuv::Ext.allocate_request_fs
-            pre_check @mkdir_deferred, request, ::Libuv::Ext.fs_mkdir(@loop, request, path, mode, callback(:on_mkdir, request.address))
+            pre_check @mkdir_deferred, request, ::Libuv::Ext.fs_mkdir(@reactor, request, path, mode, callback(:on_mkdir, request.address))
             @mkdir_deferred.promise
         end
 
         def rmdir(path)
             assert_type(String, path, "path must be a String")
-            @rmdir_deferred = @loop.defer
+            @rmdir_deferred = @reactor.defer
 
             request = ::Libuv::Ext.allocate_request_fs
-            pre_check @rmdir_deferred, request, ::Libuv::Ext.fs_rmdir(@loop, request, path, callback(:on_rmdir, request.address))
+            pre_check @rmdir_deferred, request, ::Libuv::Ext.fs_rmdir(@reactor, request, path, callback(:on_rmdir, request.address))
             @rmdir_deferred.promise
         end
 
         def readdir(path)
             assert_type(String, path, "path must be a String")
-            @readdir_deferred = @loop.defer
+            @readdir_deferred = @reactor.defer
 
             request = ::Libuv::Ext.allocate_request_fs
-            pre_check @readdir_deferred, request, ::Libuv::Ext.fs_readdir(@loop, request, path, 0, callback(:on_readdir, request.address))
+            pre_check @readdir_deferred, request, ::Libuv::Ext.fs_readdir(@reactor, request, path, 0, callback(:on_readdir, request.address))
             @readdir_deferred.promise
         end
 
         def rename(old_path, new_path)
             assert_type(String, old_path, "old_path must be a String")
             assert_type(String, new_path, "new_path must be a String")
-            @rename_deferred = @loop.defer
+            @rename_deferred = @reactor.defer
 
             request = ::Libuv::Ext.allocate_request_fs
-            pre_check @rename_deferred, request, ::Libuv::Ext.fs_rename(@loop, request, old_path, new_path, callback(:on_rename, request.address))
+            pre_check @rename_deferred, request, ::Libuv::Ext.fs_rename(@reactor, request, old_path, new_path, callback(:on_rename, request.address))
             @rename_deferred.promise
         end
 
         def chmod(path, mode)
             assert_type(String, path, "path must be a String")
             assert_type(Integer, mode, "mode must be an Integer")
-            @chmod_deferred = @loop.defer
+            @chmod_deferred = @reactor.defer
 
             request = ::Libuv::Ext.allocate_request_fs
-            pre_check @chmod_deferred, request, ::Libuv::Ext.fs_chmod(@loop, request, path, mode, callback(:on_chmod, request.address))
+            pre_check @chmod_deferred, request, ::Libuv::Ext.fs_chmod(@reactor, request, path, mode, callback(:on_chmod, request.address))
             @chmod_deferred.promise
         end
 
@@ -86,48 +86,48 @@ module Libuv
             assert_type(String, path, "path must be a String")
             assert_type(Integer, atime, "atime must be an Integer")
             assert_type(Integer, mtime, "mtime must be an Integer")
-            @utime_deferred = @loop.defer
+            @utime_deferred = @reactor.defer
 
             request = ::Libuv::Ext.allocate_request_fs
-            pre_check @utime_deferred, request, ::Libuv::Ext.fs_utime(@loop, request, path, atime, mtime, callback(:on_utime, request.address))
+            pre_check @utime_deferred, request, ::Libuv::Ext.fs_utime(@reactor, request, path, atime, mtime, callback(:on_utime, request.address))
             @utime_deferred.promise
         end
 
         def lstat(path)
             assert_type(String, path, "path must be a String")
-            @stat_deferred = @loop.defer
+            @stat_deferred = @reactor.defer
 
             request = ::Libuv::Ext.allocate_request_fs
-            pre_check @stat_deferred, request, ::Libuv::Ext.fs_lstat(@loop, request, path, callback(:on_stat, request.address))
+            pre_check @stat_deferred, request, ::Libuv::Ext.fs_lstat(@reactor, request, path, callback(:on_stat, request.address))
             @stat_deferred.promise
         end
 
         def link(old_path, new_path)
             assert_type(String, old_path, "old_path must be a String")
             assert_type(String, new_path, "new_path must be a String")
-            @link_deferred = @loop.defer
+            @link_deferred = @reactor.defer
 
             request = ::Libuv::Ext.allocate_request_fs
-            pre_check @link_deferred, request, ::Libuv::Ext.fs_link(@loop, request, old_path, new_path, callback(:on_link, request.address))
+            pre_check @link_deferred, request, ::Libuv::Ext.fs_link(@reactor, request, old_path, new_path, callback(:on_link, request.address))
             @link_deferred.promise
         end
 
         def symlink(old_path, new_path)
             assert_type(String, old_path, "old_path must be a String")
             assert_type(String, new_path, "new_path must be a String")
-            @symlink_deferred = @loop.defer
+            @symlink_deferred = @reactor.defer
 
             request = ::Libuv::Ext.allocate_request_fs
-            pre_check @symlink_deferred, request, ::Libuv::Ext.fs_symlink(@loop, request, old_path, new_path, 0, callback(:on_symlink, request.address))
+            pre_check @symlink_deferred, request, ::Libuv::Ext.fs_symlink(@reactor, request, old_path, new_path, 0, callback(:on_symlink, request.address))
             @symlink_deferred.promise
         end
 
         def readlink(path)
             assert_type(String, path, "path must be a String")
-            @readlink_deferred = @loop.defer
+            @readlink_deferred = @reactor.defer
 
             request = ::Libuv::Ext.allocate_request_fs
-            pre_check @readlink_deferred, request, ::Libuv::Ext.fs_readlink(@loop, request, path, callback(:on_readlink, request.address))
+            pre_check @readlink_deferred, request, ::Libuv::Ext.fs_readlink(@reactor, request, path, callback(:on_readlink, request.address))
             @readlink_deferred.promise
         end
 
@@ -135,10 +135,10 @@ module Libuv
             assert_type(String, path, "path must be a String")
             assert_type(Integer, uid, "uid must be an Integer")
             assert_type(Integer, gid, "gid must be an Integer")
-            @chown_deferred = @loop.defer
+            @chown_deferred = @reactor.defer
 
             request = ::Libuv::Ext.allocate_request_fs
-            pre_check @chown_deferred, request, ::Libuv::Ext.fs_chown(@loop, request, path, uid, gid, callback(:on_chown, request.address))
+            pre_check @chown_deferred, request, ::Libuv::Ext.fs_chown(@reactor, request, path, uid, gid, callback(:on_chown, request.address))
             @chown_deferred.promise
         end
 

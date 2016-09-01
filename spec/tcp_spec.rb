@@ -7,17 +7,17 @@ describe Libuv::TCP do
 		@log = []
 		@general_failure = []
 
-		@loop = Libuv::Loop.new
-		@server = @loop.tcp
-		@client = @loop.tcp
-		@timeout = @loop.timer do
-			@loop.stop
-			@loop2.stop if @loop2
+		@reactor = Libuv::Reactor.new
+		@server = @reactor.tcp
+		@client = @reactor.tcp
+		@timeout = @reactor.timer do
+			@reactor.stop
+			@reactor2.stop if @reactor2
 			@general_failure << "test timed out"
 		end
 		@timeout.start(5000)
 
-		@loop.all(@server, @client, @timeout).catch do |reason|
+		@reactor.all(@server, @client, @timeout).catch do |reason|
 			@general_failure << reason.inspect
 		end
 
@@ -32,7 +32,7 @@ describe Libuv::TCP do
 	
 	describe 'basic client server' do
 		it "should send a ping and return a pong", :network => true do
-			@loop.run { |logger|
+			@reactor.run { |logger|
 				logger.progress do |level, errorid, error|
 					begin
 						@general_failure << "Log called: #{level}: #{errorid}\n#{error.message}\n#{error.backtrace.join("\n") if error.backtrace}\n"
@@ -81,7 +81,7 @@ describe Libuv::TCP do
 				# close the handle
 				@client.finally do
 					@server.close
-					@loop.stop
+					@reactor.stop
 				end
 			}
 
@@ -93,7 +93,7 @@ describe Libuv::TCP do
 	it "should handle requests on different threads", :network => true do
 		@sync = Mutex.new
 
-		@loop.run { |logger|
+		@reactor.run { |logger|
 			logger.progress do |level, errorid, error|
 				begin
 					@general_failure << "Log called: #{level}: #{errorid}\n#{error.message}\n#{error.backtrace.join("\n") if error.backtrace}\n"
@@ -114,7 +114,7 @@ describe Libuv::TCP do
 			end
 
 
-			@pipeserve = @loop.pipe(true)
+			@pipeserve = @reactor.pipe(true)
 			@pipeserve.bind(@pipefile) do |client|
 				@remote = client
 
@@ -156,11 +156,11 @@ describe Libuv::TCP do
 
 
 			Thread.new do
-				@loop2 = Libuv::Loop.new
-				@pipeclient = @loop2.pipe(true)
+				@reactor2 = Libuv::Reactor.new
+				@pipeclient = @reactor2.pipe(true)
 
 
-				@loop2.run do  |logger|
+				@reactor2.run do  |logger|
 					logger.progress do |level, errorid, error|
 						begin
 							@general_failure << "Log called: #{level}: #{errorid}\n#{error.message}\n#{error.backtrace.join("\n") if error.backtrace}\n"
@@ -183,8 +183,8 @@ describe Libuv::TCP do
 							connection.start_read
 							connection.finally do
 								@pipeclient.close
-								@loop2.stop
-								@loop.stop
+								@reactor2.stop
+								@reactor.stop
 							end
 						end
 
@@ -200,7 +200,7 @@ describe Libuv::TCP do
 
 	describe 'basic TLS client and server' do
 		it "should send a ping and return a pong", :network => true do
-			@loop.run { |logger|
+			@reactor.run { |logger|
 				logger.progress do |level, errorid, error|
 					begin
 						@general_failure << "Log called: #{level}: #{errorid}\n#{error.message}\n#{error.backtrace.join("\n") if error.backtrace}\n"
@@ -251,7 +251,7 @@ describe Libuv::TCP do
 				# close the handle
 				@client.finally do
 					@server.close
-					@loop.stop
+					@reactor.stop
 				end
 			}
 

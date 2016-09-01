@@ -3,11 +3,11 @@ module Libuv
         include Stream
 
 
-        def initialize(loop, fileno, readable)
-            @loop = loop
+        def initialize(reactor, fileno, readable)
+            @reactor = reactor
 
             tty_ptr = ::Libuv::Ext.allocate_handle_tty
-            error = check_result(::Libuv::Ext.tty_init(loop.handle, tty_ptr, fileno, readable ? 1 : 0))
+            error = check_result(::Libuv::Ext.tty_init(reactor.handle, tty_ptr, fileno, readable ? 1 : 0))
             
             super(tty_ptr, error)
         end

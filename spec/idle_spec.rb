@@ -6,23 +6,23 @@ describe Libuv::Idle do
 		@log = []
 		@general_failure = []
 
-		@loop = Libuv::Loop.default
-		@server = @loop.pipe
-		@client = @loop.pipe
-		@timeout = @loop.timer do
-			@loop.stop
+		@reactor = Libuv::Reactor.default
+		@server = @reactor.pipe
+		@client = @reactor.pipe
+		@timeout = @reactor.timer do
+			@reactor.stop
 			@general_failure << "test timed out"
 		end
 		@timeout.start(5000)
 
-		@loop.all(@server, @client, @timeout).catch do |reason|
+		@reactor.all(@server, @client, @timeout).catch do |reason|
 			@general_failure << reason.inspect
 			p "Failed with: #{reason.message}\n#{reason.backtrace.join("\n")}\n"
 		end
 	end
 	
 	it "should increase the idle count when there is nothing to process" do
-		@loop.run { |logger|
+		@reactor.run { |logger|
 			logger.progress do |level, errorid, error|
 				begin
 					p "Log called: #{level}: #{errorid}\n#{error.message}\n#{error.backtrace.join("\n")}\n"
@@ -33,19 +33,19 @@ describe Libuv::Idle do
 
 			@idle_calls = 0
   
-			idle = @loop.idle do |e|
+			idle = @reactor.idle do |e|
 				@idle_calls += 1
 			end
 			idle.start
 
-			timer = @loop.timer proc {}
+			timer = @reactor.timer proc {}
 			timer.start(1, 0)
 
-			stopper = @loop.timer do
+			stopper = @reactor.timer do
 				idle.close
 				timer.close
 				stopper.close
-				@loop.stop
+				@reactor.stop
 			end
 			stopper.start(1000, 0)
 		}

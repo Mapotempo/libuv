@@ -5,14 +5,14 @@ module Libuv
         define_callback function: :on_check
 
 
-        # @param loop [::Libuv::Loop] loop this check will be associated
-        # @param callback [Proc] callback to be called on loop check
-        def initialize(loop, callback = nil, &blk)
-            @loop = loop
+        # @param reactor [::Libuv::Reactor] reactor this check will be associated
+        # @param callback [Proc] callback to be called on reactor check
+        def initialize(reactor, callback = nil, &blk)
+            @reactor = reactor
             @callback = callback || blk
 
             check_ptr = ::Libuv::Ext.allocate_handle_check
-            error = check_result(::Libuv::Ext.check_init(loop.handle, check_ptr))
+            error = check_result(::Libuv::Ext.check_init(reactor.handle, check_ptr))
 
             super(check_ptr, error)
         end
@@ -31,9 +31,9 @@ module Libuv
             reject(error) if error
         end
 
-        # Used to update the callback that will be triggered on loop check
+        # Used to update the callback that will be triggered on reactor check
         #
-        # @param callback [Proc] the callback to be called on loop check
+        # @param callback [Proc] the callback to be called on reactor check
         def progress(callback = nil, &blk)
             @callback = callback || blk
         end
@@ -46,7 +46,7 @@ module Libuv
             begin
                 @callback.call
             rescue Exception => e
-                @loop.log :error, :check_cb, e
+                @reactor.log :error, :check_cb, e
             end
         end
     end

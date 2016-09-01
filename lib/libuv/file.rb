@@ -36,21 +36,21 @@ module Libuv
             @request_refs = {}
 
             request = ::Libuv::Ext.allocate_request_fs
-            pre_check @defer, request, ::Libuv::Ext.fs_open(@loop, request, @path, @flags, @mode, callback(:on_open, request.address))
+            pre_check @defer, request, ::Libuv::Ext.fs_open(@reactor, request, @path, @flags, @mode, callback(:on_open, request.address))
             nil
         end
 
         def close
             @closed = true
             request = ::Libuv::Ext.allocate_request_fs
-            pre_check(@defer, request, ::Libuv::Ext.fs_close(@loop.handle, request, @fileno, callback(:on_close, request.address)))
+            pre_check(@defer, request, ::Libuv::Ext.fs_close(@reactor.handle, request, @fileno, callback(:on_close, request.address)))
             nil # pre-check returns a promise
         end
 
         def read(length, offset = 0)
             assert_type(Integer, length, "length must be an Integer")
             assert_type(Integer, offset, "offset must be an Integer")
-            deferred = @loop.defer
+            deferred = @reactor.defer
 
             buffer1 = FFI::MemoryPointer.new(length)
             buffer  = ::Libuv::Ext.buf_init(buffer1, length)
@@ -58,13 +58,13 @@ module Libuv
 
             @request_refs[request.address] = [deferred, buffer1]
 
-            pre_check(deferred, request, ::Libuv::Ext.fs_read(@loop.handle, request, @fileno, buffer, 1, offset, callback(:on_read, request.address)))
+            pre_check(deferred, request, ::Libuv::Ext.fs_read(@reactor.handle, request, @fileno, buffer, 1, offset, callback(:on_read, request.address)))
         end
 
         def write(data, offset = 0)
             assert_type(String, data, "data must be a String")
             assert_type(Integer, offset, "offset must be an Integer")
-            deferred = @loop.defer
+            deferred = @reactor.defer
 
             length = data.respond_to?(:bytesize) ? data.bytesize : data.size
 
@@ -74,67 +74,67 @@ module Libuv
 
             @request_refs[request.address] = [deferred, buffer1]
 
-            pre_check(deferred, request, ::Libuv::Ext.fs_write(@loop.handle, request, @fileno, buffer, 1, offset, callback(:on_write, request.address)))
+            pre_check(deferred, request, ::Libuv::Ext.fs_write(@reactor.handle, request, @fileno, buffer, 1, offset, callback(:on_write, request.address)))
         end
 
         def sync
-            deferred = @loop.defer
+            deferred = @reactor.defer
 
             request = ::Libuv::Ext.allocate_request_fs
             @request_refs[request.address] = deferred
 
-            pre_check deferred, request, ::Libuv::Ext.fs_fsync(@loop.handle, request, @fileno, callback(:on_sync, request.address))
+            pre_check deferred, request, ::Libuv::Ext.fs_fsync(@reactor.handle, request, @fileno, callback(:on_sync, request.address))
         end
 
         def datasync
-            deferred = @loop.defer
+            deferred = @reactor.defer
 
             request = ::Libuv::Ext.allocate_request_fs
             @request_refs[request.address] = deferred
 
-            pre_check deferred, request, ::Libuv::Ext.fs_fdatasync(@loop.handle, request, @fileno, callback(:on_datasync, request.address))
+            pre_check deferred, request, ::Libuv::Ext.fs_fdatasync(@reactor.handle, request, @fileno, callback(:on_datasync, request.address))
         end
 
         def truncate(offset)
             assert_type(Integer, offset, "offset must be an Integer")
-            deferred = @loop.defer
+            deferred = @reactor.defer
 
             request = ::Libuv::Ext.allocate_request_fs
             @request_refs[request.address] = deferred
 
-            pre_check deferred, request, ::Libuv::Ext.fs_ftruncate(@loop.handle, request, @fileno, offset, callback(:on_truncate, request.address))
+            pre_check deferred, request, ::Libuv::Ext.fs_ftruncate(@reactor.handle, request, @fileno, offset, callback(:on_truncate, request.address))
         end
 
         def utime(atime, mtime)
             assert_type(Integer, atime, "atime must be an Integer")
             assert_type(Integer, mtime, "mtime must be an Integer")
-            deferred = @loop.defer
+            deferred = @reactor.defer
 
             request = ::Libuv::Ext.allocate_request_fs
             @request_refs[request.address] = deferred
 
-            pre_check deferred, request, ::Libuv::Ext.fs_futime(@loop.handle, request, @fileno, atime, mtime, callback(:on_utime, request.address))
+            pre_check deferred, request, ::Libuv::Ext.fs_futime(@reactor.handle, request, @fileno, atime, mtime, callback(:on_utime, request.address))
         end
 
         def chmod(mode)
             assert_type(Integer, mode, "mode must be an Integer")
-            deferred = @loop.defer
+            deferred = @reactor.defer
 
             request = ::Libuv::Ext.allocate_request_fs
             @request_refs[request.address] = deferred
 
-            pre_check deferred, request, ::Libuv::Ext.fs_fchmod(@loop.handle, request, @fileno, mode, callback(:on_chmod, request.address))
+            pre_check deferred, request, ::Libuv::Ext.fs_fchmod(@reactor.handle, request, @fileno, mode, callback(:on_chmod, request.address))
         end
 
         def chown(uid, gid)
             assert_type(Integer, uid, "uid must be an Integer")
             assert_type(Integer, gid, "gid must be an Integer")
-            deferred = @loop.defer
+            deferred = @reactor.defer
 
             request = ::Libuv::Ext.allocate_request_fs
             @request_refs[request.address] = deferred
 
-            pre_check deferred, request, ::Libuv::Ext.fs_fchown(@loop.handle, request, @fileno, uid, gid, callback(:on_chown, request.address))
+            pre_check deferred, request, ::Libuv::Ext.fs_fchown(@reactor.handle, request, @fileno, uid, gid, callback(:on_chown, request.address))
         end
 
         def send_file(stream, type = :raw, chunk_size = 4096)
@@ -143,7 +143,7 @@ module Libuv
             @start_transmit ||= method(:start_transmit)
             @next_chunk ||= method(:next_chunk)
 
-            @sending_file = @loop.defer
+            @sending_file = @reactor.defer
             @file_stream = stream
             @file_stream_type = type
             @file_chunk_size = chunk_size

@@ -11,7 +11,7 @@ module Libuv
         define_callback function: :on_complete, params: [:pointer, :int]
 
 
-        # @param thread [::Libuv::Loop] thread this work request will be associated
+        # @param thread [::Libuv::Reactor] thread this work request will be associated
         # @param work [Proc] callback to be called in the thread pool
         def initialize(thread, work)
             super(thread, thread.defer)
@@ -23,7 +23,7 @@ module Libuv
 
             @instance_id = @pointer.address
 
-            error = check_result ::Libuv::Ext.queue_work(@loop, @pointer, callback(:on_work), callback(:on_complete))
+            error = check_result ::Libuv::Ext.queue_work(@reactor, @pointer, callback(:on_work), callback(:on_complete))
             if error
                 ::Libuv::Ext.free(@pointer)
                 @complete = true

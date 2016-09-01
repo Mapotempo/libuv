@@ -5,13 +5,13 @@ module Libuv
         define_callback function: :on_timer
 
 
-        # @param loop [::Libuv::Loop] loop this timer will be associated
+        # @param reactor [::Libuv::Reactor] reactor this timer will be associated
         # @param callback [Proc] callback to be called when the timer is triggered
-        def initialize(loop, callback = nil)
-            @loop, @callback = loop, callback
+        def initialize(reactor, callback = nil)
+            @reactor, @callback = reactor, callback
             
             timer_ptr = ::Libuv::Ext.allocate_handle_timer
-            error = check_result(::Libuv::Ext.timer_init(loop.handle, timer_ptr))
+            error = check_result(::Libuv::Ext.timer_init(reactor.handle, timer_ptr))
             @stopped = true
 
             super(timer_ptr, error)
@@ -80,7 +80,7 @@ module Libuv
             begin
                 @callback.call
             rescue Exception => e
-                @loop.log :error, :timer_cb, e
+                @reactor.log :error, :timer_cb, e
             end
         end
     end

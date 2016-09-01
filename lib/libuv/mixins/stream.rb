@@ -64,7 +64,7 @@ module Libuv
 
         def write(data)
             # NOTE:: Similar to udp.rb -> send
-            deferred = @loop.defer
+            deferred = @reactor.defer
             if !@closed
                 begin
                     assert_type(String, data, WRITE_ERROR)
@@ -125,7 +125,7 @@ module Libuv
                 begin
                     @on_listen.call(self)
                 rescue Exception => e
-                    @loop.log :error, :stream_listen_cb, e
+                    @reactor.log :error, :stream_listen_cb, e
                 end
             end
         end
@@ -165,7 +165,7 @@ module Libuv
                     begin
                         @progress.call data, self
                     rescue Exception => e
-                        @loop.log :error, :stream_progress_cb, e
+                        @reactor.log :error, :stream_progress_cb, e
                     end
                 else
                     @tls.decrypt(data)

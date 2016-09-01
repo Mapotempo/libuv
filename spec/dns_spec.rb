@@ -6,21 +6,21 @@ describe Libuv::Dns do
 		@log = []
 		@general_failure = []
 
-		@loop = Libuv::Loop.default
-		@timeout = @loop.timer do
-			@loop.stop
+		@reactor = Libuv::Reactor.default
+		@timeout = @reactor.timer do
+			@reactor.stop
 			@general_failure << "test timed out"
 		end
 		@timeout.start(5000)
 
-		@loop.all(@server, @client, @timeout).catch do |reason|
+		@reactor.all(@server, @client, @timeout).catch do |reason|
 			@general_failure << reason.inspect
 			p "Failed with: #{reason.message}\n#{reason.backtrace.join("\n")}\n"
 		end
 	end
 	
 	it "should resolve localhost using IP4", :network => true do
-		@loop.run { |logger|
+		@reactor.run { |logger|
 			logger.progress do |level, errorid, error|
 				begin
 					p "Log called: #{level}: #{errorid}\n#{error.message}\n#{error.backtrace.join("\n")}\n"
@@ -29,14 +29,14 @@ describe Libuv::Dns do
 				end
 			end
 
-			@loop.lookup('localhost').then proc { |addrinfo|
+			@reactor.lookup('localhost').then proc { |addrinfo|
 				@result = addrinfo[0][0]
 				@timeout.close
-				@loop.stop
+				@reactor.stop
 			}, proc { |err|
 				@general_failure << err
 				@timeout.close
-				@loop.stop
+				@reactor.stop
 			}
 		}
 
@@ -45,7 +45,7 @@ describe Libuv::Dns do
 	end
 
 	it "should resolve localhost using IP6", :network => true do
-		@loop.run { |logger|
+		@reactor.run { |logger|
 			logger.progress do |level, errorid, error|
 				begin
 					p "Log called: #{level}: #{errorid}\n#{error.message}\n#{error.backtrace.join("\n")}\n"
@@ -54,14 +54,14 @@ describe Libuv::Dns do
 				end
 			end
 
-			@loop.lookup('localhost', :IPv6).then proc { |addrinfo|
+			@reactor.lookup('localhost', :IPv6).then proc { |addrinfo|
 				@result = addrinfo[0][0]
 				@timeout.close
-				@loop.stop
+				@reactor.stop
 			}, proc { |err|
 				@general_failure << err
 				@timeout.close
-				@loop.stop
+				@reactor.stop
 			}
 		}
 
@@ -69,8 +69,8 @@ describe Libuv::Dns do
 		expect(@result).to eq('::1')
 	end
 
-	it "should resolve loop back" do
-		@loop.run { |logger|
+	it "should resolve reactor back" do
+		@reactor.run { |logger|
 			logger.progress do |level, errorid, error|
 				begin
 					p "Log called: #{level}: #{errorid}\n#{error.message}\n#{error.backtrace.join("\n")}\n"
@@ -79,14 +79,14 @@ describe Libuv::Dns do
 				end
 			end
 
-			@loop.lookup('127.0.0.1').then proc { |addrinfo|
+			@reactor.lookup('127.0.0.1').then proc { |addrinfo|
 				@result = addrinfo[0][0]
 				@timeout.close
-				@loop.stop
+				@reactor.stop
 			}, proc { |err|
 				@general_failure << err
 				@timeout.close
-				@loop.stop
+				@reactor.stop
 			}
 		}
 

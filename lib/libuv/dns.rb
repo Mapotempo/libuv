@@ -28,11 +28,11 @@ module Libuv
         end
 
 
-        # @param loop [::Libuv::Loop] loop this work request will be associated
+        # @param reactor [::Libuv::Reactor] reactor this work request will be associated
         # @param domain [String] the domain name to resolve
         # @param port [Integer, String] the port we wish to use
-        def initialize(loop, domain, port, hint = :IPv4)
-            super(loop, loop.defer)
+        def initialize(reactor, domain, port, hint = :IPv4)
+            super(reactor, reactor.defer)
 
             @domain = domain
             @port = port
@@ -42,7 +42,7 @@ module Libuv
             @error = nil    # error in callback
 
             @instance_id = @pointer.address
-            error = check_result ::Libuv::Ext.getaddrinfo(@loop, @pointer, callback(:on_complete), domain, port.to_s, HINTS[hint])
+            error = check_result ::Libuv::Ext.getaddrinfo(@reactor, @pointer, callback(:on_complete), domain, port.to_s, HINTS[hint])
 
             if error
                 ::Libuv::Ext.free(@pointer)

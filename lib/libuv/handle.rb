@@ -5,7 +5,7 @@ module Libuv
 
         attr_accessor :storage  # A place for general storage
         attr_reader :closed
-        attr_reader :loop
+        attr_reader :reactor
 
 
         define_callback function: :on_close
@@ -16,7 +16,7 @@ module Libuv
             @instance_id = @pointer.address
 
             # Initialise the promise
-            super(loop, loop.defer)
+            super(reactor, reactor.defer)
 
             # clean up on init error (always raise here)
             if error
@@ -27,8 +27,8 @@ module Libuv
             end
         end
 
-        # Public: Increment internal ref counter for the handle on the loop. Useful for
-        # extending the loop with custom watchers that need to make loop not stop
+        # Public: Increment internal ref counter for the handle on the reactor. Useful for
+        # extending the reactor with custom watchers that need to make reactor not stop
         # 
         # Returns self
         def ref
@@ -36,8 +36,8 @@ module Libuv
             ::Libuv::Ext.ref(handle)
         end
 
-        # Public: Decrement internal ref counter for the handle on the loop, useful to stop
-        # loop even when there are outstanding open handles
+        # Public: Decrement internal ref counter for the handle on the reactor, useful to stop
+        # reactor even when there are outstanding open handles
         # 
         # Returns self
         def unref

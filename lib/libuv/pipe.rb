@@ -10,11 +10,11 @@ module Libuv
         WRITE2_ERROR = "data must be a String".freeze
 
 
-        def initialize(loop, ipc, acceptor = nil)
-            @loop, @ipc = loop, ipc
+        def initialize(reactor, ipc, acceptor = nil)
+            @reactor, @ipc = reactor, ipc
 
             pipe_ptr = ::Libuv::Ext.allocate_handle_pipe
-            error = check_result(::Libuv::Ext.pipe_init(loop.handle, pipe_ptr, ipc ? 1 : 0))
+            error = check_result(::Libuv::Ext.pipe_init(reactor.handle, pipe_ptr, ipc ? 1 : 0))
             error = check_result(::Libuv::Ext.accept(acceptor, pipe_ptr)) if acceptor && error.nil?
             
             super(pipe_ptr, error)
@@ -44,7 +44,7 @@ module Libuv
                 begin
                     @callback.call(self) if @callback
                 rescue Exception => e
-                    @loop.log :error, :pipe_connect_cb, e
+                    @reactor.log :error, :pipe_connect_cb, e
                 end
             rescue Exception => e
                 reject(e)
@@ -65,7 +65,7 @@ module Libuv
         end
 
         def write2(fd, data = ".")
-            deferred = @loop.defer
+            deferred = @reactor.defer
             if @ipc && !@closed
                 begin
                     assert_type(String, data, WRITE_ERROR)
@@ -113,9 +113,9 @@ module Libuv
             remote = nil
             case pending
             when :tcp
-                remote = TCP.new(loop, handle)
+                remote = TCP.new(reactor, handle)
             when :pipe
-                remote = Pipe.new(loop, @ipc, handle)
+                remote = Pipe.new(reactor, @ipc, handle)
             else
                 raise NotImplementedError, "IPC for handle #{pending} not supported"
             end
@@ -139,15 +139,15 @@ module Libuv
             pipe = nil
             begin
                 raise RuntimeError, CLOSED_HANDLE_ERROR if @closed
-                pipe = Pipe.new(loop, @ipc, handle)
+                pipe = Pipe.new(reactor, @ipc, handle)
             rescue Exception => e
-                @loop.log :info, :pipe_accept_failed, e
+                @reactor.log :info, :pipe_accept_failed, e
             end
             if pipe
                 begin
                     @on_accept.call(pipe)
                 rescue Exception => e
-                    @loop.log :error, :pipe_accept_cb, e
+                    @reactor.log :error, :pipe_accept_cb, e
                 end
             end
         end
@@ -163,7 +163,7 @@ module Libuv
                 begin
                     @callback.call(self)
                 rescue Exception => e
-                    @loop.log :error, :pipe_connect_cb, e
+                    @reactor.log :error, :pipe_connect_cb, e
                 end
             end
         end

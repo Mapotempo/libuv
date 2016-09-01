@@ -5,14 +5,14 @@ module Libuv
         define_callback function: :on_idle
 
 
-        # @param thread [::Libuv::Loop] loop this idle handler will be associated
-        # @param callback [Proc] callback to be called when the loop is idle
-        def initialize(thread, callback = nil, &blk)
-            @loop = thread
+        # @param reactor [::Libuv::Reactor] reactor this idle handler will be associated
+        # @param callback [Proc] callback to be called when the reactor is idle
+        def initialize(reactor, callback = nil, &blk)
+            @reactor = reactor
             @callback = callback || blk
 
             idle_ptr = ::Libuv::Ext.allocate_handle_idle
-            error = check_result(::Libuv::Ext.idle_init(thread.handle, idle_ptr))
+            error = check_result(::Libuv::Ext.idle_init(reactor.handle, idle_ptr))
 
             super(idle_ptr, error)
         end
@@ -46,7 +46,7 @@ module Libuv
             begin
                 @callback.call
             rescue Exception => e
-                @loop.log :error, :idle_cb, e
+                @reactor.log :error, :idle_cb, e
             end
         end
     end

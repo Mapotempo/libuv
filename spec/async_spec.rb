@@ -6,22 +6,22 @@ describe Libuv::Async do
 		@log = []
 		@general_failure = []
 
-		@loop = Libuv::Loop.default
-		@call = @loop.pipe
-		@timeout = @loop.timer do
-			@loop.stop
+		@reactor = Libuv::Reactor.default
+		@call = @reactor.pipe
+		@timeout = @reactor.timer do
+			@reactor.stop
 			@general_failure << "test timed out"
 		end
 		@timeout.start(5000)
 
-		@loop.all(@server, @client, @timeout).catch do |reason|
+		@reactor.all(@server, @client, @timeout).catch do |reason|
 			@general_failure << reason.inspect
 			p "Failed with: #{reason.message}\n#{reason.backtrace.join("\n")}\n"
 		end
 	end
 	
 	it "Should call the async function from the thread pool stopping the counter" do
-		@loop.run { |logger|
+		@reactor.run { |logger|
 			logger.progress do |level, errorid, error|
 				begin
 					p "Log called: #{level}: #{errorid}\n#{error.message}\n#{error.backtrace.join("\n")}\n"
@@ -32,24 +32,24 @@ describe Libuv::Async do
 
 			@count = 0
 
-			timer = @loop.timer do
+			timer = @reactor.timer do
 				@count += 1
 			end
 			timer.start(0, 200)
 
-			callback = @loop.async do
-				stopper = @loop.timer do
+			callback = @reactor.async do
+				stopper = @reactor.timer do
 					timer.close
 					callback.close
 					stopper.close
 					@timeout.close
-					@loop.stop
+					@reactor.stop
 				end
 				stopper.start(1000)
 				callback.close
 			end
 
-			@loop.work(proc {
+			@reactor.work(proc {
 				callback.call
 			}).catch do |err|
 				@general_failure << err

@@ -1,19 +1,19 @@
 require 'thread'
 
 module Libuv
-    class Loop
+    class Reactor
         include Resource, Assertions
 
 
-        LOOPS = ThreadSafe::Cache.new
+        REACTORS = ThreadSafe::Cache.new
         CRITICAL = Mutex.new
         @@use_fibers = false
 
 
         module ClassMethods
-            # Get default loop
+            # Get default reactor
             # 
-            # @return [::Libuv::Loop]
+            # @return [::Libuv::Reactor]
             def default
                 return @default unless @default.nil?
                 CRITICAL.synchronize {
@@ -21,54 +21,57 @@ module Libuv
                 }
             end
 
-            # Create new Libuv loop
+            # Create new Libuv reactor
             # 
-            # @return [::Libuv::Loop]
+            # @return [::Libuv::Reactor]
             def new
                 return create(::Libuv::Ext.loop_new)
             end
 
-            # Build a Ruby Libuv loop from an existing loop pointer
+            # Build a Ruby Libuv reactor from an existing reactor pointer
             # 
-            # @return [::Libuv::Loop]
+            # @return [::Libuv::Reactor]
             def create(pointer)
                 allocate.tap { |i| i.send(:initialize, FFI::AutoPointer.new(pointer, ::Libuv::Ext.method(:loop_delete))) }
             end
 
-            # Checks for the existence of a loop on the current thread
+            # Checks for the existence of a reactor on the current thread
             #
-            # @return [::Libuv::Loop | nil]
+            # @return [::Libuv::Reactor | nil]
             def current
-                LOOPS[Thread.current]
+                REACTORS[Thread.current]
             end
         end
         extend ClassMethods
 
 
-        # Initialize a loop using an FFI::Pointer to a libuv loop
+        # Initialize a reactor using an FFI::Pointer to a libuv reactor
         def initialize(pointer) # :notnew:
             @pointer = pointer
-            @loop = self
+            @reactor = self
+            @run_count = 0
 
             # Create an async call for scheduling work from other threads
             @run_queue = Queue.new
-            @process_queue = @loop.async method(:process_queue_cb)
+            @process_queue = @reactor.async method(:process_queue_cb)
             @process_queue.unref
 
             # Create a next tick timer
-            @next_tick = @loop.timer method(:next_tick_cb)
+            @next_tick = @reactor.timer method(:next_tick_cb)
             @next_tick.unref
 
-            # Create an async call for ending the loop
-            @stop_loop = @loop.async method(:stop_cb)
-            @stop_loop.unref
+            # Create an async call for ending the reactor
+            @stop_reactor = @reactor.async method(:stop_cb)
+            @stop_reactor.unref
 
             # Libuv can prevent the application shutting down once the main thread has ended
             # The addition of a prepare function prevents this from happening.
-            @loop_prep = Libuv::Prepare.new(@loop, method(:noop))
-            @loop_prep.unref
-            @loop_prep.start
+            @reactor_prep = Libuv::Prepare.new(@reactor, method(:noop))
+            @reactor_prep.unref
+            @reactor_prep.start
         end
+
+        attr_reader :run_count
 
 
         protected
@@ -77,7 +80,7 @@ module Libuv
         def noop; end
 
         def stop_cb
-            LOOPS.delete(@reactor_thread)
+            REACTORS.delete(@reactor_thread)
             @reactor_thread = nil
 
             ::Libuv::Ext.stop(@pointer)
@@ -102,7 +105,7 @@ module Libuv
                 run = @run_queue.pop true  # pop non-block
                 run.call
             rescue Exception => e
-                @loop.log :error, :next_tick_cb, e
+                @reactor.log :error, :next_tick_cb, e
             end
         end
 
@@ -119,25 +122,26 @@ module Libuv
 
         def handle; @pointer; end
 
-        # Run the actual event loop. This method will block until the loop is stopped.
+        # Run the actual event reactor. This method will block until the reactor is stopped.
         #
         # @param run_type [:UV_RUN_DEFAULT, :UV_RUN_ONCE, :UV_RUN_NOWAIT]
         # @yieldparam promise [::Libuv::Q::Promise] Yields a promise that can be used for logging unhandled
-        #   exceptions on the loop.
+        #   exceptions on the reactor.
         def run(run_type = :UV_RUN_DEFAULT)
             if @reactor_thread.nil?
-                @loop_notify = @loop.defer
+                @reactor_notify = @reactor.defer
 
                 begin
                     @reactor_thread = Thread.current
-                    LOOPS[@reactor_thread] = @loop
+                    REACTORS[@reactor_thread] = @reactor
                     if block_given?
                         if @@use_fibers
-                            Fiber.new { yield @loop_notify.promise }.resume
+                            Fiber.new { yield @reactor_notify.promise }.resume
                         else
-                            yield @loop_notify.promise
+                            yield @reactor_notify.promise
                         end
                     end
+                    @run_count += 1
                     ::Libuv::Ext.run(@pointer, run_type)  # This is blocking
                 ensure
                     @reactor_thread = nil
@@ -145,12 +149,12 @@ module Libuv
                 end
             elsif block_given?
                 if @@use_fibers
-                    schedule { Fiber.new { yield @loop_notify.promise }.resume }
+                    schedule { Fiber.new { yield @reactor_notify.promise }.resume }
                 else
-                    schedule { yield @loop_notify.promise }
+                    schedule { yield @reactor_notify.promise }
                 end
             end
-            @loop
+            @reactor
         end
 
 
@@ -158,7 +162,7 @@ module Libuv
         #
         # @return [::Libuv::Q::Promise]
         def notifier
-            @loop_notify.promise
+            @reactor_notify.promise
         end
 
         # Creates a deferred result object for where the result of an operation may only be returned 
@@ -166,7 +170,7 @@ module Libuv
         #
         # @return [::Libuv::Q::Deferred]
         def defer
-            Q.defer(@loop)
+            Q.defer(@reactor)
         end
 
         # Combines multiple promises into a single promise that is resolved when all of the input
@@ -178,7 +182,7 @@ module Libuv
         #   the promises is resolved with a rejection, this resulting promise will be resolved with the
         #   same rejection.
         def all(*promises)
-            Q.all(@loop, *promises)
+            Q.all(@reactor, *promises)
         end
 
         #
@@ -188,7 +192,7 @@ module Libuv
         # @param *promises [::Libuv::Q::Promise] a number of promises that will be combined into a single promise
         # @return [::Libuv::Q::Promise] Returns a single promise
         def any(*promises)
-            Q.any(@loop, *promises)
+            Q.any(@reactor, *promises)
         end
 
         #
@@ -199,11 +203,11 @@ module Libuv
         # @return [::Libuv::Q::Promise] Returns a single promise that will be resolved with an array of values,
         #   each [result, wasResolved] value pair corresponding to a at the same index in the `promises` array.
         def finally(*promises)
-            Q.finally(@loop, *promises)
+            Q.finally(@reactor, *promises)
         end
         
 
-        # forces loop time update, useful for getting more granular times
+        # forces reactor time update, useful for getting more granular times
         # 
         # @return nil
         def update_time
@@ -232,7 +236,7 @@ module Libuv
                 raise "error lookup failed for code #{err}"
             end
         rescue Exception => e
-            @loop.log :warn, :error_lookup_failed, e
+            @reactor.log :warn, :error_lookup_failed, e
             e
         end
 
@@ -240,14 +244,14 @@ module Libuv
         # 
         # @return [::Libuv::TCP]
         def tcp
-            TCP.new(@loop)
+            TCP.new(@reactor)
         end
 
         # Get a new UDP instance
         #
         # @return [::Libuv::UDP]
         def udp
-            UDP.new(@loop)
+            UDP.new(@reactor)
         end
 
         # Get a new TTY instance
@@ -258,7 +262,7 @@ module Libuv
         def tty(fileno, readable = false)
             assert_type(Integer, fileno, "io#fileno must return an integer file descriptor, #{fileno.inspect} given")
 
-            TTY.new(@loop, fileno, readable)
+            TTY.new(@reactor, fileno, readable)
         end
 
         # Get a new Pipe instance
@@ -266,7 +270,7 @@ module Libuv
         # @param ipc [true, false] indicate if a handle will be used for ipc, useful for sharing tcp socket between processes
         # @return [::Libuv::Pipe]
         def pipe(ipc = false)
-            Pipe.new(@loop, ipc)
+            Pipe.new(@reactor, ipc)
         end
 
         # Get a new timer instance
@@ -274,21 +278,21 @@ module Libuv
         # @param callback [Proc] the callback to be called on timer trigger
         # @return [::Libuv::Timer]
         def timer(callback = nil, &blk)
-            Timer.new(@loop, callback || blk)
+            Timer.new(@reactor, callback || blk)
         end
 
         # Get a new Prepare handle
         # 
         # @return [::Libuv::Prepare]
         def prepare(callback = nil, &blk)
-            Prepare.new(@loop, callback || blk)
+            Prepare.new(@reactor, callback || blk)
         end
 
         # Get a new Check handle
         # 
         # @return [::Libuv::Check]
         def check(callback = nil, &blk)
-            Check.new(@loop, callback || blk)
+            Check.new(@reactor, callback || blk)
         end
 
         # Get a new Idle handle
@@ -296,7 +300,7 @@ module Libuv
         # @param callback [Proc] the callback to be called on idle trigger
         # @return [::Libuv::Idle]
         def idle(callback = nil, &block)
-            Idle.new(@loop, callback || block)
+            Idle.new(@reactor, callback || block)
         end
 
         # Get a new Async handle
@@ -304,7 +308,7 @@ module Libuv
         # @return [::Libuv::Async]
         def async(callback = nil, &block)
             callback ||= block
-            handle = Async.new(@loop)
+            handle = Async.new(@reactor)
             handle.progress callback if callback
             handle
         end
@@ -314,7 +318,7 @@ module Libuv
         # @return [::Libuv::Signal]
         def signal(signum = nil, callback = nil, &block)
             callback ||= block
-            handle = Signal.new(@loop)
+            handle = Signal.new(@reactor)
             handle.progress callback if callback
             handle.start(signum) if signum
             handle
@@ -328,7 +332,7 @@ module Libuv
         def work(callback = nil, &block)
             callback ||= block
             assert_block(callback)
-            Work.new(@loop, callback)    # Work is a promise object
+            Work.new(@reactor, callback)    # Work is a promise object
         end
 
         # Lookup a hostname
@@ -338,7 +342,7 @@ module Libuv
         # @param callback [Proc] the callback to be called on success
         # @return [::Libuv::Dns]
         def lookup(hostname, hint = :IPv4, port = 9, &block)
-            dns = Dns.new(@loop, hostname, port, hint)    # Work is a promise object
+            dns = Dns.new(@reactor, hostname, port, hint)    # Work is a promise object
             dns.then block if block_given?
             dns
         end
@@ -350,7 +354,7 @@ module Libuv
         # @raise [ArgumentError] if path is not a string
         def fs_event(path)
             assert_type(String, path)
-            FSEvent.new(@loop, path)
+            FSEvent.new(@reactor, path)
         end
 
         # Opens a file and returns an object that can be used to manipulate it
@@ -363,17 +367,17 @@ module Libuv
             assert_type(String, path, "path must be a String")
             assert_type(Integer, flags, "flags must be an Integer")
             assert_type(Integer, mode, "mode must be an Integer")
-            File.new(@loop, path, flags, mode)
+            File.new(@reactor, path, flags, mode)
         end
 
         # Returns an object for manipulating the filesystem
         #
         # @return [::Libuv::Filesystem]
         def filesystem
-            Filesystem.new(@loop)
+            Filesystem.new(@reactor)
         end
 
-        # Schedule some work to be processed on the event loop as soon as possible (thread safe)
+        # Schedule some work to be processed on the event reactor as soon as possible (thread safe)
         #
         # @param callback [Proc] the callback to be called on the reactor thread
         # @raise [ArgumentError] if block is not given
@@ -389,7 +393,7 @@ module Libuv
             end
         end
 
-        # Queue some work to be processed in the next iteration of the event loop (thread safe)
+        # Queue some work to be processed in the next iteration of the event reactor (thread safe)
         #
         # @param callback [Proc] the callback to be called on the reactor thread
         # @raise [ArgumentError] if block is not given
@@ -410,18 +414,18 @@ module Libuv
             end
         end
 
-        # Notifies the loop there was an event that should be logged
+        # Notifies the reactor there was an event that should be logged
         #
         # @param level [Symbol] the error level (info, warn, error etc)
         # @param id [Object] some kind of identifying information
         # @param *args [*args] any additional information
         def log(level, id, *args)
-            @loop_notify.notify(level, id, *args)
+            @reactor_notify.notify(level, id, *args)
         end
 
-        # Closes handles opened by the loop class and completes the current loop iteration (thread safe)
+        # Closes handles opened by the reactor class and completes the current reactor iteration (thread safe)
         def stop
-            @stop_loop.call
+            @stop_reactor.call
         end
 
         # True if the calling thread is the same thread as the reactor.
@@ -436,7 +440,7 @@ module Libuv
         # @return [Thread]
         attr_reader :reactor_thread
 
-        # Tells you whether the Libuv reactor loop is currently running.
+        # Tells you whether the Libuv reactor reactor is currently running.
         #
         # @return [Boolean]
         def reactor_running?

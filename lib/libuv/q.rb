@@ -11,8 +11,8 @@ module Libuv
 
 
             # Used by finally method
-            MAKE_PROMISE = proc { |value, resolved, loop|
-                result = Q.defer(loop)
+            MAKE_PROMISE = proc { |value, resolved, reactor|
+                result = Q.defer(reactor)
                 if (resolved)
                     result.resolve(value)
                 else
@@ -53,18 +53,18 @@ module Libuv
                     begin
                         callbackOutput = callback.call
                     rescue Exception => e
-                        @loop.log(:error, :q_finally_cb, e)
-                        return MAKE_PROMISE.call(e, false, @loop)
+                        @reactor.log(:error, :q_finally_cb, e)
+                        return MAKE_PROMISE.call(e, false, @reactor)
                     end
 
                     if callbackOutput.is_a?(Promise)
                         return callbackOutput.then(proc {
-                                MAKE_PROMISE.call(value, isResolved, @loop)
+                                MAKE_PROMISE.call(value, isResolved, @reactor)
                             }, proc { |err|
-                                MAKE_PROMISE.call(err, false, @loop)
+                                MAKE_PROMISE.call(err, false, @reactor)
                             })
                     else
-                        return MAKE_PROMISE.call(value, isResolved, @loop)
+                        return MAKE_PROMISE.call(value, isResolved, @reactor)
                     end
                 }
 
@@ -84,11 +84,11 @@ module Libuv
         class DeferredPromise < Promise
             public_class_method :new
             
-            def initialize(loop, defer)
+            def initialize(reactor, defer)
                 raise ArgumentError unless defer.is_a?(Deferred)
                 super()
                 
-                @loop = loop
+                @reactor = reactor
                 @defer = defer
             end
             
@@ -100,7 +100,7 @@ module Libuv
             # @param [Proc, Proc, Proc, &blk] callbacks error, success, progress, success_block
             # @return [Promise] Returns an unresolved promise for chaining
             def then(callback = nil, errback = nil, progback = nil, &blk)
-                result = Q.defer(@loop)
+                result = Q.defer(@reactor)
                 
                 callback ||= blk
                 
@@ -110,17 +110,17 @@ module Libuv
                     rescue Exception => e
                         #warn "\nUnhandled exception: #{e.message}\n#{e.backtrace.join("\n")}\n"
                         result.reject(e)
-                        @loop.log(:error, :q_resolve_cb, e)
+                        @reactor.log(:error, :q_resolve_cb, e)
                     end
                 }
                 
                 wrappedErrback = proc { |reason|
                     begin
-                        result.resolve(errback.nil? ? Q.reject(@loop, reason) : errback.call(reason))
+                        result.resolve(errback.nil? ? Q.reject(@reactor, reason) : errback.call(reason))
                     rescue Exception => e
                         #warn "Unhandled exception: #{e.message}\n#{e.backtrace.join("\n")}\n"
                         result.reject(e)
-                        @loop.log(:error, :q_reject_cb, e)
+                        @reactor.log(:error, :q_reject_cb, e)
                     end
                 }
 
@@ -129,7 +129,7 @@ module Libuv
                         result.notify(progback.nil? ? progress : progback.call(*progress))
                     rescue Exception => e
                         #warn "Unhandled exception: #{e.message}\n#{e.backtrace.join("\n")}\n"
-                        @loop.log(:error, :q_progress_cb, e)
+                        @reactor.log(:error, :q_progress_cb, e)
                     end
                 }
                 
@@ -137,7 +137,7 @@ module Libuv
                 # Schedule as we are touching shared state
                 #    Everything else is locally scoped
                 #
-                @loop.schedule do
+                @reactor.schedule do
                     pending_array = pending
                     
                     if pending_array.nil?
@@ -172,28 +172,28 @@ module Libuv
         class ResolvedPromise < Promise
             public_class_method :new
             
-            def initialize(loop, response, error = false)
+            def initialize(reactor, response, error = false)
                 raise ArgumentError if error && response.is_a?(Promise)
                 super()
                 
-                @loop = loop
+                @reactor = reactor
                 @error = error
                 @response = response
             end
             
             def then(callback = nil, errback = nil, progback = nil, &blk)
-                result = Q.defer(@loop)
+                result = Q.defer(@reactor)
                 
                 callback ||= blk
                 
-                @loop.next_tick {
+                @reactor.next_tick {
                     if @error
                         begin
-                            result.resolve(errback.nil? ? Q.reject(@loop, @response) : errback.call(@response))
+                            result.resolve(errback.nil? ? Q.reject(@reactor, @response) : errback.call(@response))
                         rescue Exception => e
                             #warn "Unhandled exception: #{e.message}\n#{e.backtrace.join("\n")}\n"
                             result.reject(e)
-                            @loop.log(:error, :q_reject_cb, e)
+                            @reactor.log(:error, :q_reject_cb, e)
                         end
                     else
                         begin
@@ -201,7 +201,7 @@ module Libuv
                         rescue Exception => e
                             #warn "\nUnhandled exception: #{e.message}\n#{e.backtrace.join("\n")}\n"
                             result.reject(e)
-                            @loop.log(:error, :q_resolve_cb, e)
+                            @reactor.log(:error, :q_resolve_cb, e)
                         end
                     end
                 }
@@ -222,12 +222,12 @@ module Libuv
         class Deferred
             include Q
             
-            def initialize(loop)
+            def initialize(reactor)
                 super()
                 
                 @pending = []
                 @value = nil
-                @loop = loop
+                @reactor = reactor
             end
 
             attr_reader :pending, :value
@@ -238,11 +238,11 @@ module Libuv
             #
             # @param [Object] val constant, message or an object representing the result.
             def resolve(val = nil)
-                @loop.schedule do
+                @reactor.schedule do
                     if not @pending.nil?
                         callbacks = @pending
                         @pending = nil
-                        @value = ref(@loop, val)
+                        @value = ref(@reactor, val)
                         
                         if callbacks.length > 0
                             callbacks.each do |callback|
@@ -259,14 +259,14 @@ module Libuv
             #
             # @param [Object] reason constant, message, exception or an object representing the rejection reason.
             def reject(reason = nil)
-                resolve(Q.reject(@loop, reason))
+                resolve(Q.reject(@reactor, reason))
             end
             
             #
             # Creates a promise object associated with this deferred
             #
             def promise
-                @promise ||= DeferredPromise.new(@loop, self)
+                @promise ||= DeferredPromise.new(@reactor, self)
                 @promise # Should only ever be one per deferred
             end
 
@@ -275,10 +275,10 @@ module Libuv
             #
             # @param [*Object] data you would like to send down the promise chain.
             def notify(*args)
-                @loop.schedule do     # just in case we are on a different event loop
+                @reactor.schedule do     # just in case we are on a different event reactor
                     if @pending && @pending.length > 0
                         callbacks = @pending
-                        @loop.next_tick do
+                        @reactor.next_tick do
                             callbacks.each do |callback|
                                 callback[2].call(*args)
                             end
@@ -294,9 +294,9 @@ module Libuv
             # Overwrite to prevent inspecting errors hanging the VM
             def inspect
                 if @pending.nil?
-                    "#<#{self.class}:0x#{self.__id__.to_s(16)} @loop=#{@loop.inspect} @value=#{@value.inspect}>"
+                    "#<#{self.class}:0x#{self.__id__.to_s(16)} @reactor=#{@reactor.inspect} @value=#{@value.inspect}>"
                 else
-					"#<#{self.class}:0x#{self.__id__.to_s(16)} @loop=#{@loop.inspect} @pending.count=#{@pending.length}>"
+					"#<#{self.class}:0x#{self.__id__.to_s(16)} @reactor=#{@reactor.inspect} @pending.count=#{@pending.length}>"
                 end
             end
         end
@@ -310,8 +310,8 @@ module Libuv
         # Creates a Deferred object which represents a task which will finish in the future.
         #
         # @return [Deferred] Returns a new instance of Deferred
-        def defer(loop)
-            return Deferred.new(loop)
+        def defer(reactor)
+            return Deferred.new(reactor)
         end
         
         
@@ -340,7 +340,7 @@ module Libuv
         #       # handle the error and recover
         #       return newPromiseOrValue
         #     end
-        #     return Q.reject(loop, reason)
+        #     return Q.reject(reactor, reason)
         #   }, lambda {|result|
         #     # success: do something and resolve promiseB with the old or a new result
         #     return result
@@ -348,8 +348,8 @@ module Libuv
         #
         # @param [Object] reason constant, message, exception or an object representing the rejection reason.
         # @return [Promise] Returns a promise that was already resolved as rejected with the reason
-        def reject(loop, reason = nil)
-            return ResolvedPromise.new(loop, reason, true)    # A resolved failed promise
+        def reject(reactor, reason = nil)
+            return ResolvedPromise.new(reactor, reason, true)    # A resolved failed promise
         end
         
         #
@@ -361,14 +361,14 @@ module Libuv
         #   each value corresponding to the promise at the same index in the `promises` array. If any of
         #   the promises is resolved with a rejection, this resulting promise will be resolved with the
         #   same rejection.
-        def all(loop, *promises)
-            deferred = Q.defer(loop)
+        def all(reactor, *promises)
+            deferred = Q.defer(reactor)
             counter = promises.length
             results = []
             
             if counter > 0
                 promises.each_index do |index|
-                    ref(loop, promises[index]).then(proc {|result|
+                    ref(reactor, promises[index]).then(proc {|result|
                         if results[index].nil?
                             results[index] = result
                             counter -= 1
@@ -379,7 +379,7 @@ module Libuv
                         if results[index].nil?
                             deferred.reject(reason)
                         end
-                        Q.reject(@loop, reason)    # Don't modify result
+                        Q.reject(@reactor, reason)    # Don't modify result
                     })
                 end
             else
@@ -396,16 +396,16 @@ module Libuv
         #
         # @param [*Promise] Promises a number of promises that will be combined into a single promise
         # @return [Promise] Returns a single promise
-        def any(loop, *promises)
-            deferred = Q.defer(loop)
+        def any(reactor, *promises)
+            deferred = Q.defer(reactor)
             if promises.length > 0
                 promises.each_index do |index|
-                    ref(loop, promises[index]).then(proc {|result|
+                    ref(reactor, promises[index]).then(proc {|result|
                         deferred.resolve(true)
                         result
                     }, proc {|reason|
                         deferred.reject(false)
-                        Q.reject(@loop, reason)    # Don't modify result
+                        Q.reject(@reactor, reason)    # Don't modify result
                     })
                 end
             else
@@ -421,14 +421,14 @@ module Libuv
         # @param [*Promise] Promises a number of promises that will be combined into a single promise
         # @return [Promise] Returns a single promise that will be resolved with an array of values,
         #   each [result, wasResolved] value pair corresponding to a at the same index in the `promises` array.
-        def self.finally(loop, *promises)
-            deferred = Q.defer(loop)
+        def self.finally(reactor, *promises)
+            deferred = Q.defer(reactor)
             counter = promises.length
             results = []
             
             if counter > 0
                 promises.each_index do |index|
-                    ref(loop, promises[index]).then(proc {|result|
+                    ref(reactor, promises[index]).then(proc {|result|
                         if results[index].nil?
                             results[index] = [result, true]
                             counter -= 1
@@ -441,7 +441,7 @@ module Libuv
                             counter -= 1
                             deferred.resolve(results) if counter <= 0
                         end
-                        Q.reject(@loop, reason)    # Don't modify result
+                        Q.reject(@reactor, reason)    # Don't modify result
                     })
                 end
             else
@@ -455,9 +455,9 @@ module Libuv
         private
         
         
-        def ref(loop, value)
+        def ref(reactor, value)
             return value if value.is_a?(Promise)
-            return ResolvedPromise.new(loop, value)            # A resolved success promise
+            return ResolvedPromise.new(reactor, value)            # A resolved success promise
         end
         
         

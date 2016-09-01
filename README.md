@@ -13,12 +13,12 @@ using promises
 ```ruby
   require 'libuv'
 
-  loop = Libuv::Loop.default
+  reactor = Libuv::Reactor.default
   # or
-  # loop = Libuv::Loop.new
+  # reactor = Libuv::Reactor.new
 
-  loop.run do
-    timer = loop.timer do
+  reactor.run do
+    timer = reactor.timer do
       puts "5 seconds passed"
       timer.close
     end
@@ -38,10 +38,10 @@ using coroutines (if a somewhat abstract example)
   require 'libuv'
   require 'libuv/coroutines'
 
-  loop = Libuv::Loop.default
-  loop.run do
+  reactor = Libuv::Reactor.default
+  reactor.run do
     begin
-      timer = loop.timer do
+      timer = reactor.timer do
         puts "5 seconds passed"
         timer.close
       end
@@ -57,7 +57,7 @@ using coroutines (if a somewhat abstract example)
   end
 ```
 
-Check out the [yard documentation](http://rubydoc.info/gems/libuv/Libuv/Loop)
+Check out the [yard documentation](http://rubydoc.info/gems/libuv/Libuv/Reactor)
 
 
 ## Installation
@@ -107,6 +107,6 @@ Windows users will additionally require:
 * Filesystem Events
 * Filesystem manipulation
 * File manipulation
-* Errors (with a catch-all fallback for anything unhandled on the event loop)
+* Errors (with a catch-all fallback for anything unhandled on the event reactor)
 * Work queue (thread pool)
 * Coroutines (optional - makes use of Fibers)
