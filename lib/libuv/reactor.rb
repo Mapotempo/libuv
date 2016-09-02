@@ -3,11 +3,11 @@ require 'thread'
 module Libuv
     class Reactor
         include Resource, Assertions
+        extend Accessors
 
 
         REACTORS = ThreadSafe::Cache.new
         CRITICAL = Mutex.new
-        @@use_fibers = false
 
 
         module ClassMethods
@@ -24,8 +24,18 @@ module Libuv
             # Create new Libuv reactor
             # 
             # @return [::Libuv::Reactor]
-            def new
-                return create(::Libuv::Ext.loop_new)
+            def new(use_current = false, &blk)
+                thread = create(::Libuv::Ext.loop_new)
+                if block_given?
+                    if use_current
+                        thread.run &blk
+                    else
+                        ::Thread.new do
+                            thread.run &blk
+                        end
+                    end
+                end
+                thread
             end
 
             # Build a Ruby Libuv reactor from an existing reactor pointer
@@ -132,14 +142,10 @@ module Libuv
                 @reactor_notify = @reactor.defer
 
                 begin
-                    @reactor_thread = Thread.current
+                    @reactor_thread = ::Thread.current
                     REACTORS[@reactor_thread] = @reactor
                     if block_given?
-                        if @@use_fibers
-                            Fiber.new { yield @reactor_notify.promise }.resume
-                        else
-                            yield @reactor_notify.promise
-                        end
+                        ::Fiber.new { yield @reactor_notify.promise }.resume
                     end
                     @run_count += 1
                     ::Libuv::Ext.run(@pointer, run_type)  # This is blocking
@@ -148,11 +154,7 @@ module Libuv
                     @run_queue.clear
                 end
             elsif block_given?
-                if @@use_fibers
-                    schedule { Fiber.new { yield @reactor_notify.promise }.resume }
-                else
-                    schedule { yield @reactor_notify.promise }
-                end
+                schedule { ::Fiber.new { yield @reactor_notify.promise }.resume }
             end
             @reactor
         end
@@ -432,7 +434,7 @@ module Libuv
         #
         # @return [Boolean]
         def reactor_thread?
-            @reactor_thread == Thread.current
+            @reactor_thread == ::Thread.current
         end
 
         # Exposed to allow joining on the thread, when run in a multithreaded environment. Performing other actions on the thread has undefined semantics (read: a dangerous endevor).

@@ -21,8 +21,7 @@ describe Libuv::Listener do
 
 			if values.length > 0
 				puts "\nMemory Leak in #{cls} with #{values.length} left over objects"
-				puts "\nChecked #{checked.length} classes"
-				puts "\n\nObjects are:"
+				puts "Checked #{checked.length} classes, objects are:"
 				values.each do |val|
 					puts "\n#{val}\n"
 				end

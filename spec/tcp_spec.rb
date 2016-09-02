@@ -88,6 +88,59 @@ describe Libuv::TCP do
 			expect(@general_failure).to eq([])
 			expect(@log).to eq(['ping', 'pong'])
 		end
+
+		it "should work with coroutines", :network => true do
+			@reactor.run { |logger|
+				logger.progress do |level, errorid, error|
+					begin
+						@general_failure << "Log called: #{level}: #{errorid}\n#{error.message}\n#{error.backtrace.join("\n") if error.backtrace}\n"
+					rescue Exception => e
+						@general_failure << "error in logger #{e.inspect}"
+					end
+				end
+
+
+				@server.bind('127.0.0.1', 34567) do |client|
+					client.progress do |data|
+						@log << data
+
+						client.write('pong')
+					end
+					client.start_read
+				end
+
+				# catch errors
+				@server.catch do |reason|
+					@general_failure << reason.inspect
+				end
+
+				# start listening
+				@server.listen(1024)
+
+				# connect client to server
+				@client.progress do |data|
+					@log << data
+
+					@client.shutdown
+				end
+				# catch errors
+				@client.catch do |reason|
+					@general_failure << reason.inspect
+				end
+
+				# close the handle
+				@client.finally do
+					@server.close
+					@reactor.stop
+				end
+				@client.connect('127.0.0.1', 34567)
+				@client.start_read
+				@client.write('ping')
+			}
+
+			expect(@general_failure).to eq([])
+			expect(@log).to eq(['ping', 'pong'])
+		end
 	end
 
 	it "should handle requests on different threads", :network => true do

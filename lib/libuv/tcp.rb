@@ -204,9 +204,11 @@ module Libuv
                 @on_accept = callback || blk
             else
                 @callback = callback || blk
+                @coroutine = @reactor.defer if @callback.nil?
             end
             error = check_result UV.tcp_open(handle, fd)
             reject(error) if error
+            co @coroutine.promise if @coroutine
         end
 
         def connect(ip, port, callback = nil, &blk)
@@ -220,6 +222,11 @@ module Libuv
                 @tcp_socket.connect(callback(:on_connect, @tcp_socket.connect_req.address))
             rescue Exception => e
                 reject(e)
+            end
+
+            if @callback.nil?
+                @coroutine = @reactor.defer
+                co @coroutine.promise
             end
         end
 
@@ -290,7 +297,15 @@ module Libuv
                 @connected = true
 
                 begin
-                    @callback.call(self)
+                    if @callback
+                        @callback.call(self)
+                        @callback = nil
+                    elsif @coroutine
+                        @coroutine.resolve(nil)
+                        @coroutine = nil
+                    else
+                        raise ArgumentError, 'no callback provided'
+                    end
                 rescue Exception => e
                     @reactor.log :error, :connect_cb, e
                 end

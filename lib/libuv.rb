@@ -11,6 +11,7 @@ module Libuv
 
     # -- The classes required for a reactor instance --
     require 'libuv/mixins/assertions'  # Common code to check arguments
+    require 'libuv/mixins/accessors'   # Helper methods for accessing reactor functions
     require 'libuv/mixins/resource'    # Common code to check for errors
     require 'libuv/mixins/listener'    # Common callback code
 
@@ -19,7 +20,6 @@ module Libuv
     require 'libuv/async'       # Provide a threadsafe way to signal the event reactor
     require 'libuv/timer'       # High resolution timer
     require 'libuv/reactor'        # The libuv reactor or event reactor
-
     require 'libuv/coroutines'
     # --
 
@@ -58,9 +58,21 @@ module Libuv
         end
     end
 
+    # Include all the accessors at this level
+    extend Accessors
+
     # Run the default reactor
     at_exit do
         reactor = Reactor.default
         reactor.run if reactor.run_count == 0
+    end
+end
+
+
+class Object
+    private
+
+    def reactor(&blk)
+        Libuv.reactor &blk
     end
 end

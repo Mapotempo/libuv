@@ -1,9 +1,5 @@
 require 'fiber'
 
-class ::Libuv::Reactor
-    @@use_fibers = true
-end
-
 class Object
     private
 
