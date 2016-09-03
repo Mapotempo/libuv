@@ -113,6 +113,7 @@ module Libuv
         def process_queue_cb
             # ensure we only execute what was required for this tick
             length = @run_queue.length
+            update_time
             length.times do
                 process_item
             end
@@ -155,7 +156,15 @@ module Libuv
 
                     REACTORS[@reactor_thread] = @reactor
                     if block_given?
-                        ::Fiber.new { yield @reactor }.resume
+                        update_time
+                        ::Fiber.new {
+                            begin
+                                yield @reactor
+                            rescue => e
+                                # TODO:: update default error handler
+                                puts e
+                            end
+                        }.resume
                     end
                     @run_count += 1
                     ::Libuv::Ext.run(@pointer, run_type)  # This is blocking
@@ -165,7 +174,15 @@ module Libuv
                     @run_queue.clear
                 end
             elsif block_given?
-                schedule { ::Fiber.new { yield @reactor }.resume }
+                update_time
+                schedule { ::Fiber.new {
+                    begin
+                        yield @reactor
+                    rescue => e
+                        # TODO:: update default error handler
+                        puts e
+                    end
+                }.resume }
             end
 
             @reactor

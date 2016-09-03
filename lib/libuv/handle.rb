@@ -92,7 +92,7 @@ module Libuv
             end
 
             if @coroutine
-                @coroutine.reject(IOError.new('handle closed'))
+                @coroutine.resolve(self)
                 @coroutine = nil
             end
         end

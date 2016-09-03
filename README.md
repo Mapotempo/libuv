@@ -35,41 +35,60 @@ Promises are used to simplify code flow.
       puts "received: #{data}"
       socket.close
     }
-    .connect('127.0.0.1', 3000)
-    .start_read
-    .write("GET / HTTP/1.1\r\n\r\n")
+    .connect('127.0.0.1', 3000) { |socket|
+      socket.start_read
+            .write("GET / HTTP/1.1\r\n\r\n")
+    }
     .catch { |error|
-      puts "An error occurred #{error}"
+      puts "error: #{error}"
     }
     .finally {
-      puts "Socket closed"
+      puts "socket closed"
     }
   end
 ```
 
-Continuations make life easy
+Continuations are used if callbacks are not defined
 
 ```ruby
   require 'libuv'
 
-  reactor = Libuv::Reactor.default
-  reactor.run do
+  reactor do |reactor|
     begin
-      timer = reactor.timer do
-        puts "5 seconds passed"
-        timer.close
-      end
-      timer.start(5000)
-
-      # co-routine waits for timer to close
-      co timer
-
-      puts "timer handle was closed"
+      reactor.tcp { |data, socket|
+        puts "received: #{data}"
+        socket.close
+      }
+      .connect('127.0.0.1', 3000)
+      .start_read
+      .write("GET / HTTP/1.1\r\n\r\n")
     rescue => error
-      puts "error with timer: #{error}"
+      puts "error: #{error}"
     end
   end
 ```
+
+Any promise can be converted into a continuation
+
+```ruby
+  require 'libuv'
+
+  reactor do |reactor|
+    # Perform work on the thread pool with promises
+    reactor.work {
+      10 * 2
+    }.then { |result|
+      puts "result using a promise #{result}"
+    }
+
+    # Use the coroutine helper to obtain the result without a callback
+    result = co reactor.work {
+      10 * 3
+    }
+    puts "no callbacks here #{result}"
+  end
+```
+
 
 Check out the [yard documentation](http://rubydoc.info/gems/libuv/Libuv/Reactor)
 
@@ -123,4 +142,4 @@ Windows users will additionally require:
 * File manipulation
 * Errors (with a catch-all fallback for anything unhandled on the event reactor)
 * Work queue (thread pool)
-* Coroutines (optional - makes use of Fibers)
+* Coroutines (makes use of Fibers)
