@@ -20,21 +20,21 @@ module Libuv
 
         # Enables the timer. A repeat of 0 means no repeat
         #
-        # @param timeout [Fixnum] time in milliseconds before the timer callback is triggered the first time
-        # @param repeat [Fixnum] time in milliseconds between repeated callbacks after the first
+        # @param timeout [Integer|Fixnum] time in milliseconds before the timer callback is triggered the first time
+        # @param repeat [Integer|Fixnum] time in milliseconds between repeated callbacks after the first
         def start(timeout, repeat = 0)
             return if @closed
             @stopped = false
 
             # prevent timeouts less than 0 (very long time otherwise as cast to an unsigned)
             # and you probably don't want to wait a few lifetimes
+            timeout = timeout.to_i
             timeout = 0 if timeout < 0
 
-            timeout = timeout.to_i
-            repeat = repeat.to_i
-
-            error = check_result ::Libuv::Ext.timer_start(handle, callback(:on_timer), timeout, repeat)
+            error = check_result ::Libuv::Ext.timer_start(handle, callback(:on_timer), timeout, repeat.to_i)
             reject(error) if error
+
+            self
         end
 
         # Disables the timer.
@@ -43,6 +43,8 @@ module Libuv
             @stopped = true
             error = check_result ::Libuv::Ext.timer_stop(handle)
             reject(error) if error
+
+            self
         end
 
         # Resets the current repeat
@@ -50,20 +52,33 @@ module Libuv
             return if @closed
             error = check_result ::Libuv::Ext.timer_again(handle)
             reject(error) if error
+
+            self
         end
 
-        # Updates the repeat timeout
-        def repeat=(repeat)
+        # Set the current repeat timeout
+        # Repeat is the time in milliseconds between repeated callbacks after the initial timeout fires
+        #
+        # @param time [Integer|Fixnum] time in milliseconds between repeated callbacks after the first
+        def repeat=(time)
             return if @closed
-            repeat = repeat.to_i
-            error = check_result ::Libuv::Ext.timer_set_repeat(handle, repeat)
+            error = check_result ::Libuv::Ext.timer_set_repeat(handle, time.to_i)
             reject(error) if error
+            time
         end
 
-        # Returns the current repeat timeout
-        def repeat
+        # Set or gets the current repeat timeout
+        # Repeat is the time in milliseconds between repeated callbacks after the initial timeout fires
+        #
+        # @param times [Integer|Fixnum] time in milliseconds between repeated callbacks after the first
+        def repeat(time = nil)
             return if @closed
-            ::Libuv::Ext.timer_get_repeat(handle)
+            if time.nil?
+                ::Libuv::Ext.timer_get_repeat(handle)
+            else
+                self.repeat = time
+                self
+            end
         end
 
         # Used to update the callback to be triggered by the timer
@@ -71,6 +86,8 @@ module Libuv
         # @param callback [Proc] the callback to be called by the timer
         def progress(callback = nil, &blk)
             @callback = callback || blk
+
+            self
         end
 
 

@@ -24,15 +24,11 @@ module Libuv
             # Create new Libuv reactor
             # 
             # @return [::Libuv::Reactor]
-            def new(use_current = false, &blk)
+            def new(&blk)
                 thread = create(::Libuv::Ext.loop_new)
                 if block_given?
-                    if use_current
+                    ::Thread.new do
                         thread.run &blk
-                    else
-                        ::Thread.new do
-                            thread.run &blk
-                        end
                     end
                 end
                 thread
@@ -79,6 +75,14 @@ module Libuv
             @reactor_prep = Libuv::Prepare.new(@reactor, method(:noop))
             @reactor_prep.unref
             @reactor_prep.start
+
+            # LibUV ingnores program interrupt by default.
+            # We provide normal behaviour and allow this to be overriden
+            @on_signal = proc { stop_cb }
+            sig_callback = method(:signal_cb)
+            self.signal(:INT, sig_callback).unref
+            self.signal(:HUP, sig_callback).unref
+            self.signal(:TERM, sig_callback).unref
         end
 
         attr_reader :run_count
@@ -94,6 +98,10 @@ module Libuv
             @reactor_thread = nil
 
             ::Libuv::Ext.stop(@pointer)
+        end
+
+        def signal_cb
+            @on_signal.call(self)
         end
 
         def next_tick_cb
@@ -143,19 +151,23 @@ module Libuv
 
                 begin
                     @reactor_thread = ::Thread.current
+                    raise 'only one reactor allowed per-thread' if REACTORS[@reactor_thread]
+
                     REACTORS[@reactor_thread] = @reactor
                     if block_given?
-                        ::Fiber.new { yield @reactor_notify.promise }.resume
+                        ::Fiber.new { yield @reactor }.resume
                     end
                     @run_count += 1
                     ::Libuv::Ext.run(@pointer, run_type)  # This is blocking
                 ensure
+                    REACTORS.delete(@reactor_thread)
                     @reactor_thread = nil
                     @run_queue.clear
                 end
             elsif block_given?
-                schedule { ::Fiber.new { yield @reactor_notify.promise }.resume }
+                schedule { ::Fiber.new { yield @reactor }.resume }
             end
+
             @reactor
         end
 
@@ -163,8 +175,8 @@ module Libuv
         # Provides a promise notifier for receiving un-handled exceptions
         #
         # @return [::Libuv::Q::Promise]
-        def notifier
-            @reactor_notify.promise
+        def notifier(callback = nil, &blk)
+            @reactor_notify.promise.progress(callback || blk)
         end
 
         # Creates a deferred result object for where the result of an operation may only be returned 
@@ -245,8 +257,9 @@ module Libuv
         # Get a new TCP instance
         # 
         # @return [::Libuv::TCP]
-        def tcp
-            TCP.new(@reactor)
+        def tcp(callback = nil, &blk)
+            callback ||= blk
+            TCP.new(@reactor, progress: callback)
         end
 
         # Get a new UDP instance
@@ -324,6 +337,12 @@ module Libuv
             handle.progress callback if callback
             handle.start(signum) if signum
             handle
+        end
+
+        # Allows user defined behaviour when sig int is received
+        def on_program_interrupt(callback = nil, &block)
+            @on_signal = callback || block
+            self
         end
 
         # Queue some work for processing in the libuv thread pool

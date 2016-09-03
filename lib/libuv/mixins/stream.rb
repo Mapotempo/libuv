@@ -20,32 +20,36 @@ module Libuv
 
 
         def listen(backlog)
-            return if @closed
+            return self if @closed
             assert_type(Integer, backlog, BACKLOG_ERROR)
             error = check_result ::Libuv::Ext.listen(handle, Integer(backlog), callback(:on_listen))
             reject(error) if error
+            self
         end
 
         # Starts reading from the handle
         def start_read
-            return if @closed
+            return self if @closed
             error = check_result ::Libuv::Ext.read_start(handle, callback(:on_allocate), callback(:on_read))
             reject(error) if error
+            self
         end
 
         # Stops reading from the handle
         def stop_read
-            return if @closed
+            return self if @closed
             error = check_result ::Libuv::Ext.read_stop(handle)
             reject(error) if error
+            self
         end
 
         # Shutsdown the writes on the handle waiting until the last write is complete before triggering the callback
         def shutdown
-            return if @closed
+            return self if @closed
             req = ::Libuv::Ext.allocate_request_shutdown
             error = check_result ::Libuv::Ext.shutdown(req, handle, callback(:on_shutdown, req.address))
             reject(error) if error
+            self
         end
 
         def try_write(data)
@@ -62,7 +66,7 @@ module Libuv
             return result
         end
 
-        def write(data)
+        def write(data, wait: false)
             # NOTE:: Similar to udp.rb -> send
             deferred = @reactor.defer
             if !@closed
@@ -94,7 +98,13 @@ module Libuv
             else
                 deferred.reject(RuntimeError.new(STREAM_CLOSED_ERROR))
             end
-            deferred.promise
+
+            if wait
+                return deferred.promise if wait == :promise
+                co deferred.promise
+            end
+
+            self
         end
         alias_method :puts, :write
 
@@ -110,6 +120,7 @@ module Libuv
 
         def progress(callback = nil, &blk)
             @progress = callback || blk
+            self
         end
 
 

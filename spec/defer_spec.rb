@@ -24,10 +24,6 @@ describe Libuv::Q do
 				end
 				
 				@deferred.resolve(:foo)
-				
-				@reactor.next_tick do
-					@reactor.stop
-				end
 			}
 
 			expect(@log).to eq([:foo])
@@ -45,12 +41,6 @@ describe Libuv::Q do
 				end
 				
 				@deferred.resolve(:foo)
-				
-				@reactor.next_tick do
-					@reactor.next_tick do
-						@reactor.stop
-					end
-				end
 			}
 			expect(@log).to eq([:foo, :foo])
 		end
@@ -68,10 +58,6 @@ describe Libuv::Q do
 				end
 				
 				@deferred.resolve(:foo)
-				
-				@reactor.next_tick do
-					@reactor.stop
-				end
 			}
 			expect(@log).to eq([:first, :second])
 		end
@@ -87,19 +73,6 @@ describe Libuv::Q do
 				
 				@deferred.resolve(:foo)
 				@deferred.reject(:baz)
-				
-				#
-				# 4 ticks should detect any errors
-				#
-				@reactor.next_tick do
-					@reactor.next_tick do
-						@reactor.next_tick do
-							@reactor.next_tick do
-								@reactor.stop
-							end
-						end
-					end
-				end
 			}
 			expect(@log).to eq([:foo])
 		end
@@ -130,12 +103,6 @@ describe Libuv::Q do
 				end
 				
 				@deferred.resolve(:foo)
-				
-				@reactor.next_tick do
-					@reactor.next_tick do
-						@reactor.stop
-					end
-				end
 			}
 
 			expect(@log).to eq([:outer, :inner])
@@ -176,10 +143,6 @@ describe Libuv::Q do
 				})
 				
 				@deferred.reject(:foo)
-				
-				@reactor.next_tick do
-					@reactor.stop
-				end
 			}
 			expect(@log).to eq([:first, :second])
 		end
@@ -194,19 +157,6 @@ describe Libuv::Q do
 				
 				@deferred.reject(:baz)
 				@deferred.resolve(:foo)
-				
-				#
-				# 4 ticks should detect any errors
-				#
-				@reactor.next_tick do
-					@reactor.next_tick do
-						@reactor.next_tick do
-							@reactor.next_tick do
-								@reactor.stop
-							end
-						end
-					end
-				end
 			}
 			expect(@log).to eq([:baz])
 		end
@@ -242,10 +192,6 @@ describe Libuv::Q do
 				end
 				
 				@deferred.notify(:foo)
-				
-				@reactor.next_tick do
-					@reactor.stop
-				end
 			}
 
 			expect(@log).to eq([:first, :second])
@@ -260,20 +206,6 @@ describe Libuv::Q do
 
 				@deferred.resolve(:foo)
 				@deferred.notify(:baz)
-				
-				
-				#
-				# 4 ticks should detect any errors
-				#
-				@reactor.next_tick do
-					@reactor.next_tick do
-						@reactor.next_tick do
-							@reactor.next_tick do
-								@reactor.stop
-							end
-						end
-					end
-				end
 			}
 
 			expect(@log).to eq([])
@@ -287,21 +219,6 @@ describe Libuv::Q do
 				end
 				@deferred.reject(:foo)
 				@deferred.notify(:baz)
-				
-				
-				
-				#
-				# 4 ticks should detect any errors
-				#
-				@reactor.next_tick do
-					@reactor.next_tick do
-						@reactor.next_tick do
-							@reactor.next_tick do
-								@reactor.stop
-							end
-						end
-					end
-				end
 			}
 
 			expect(@log).to eq([])
@@ -316,10 +233,6 @@ describe Libuv::Q do
 					@log << update.is_a?(::Libuv::Q::Promise)
 				end
 				@deferred.notify(deferred2.promise)
-
-				@reactor.next_tick do
-					@reactor.stop
-				end
 			}
 
 			expect(@log).to eq([true])
@@ -356,10 +269,6 @@ describe Libuv::Q do
 				@promise.progress do |update|
 					@log << :second
 				end
-				
-				@reactor.next_tick do
-					@reactor.stop
-				end
 			}
 
 			expect(@log).to eq([])
@@ -368,7 +277,7 @@ describe Libuv::Q do
 	
 	
 	describe Libuv::Q::Promise do
-		
+
 		describe 'then' do
 			
 			it "should allow registration of a success callback without an errback and resolve" do
@@ -378,10 +287,6 @@ describe Libuv::Q do
 					end
 
 					@deferred.resolve(:foo)
-					
-					@reactor.next_tick do
-						@reactor.stop
-					end
 				}
 
 				expect(@log).to eq([:foo])
@@ -395,10 +300,6 @@ describe Libuv::Q do
 					end
 
 					@deferred.reject(:foo)
-					
-					@reactor.next_tick do
-						@reactor.stop
-					end
 				}
 
 				expect(@log).to eq([])
@@ -412,10 +313,6 @@ describe Libuv::Q do
 					})
 
 					@deferred.reject(:foo)
-					
-					@reactor.next_tick do
-						@reactor.stop
-					end
 				}
 
 				expect(@log).to eq([:foo])
@@ -429,10 +326,6 @@ describe Libuv::Q do
 					})
 
 					@deferred.resolve(:foo)
-					
-					@reactor.next_tick do
-						@reactor.stop
-					end
 				}
 
 				expect(@log).to eq([])
@@ -459,10 +352,6 @@ describe Libuv::Q do
 					end
 					
 					@deferred.resolve(:foo)
-					
-					@reactor.next_tick do
-						@reactor.stop
-					end
 				}
 
 				expect(@log).to eq([:foo, :foo, :foo, :foo])
@@ -490,18 +379,6 @@ describe Libuv::Q do
 
 					
 					@deferred.notify(:foo)
-					
-					@reactor.next_tick do
-						@reactor.next_tick do
-							@reactor.next_tick do
-								@reactor.next_tick do
-									@reactor.next_tick do
-										@reactor.stop
-									end
-								end
-							end
-						end
-					end
 				}
 
 				expect(@log).to eq([:foo, :foo, :foo, :foo])
@@ -528,10 +405,6 @@ describe Libuv::Q do
 					})
 					
 					@deferred.reject(:foo)
-					
-					@reactor.next_tick do
-						@reactor.stop
-					end
 				}
 
 				expect(@log).to eq([:foo, :foo, :foo, :foo])
@@ -557,20 +430,6 @@ describe Libuv::Q do
 					}, @default_fail)
 					
 					@deferred.resolve(:foo)
-					
-					@reactor.next_tick do
-						@reactor.next_tick do
-							@reactor.next_tick do
-								@reactor.next_tick do
-									@reactor.next_tick do
-										@reactor.next_tick do 	# extra tick?
-											@reactor.stop
-										end
-									end
-								end
-							end
-						end
-					end
 				}
 
 				expect(@log).to eq([:foo, :bar, 'baz', 'bob', :done])
@@ -578,8 +437,8 @@ describe Libuv::Q do
 
 
 			it "should propagate notification between dependent promises" do
-				@reactor.run { |reactor_promise|
-					reactor_promise.progress do |type, id, error|
+				@reactor.run { |reactor|
+					reactor.notifier do |type, id, error|
 						@log << id
 					end
 
@@ -603,20 +462,6 @@ describe Libuv::Q do
 
 					
 					@deferred.notify(:foo)
-					
-					@reactor.next_tick do
-						@reactor.next_tick do
-							@reactor.next_tick do
-								@reactor.next_tick do
-									@reactor.next_tick do
-										@reactor.next_tick do # extra tick?
-											@reactor.stop
-										end
-									end
-								end
-							end
-						end
-					end
 				}
 
 				expect(@log).to eq([:foo, :bar, :bar, :bar, :done])
@@ -624,8 +469,8 @@ describe Libuv::Q do
 
 
 			it "should stop notification propagation in case of error" do
-				@reactor.run { |reactor_logger|
-					reactor_logger.progress do |type, id, error|
+				@reactor.run { |reactor|
+					reactor.notifier do |type, id, error|
 						@log << id
 					end
 
@@ -650,18 +495,6 @@ describe Libuv::Q do
 
 					
 					@deferred.notify(:foo)
-					
-					@reactor.next_tick do
-						@reactor.next_tick do
-							@reactor.next_tick do
-								@reactor.next_tick do
-									@reactor.next_tick do
-										@reactor.stop
-									end
-								end
-							end
-						end
-					end
 				}
 
 				expect(@log).to eq([:foo, :bar, :q_progress_cb])
@@ -719,12 +552,6 @@ describe Libuv::Q do
 						
 
 						@deferred.resolve(:foo)
-						
-						@reactor.next_tick do
-							@reactor.next_tick do
-								@reactor.stop
-							end
-						end
 					}
 
 					expect(@log).to eq([:finally, :foo])
@@ -754,25 +581,6 @@ describe Libuv::Q do
 						
 
 						@deferred.resolve(:foo)
-
-						
-						@reactor.next_tick do
-						@reactor.next_tick do
-						@reactor.next_tick do
-						@reactor.next_tick do
-							@reactor.next_tick do
-								@reactor.next_tick do
-									@reactor.next_tick do
-										@reactor.next_tick do
-											@reactor.stop
-										end
-									end
-								end
-							end
-						end
-						end
-						end
-						end
 					}
 
 					expect(@log).to eq([:foo, :finally, :foo, :change, :finally, :change])
@@ -789,12 +597,6 @@ describe Libuv::Q do
 							end
 							
 							@deferred.resolve(:foo)
-							
-							@reactor.next_tick do
-								@reactor.next_tick do
-									@reactor.stop
-								end
-							end
 						}
 
 						expect(@log).to eq([:finally, true])
@@ -821,11 +623,6 @@ describe Libuv::Q do
 										@reactor.next_tick do
 											@log << :resolving
 											deferred2.resolve('working')
-											@reactor.next_tick do
-												@reactor.next_tick do
-													@reactor.stop
-												end
-											end
 										end
 									end
 								end
@@ -855,11 +652,6 @@ describe Libuv::Q do
 										@reactor.next_tick do
 											@log << :rejecting
 											deferred2.reject(:rejected)
-											@reactor.next_tick do
-												@reactor.next_tick do
-													@reactor.stop
-												end
-											end
 										end
 									end
 								end
@@ -889,10 +681,6 @@ describe Libuv::Q do
 				})
 				
 				@deferred.resolve(rejectedPromise)
-				
-				@reactor.next_tick do
-					@reactor.stop
-				end
 			}
 
 			expect(@log).to eq(['not gonna happen'])
@@ -908,12 +696,6 @@ describe Libuv::Q do
 				})
 				
 				@deferred.resolve(rejectedPromise.then())
-				
-				@reactor.next_tick do
-					@reactor.next_tick do
-						@reactor.stop
-					end
-				end
 			}
 
 			expect(@log).to eq(['not gonna happen'])
@@ -929,10 +711,6 @@ describe Libuv::Q do
 			@reactor.run {
 				Libuv::Q.all(@reactor).then nil, @default_fail do |result|
 					@log << result
-				end
-				
-				@reactor.next_tick do
-					@reactor.stop
 				end
 			}
 

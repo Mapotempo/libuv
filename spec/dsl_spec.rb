@@ -21,9 +21,7 @@ describe Libuv::Accessors do
             mutex.synchronize {
 
                 # This will run on a new thread
-                # TODO:: We need to pass the reactor to the callback - not the logger...
-                # Need to update logging
-                Libuv::Reactor.new do
+                Libuv::Reactor.new do |reactor|
                     reactor.timer {
                         count += 1
 

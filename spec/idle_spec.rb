@@ -22,8 +22,8 @@ describe Libuv::Idle do
 	end
 	
 	it "should increase the idle count when there is nothing to process" do
-		@reactor.run { |logger|
-			logger.progress do |level, errorid, error|
+		@reactor.run { |reactor|
+			reactor.notifier do |level, errorid, error|
 				begin
 					p "Log called: #{level}: #{errorid}\n#{error.message}\n#{error.backtrace.join("\n")}\n"
 				rescue Exception

@@ -21,8 +21,8 @@ if RUBY_PLATFORM != 'java'
 		
 		describe 'serial execution' do
 			it "should wait for work to complete and return the result" do
-				@reactor.run { |logger|
-					logger.progress do |level, errorid, error|
+				@reactor.run { |reactor|
+					reactor.notifier do |level, errorid, error|
 						begin
 							@general_failure << "Log called: #{level}: #{errorid}\n#{error.message}\n#{error.backtrace.join("\n") if error.backtrace}\n"
 						rescue Exception => e
@@ -46,8 +46,8 @@ if RUBY_PLATFORM != 'java'
 			end
 
 			it "should raise an error if the promise is rejected" do
-				@reactor.run { |logger|
-					logger.progress do |level, errorid, error|
+				@reactor.run { |reactor|
+					reactor.notifier do |level, errorid, error|
 						begin
 							@general_failure << "Log called: #{level}: #{errorid}\n#{error.message}\n#{error.backtrace.join("\n") if error.backtrace}\n"
 						rescue Exception => e
@@ -73,8 +73,8 @@ if RUBY_PLATFORM != 'java'
 			end
 
 			it "should return the results of multiple promises" do
-				@reactor.run { |logger|
-					logger.progress do |level, errorid, error|
+				@reactor.run { |reactor|
+					reactor.notifier do |level, errorid, error|
 						begin
 							@general_failure << "Log called: #{level}: #{errorid}\n#{error.message}\n#{error.backtrace.join("\n") if error.backtrace}\n"
 						rescue Exception => e
@@ -110,8 +110,8 @@ if RUBY_PLATFORM != 'java'
 
 
 			it "should provide a callback option for progress events" do
-				@reactor.run { |logger|
-					logger.progress do |level, errorid, error|
+				@reactor.run { |reactor|
+					reactor.notifier do |level, errorid, error|
 						begin
 							@general_failure << "Log called: #{level}: #{errorid}\n#{error.message}\n#{error.backtrace.join("\n") if error.backtrace}\n"
 						rescue Exception => e

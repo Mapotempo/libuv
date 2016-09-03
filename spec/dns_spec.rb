@@ -20,8 +20,8 @@ describe Libuv::Dns do
 	end
 	
 	it "should resolve localhost using IP4", :network => true do
-		@reactor.run { |logger|
-			logger.progress do |level, errorid, error|
+		@reactor.run { |reactor|
+			reactor.notifier do |level, errorid, error|
 				begin
 					p "Log called: #{level}: #{errorid}\n#{error.message}\n#{error.backtrace.join("\n")}\n"
 				rescue Exception
@@ -45,8 +45,8 @@ describe Libuv::Dns do
 	end
 
 	it "should resolve localhost using IP6", :network => true do
-		@reactor.run { |logger|
-			logger.progress do |level, errorid, error|
+		@reactor.run { |reactor|
+			reactor.notifier do |level, errorid, error|
 				begin
 					p "Log called: #{level}: #{errorid}\n#{error.message}\n#{error.backtrace.join("\n")}\n"
 				rescue Exception
@@ -70,8 +70,8 @@ describe Libuv::Dns do
 	end
 
 	it "should resolve reactor back" do
-		@reactor.run { |logger|
-			logger.progress do |level, errorid, error|
+		@reactor.run { |reactor|
+			reactor.notifier do |level, errorid, error|
 				begin
 					p "Log called: #{level}: #{errorid}\n#{error.message}\n#{error.backtrace.join("\n")}\n"
 				rescue Exception

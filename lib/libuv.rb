@@ -64,7 +64,7 @@ module Libuv
     # Run the default reactor
     at_exit do
         reactor = Reactor.default
-        reactor.run if reactor.run_count == 0
+        reactor.run if $!.nil? && reactor.run_count == 0
     end
 end
 

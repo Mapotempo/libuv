@@ -32,8 +32,8 @@ describe Libuv::TCP do
 	
 	describe 'basic client server' do
 		it "should send a ping and return a pong", :network => true do
-			@reactor.run { |logger|
-				logger.progress do |level, errorid, error|
+			@reactor.run { |reactor|
+				reactor.notifier do |level, errorid, error|
 					begin
 						@general_failure << "Log called: #{level}: #{errorid}\n#{error.message}\n#{error.backtrace.join("\n") if error.backtrace}\n"
 					rescue Exception => e
@@ -90,8 +90,8 @@ describe Libuv::TCP do
 		end
 
 		it "should work with coroutines", :network => true do
-			@reactor.run { |logger|
-				logger.progress do |level, errorid, error|
+			@reactor.run { |reactor|
+				reactor.notifier do |level, errorid, error|
 					begin
 						@general_failure << "Log called: #{level}: #{errorid}\n#{error.message}\n#{error.backtrace.join("\n") if error.backtrace}\n"
 					rescue Exception => e
@@ -146,8 +146,8 @@ describe Libuv::TCP do
 	it "should handle requests on different threads", :network => true do
 		@sync = Mutex.new
 
-		@reactor.run { |logger|
-			logger.progress do |level, errorid, error|
+		@reactor.run { |reactor|
+			reactor.notifier do |level, errorid, error|
 				begin
 					@general_failure << "Log called: #{level}: #{errorid}\n#{error.message}\n#{error.backtrace.join("\n") if error.backtrace}\n"
 				rescue Exception
@@ -213,8 +213,8 @@ describe Libuv::TCP do
 				@pipeclient = @reactor2.pipe(true)
 
 
-				@reactor2.run do  |logger|
-					logger.progress do |level, errorid, error|
+				@reactor2.run do  |reactor|
+					reactor.notifier do |level, errorid, error|
 						begin
 							@general_failure << "Log called: #{level}: #{errorid}\n#{error.message}\n#{error.backtrace.join("\n") if error.backtrace}\n"
 						rescue Exception
@@ -253,8 +253,8 @@ describe Libuv::TCP do
 
 	describe 'basic TLS client and server' do
 		it "should send a ping and return a pong", :network => true do
-			@reactor.run { |logger|
-				logger.progress do |level, errorid, error|
+			@reactor.run { |reactor|
+				reactor.notifier do |level, errorid, error|
 					begin
 						@general_failure << "Log called: #{level}: #{errorid}\n#{error.message}\n#{error.backtrace.join("\n") if error.backtrace}\n"
 					rescue Exception

@@ -32,8 +32,8 @@ describe Libuv::Filesystem do
 	
 	describe 'directory navigation' do
 		it "should list the contents of a folder" do
-			@reactor.run { |logger|
-				logger.progress &@logger
+			@reactor.run { |reactor|
+				reactor.notifier @logger
 
 				currentDir = Dir.pwd
 				listing = @filesystem.readdir(currentDir)
@@ -56,8 +56,8 @@ describe Libuv::Filesystem do
 
 	describe 'file manipulation' do
 		it "should create and write to a file" do
-			@reactor.run { |logger|
-				logger.progress &@logger
+			@reactor.run { |reactor|
+				reactor.notifier @logger
 
 				file = @reactor.file(@thefile, File::CREAT|File::WRONLY)
 				file.progress do 
@@ -83,8 +83,8 @@ describe Libuv::Filesystem do
 		end
 
 		it "should return stats on the file" do
-			@reactor.run { |logger|
-				logger.progress &@logger
+			@reactor.run { |reactor|
+				reactor.notifier @logger
 
 				file = @reactor.file(@thefile, File::RDONLY)
 				file.progress do 
@@ -109,8 +109,8 @@ describe Libuv::Filesystem do
 		end
 
 		it "should read from a file" do
-			@reactor.run { |logger|
-				logger.progress &@logger
+			@reactor.run { |reactor|
+				reactor.notifier @logger
 
 				file = @reactor.file(@thefile, File::RDONLY)
 				file.progress do 
@@ -134,8 +134,8 @@ describe Libuv::Filesystem do
 		end
 
 		it "should delete a file" do
-			@reactor.run { |logger|
-				logger.progress &@logger
+			@reactor.run { |reactor|
+				reactor.notifier @logger
 
 				op = @reactor.filesystem.unlink(@thefile)
 				op.then do
@@ -157,8 +157,8 @@ describe Libuv::Filesystem do
 
 	describe 'file streaming' do
 		it "should send a file over a stream", :network => true do
-			@reactor.run { |logger|
-				logger.progress &@logger
+			@reactor.run { |reactor|
+				reactor.notifier @logger
 
 				@server = @reactor.tcp
 				@client = @reactor.tcp
@@ -223,8 +223,8 @@ describe Libuv::Filesystem do
 		end
 
 		it "should send a file as a HTTP chunked response", :network => true do
-			@reactor.run { |logger|
-				logger.progress &@logger
+			@reactor.run { |reactor|
+				reactor.notifier @logger
 
 				@server = @reactor.tcp
 				@client = @reactor.tcp

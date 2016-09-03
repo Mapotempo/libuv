@@ -10,6 +10,8 @@ module Libuv
             :SIGHUP => 1,
             :INT => 2,
             :SIGINT => 2,
+            :TERM => 15,
+            :SIGTERM => 15,
             :BREAK => 21,
             :SIGBREAK => 21,
             :WINCH => 28,

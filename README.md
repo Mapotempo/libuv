@@ -8,35 +8,49 @@ The Libuv gem contains Libuv and a Ruby wrapper that implements [pipelined promi
 
 ## Usage
 
-using promises
+Libuv supports multiple reactors that can run on different threads.
+
+For convenience the thread local or default reactor can be accessed via the `reactor` method
+You can pass a block to be executed on the reactor and the reactor will run until there is nothing left to do.
 
 ```ruby
   require 'libuv'
 
-  reactor = Libuv::Reactor.default
-  # or
-  # reactor = Libuv::Reactor.new
-
-  reactor.run do
-    timer = reactor.timer do
+  reactor do |reactor|
+    reactor.timer {
       puts "5 seconds passed"
-      timer.close
-    end
-    timer.catch do |error|
-      puts "error with timer: #{error}"
-    end
-    timer.finally do
-      puts "timer handle was closed"
-    end
-    timer.start(5000)
+    }.start(5000)
+  end
+
+  puts "reactor stopped. No more IO to process"
+```
+
+Promises are used to simplify code flow.
+
+```ruby
+  require 'libuv'
+
+  reactor do |reactor|
+    reactor.tcp { |data, socket|
+      puts "received: #{data}"
+      socket.close
+    }
+    .connect('127.0.0.1', 3000)
+    .start_read
+    .write("GET / HTTP/1.1\r\n\r\n")
+    .catch { |error|
+      puts "An error occurred #{error}"
+    }
+    .finally {
+      puts "Socket closed"
+    }
   end
 ```
 
-using coroutines (if a somewhat abstract example)
+Continuations make life easy
 
 ```ruby
   require 'libuv'
-  require 'libuv/coroutines'
 
   reactor = Libuv::Reactor.default
   reactor.run do

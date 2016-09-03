@@ -9,7 +9,7 @@ describe Libuv::Listener do
 
 		# These are created by loop objects and are never cleaned up
 		# This is OK as the loops are expected to execute for the life of the application
-		except = [::Libuv::Async, ::Libuv::Timer, ::Libuv::Prepare]
+		except = [::Libuv::Async, ::Libuv::Timer, ::Libuv::Prepare, ::Libuv::Signal]
 
 		ObjectSpace.each_object(Class) do |cls|
 			next unless cls.ancestors.include? ::Libuv::Handle

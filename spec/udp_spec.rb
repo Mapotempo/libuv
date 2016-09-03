@@ -23,8 +23,8 @@ describe Libuv::UDP do
 	
 	describe 'basic client server' do
 		it "should send a ping and return a pong", :network => true do
-			@reactor.run { |logger|
-				logger.progress do |level, errorid, error|
+			@reactor.run { |reactor|
+				reactor.notifier do |level, errorid, error|
 					begin
 						@general_failure << "Log called: #{level}: #{errorid}\n#{error.message}\n#{error.backtrace.join("\n") if error.backtrace}\n"
 					rescue Exception => e

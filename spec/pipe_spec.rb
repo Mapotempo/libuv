@@ -38,8 +38,8 @@ describe Libuv::Pipe do
 	describe 'bidirectional inter process communication' do
 
 		it "should send a ping and return a pong" do
-			@reactor.run { |logger|
-				logger.progress do |level, errorid, error|
+			@reactor.run { |reactor|
+				reactor.notifier do |level, errorid, error|
 					begin
 						@general_failure << "Log called: #{level}: #{errorid}\n#{error.message}\n#{error.backtrace}\n"
 					rescue Exception
@@ -106,8 +106,8 @@ describe Libuv::Pipe do
 		end
 
 		it "should send work to a consumer" do
-			@reactor.run { |logger|
-				logger.progress do |level, errorid, error|
+			@reactor.run { |reactor|
+				reactor.notifier do |level, errorid, error|
 					@general_failure << "Log called: #{level}: #{errorid}\n#{error.message}\n#{error.backtrace.join("\n")}\n"
 				end
 

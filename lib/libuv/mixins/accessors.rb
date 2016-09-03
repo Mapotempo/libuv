@@ -1,7 +1,15 @@
 module Libuv
     module Accessors
         def reactor
-            thread = Libuv::Reactor.current || Libuv::Reactor.default
+            thread = Libuv::Reactor.current
+            if thread.nil?
+                default = Libuv::Reactor.default
+                unless default.reactor_running?
+                    thread = default
+                else
+                    raise 'No reactor available on this thread'
+                end
+            end
             thread.run { yield(thread) } if block_given?
             thread
         end

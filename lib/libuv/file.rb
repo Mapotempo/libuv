@@ -174,7 +174,7 @@ module Libuv
                 resp << CRLF
                 data = resp
             end
-            @file_stream.write(data).then @next_chunk, @transmit_failure
+            @file_stream.write(data, wait: :promise).then @next_chunk, @transmit_failure
             nil
         end
 
@@ -184,7 +184,7 @@ module Libuv
             
             if next_offset >= @file_stream_total
                 if @file_stream_type == :http
-                    @file_stream.write(EOF.dup).then(proc {
+                    @file_stream.write(EOF, wait: :promise).then(proc {
                         @sending_file.resolve(@file_stream_total)
                     }, @transmit_failure)
                 else

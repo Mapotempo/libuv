@@ -32,8 +32,9 @@ module Libuv
         # 
         # Returns self
         def ref
-            return if @closed
+            return self if @closed
             ::Libuv::Ext.ref(handle)
+            self
         end
 
         # Public: Decrement internal ref counter for the handle on the reactor, useful to stop
@@ -41,14 +42,16 @@ module Libuv
         # 
         # Returns self
         def unref
-            return if @closed
+            return self if @closed
             ::Libuv::Ext.unref(handle)
+            self
         end
 
         def close
-            return if @closed
+            return self if @closed
             @closed = true
             ::Libuv::Ext.close(handle, callback(:on_close))
+            self
         end
 
         def active?
