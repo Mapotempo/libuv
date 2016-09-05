@@ -85,7 +85,7 @@ Any promise can be converted into a continuation
     result = co reactor.work {
       10 * 3
     }
-    puts "no callbacks here #{result}"
+    puts "no additional callbacks here #{result}"
   end
 ```
 
