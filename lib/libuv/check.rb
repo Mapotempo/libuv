@@ -22,6 +22,7 @@ module Libuv
             return if @closed
             error = check_result ::Libuv::Ext.check_start(handle, callback(:on_check))
             reject(error) if error
+            self
         end
 
         # Disables the check handler.
@@ -29,6 +30,7 @@ module Libuv
             return if @closed
             error = check_result ::Libuv::Ext.check_stop(handle)
             reject(error) if error
+            self
         end
 
         # Used to update the callback that will be triggered on reactor check
@@ -36,6 +38,7 @@ module Libuv
         # @param callback [Proc] the callback to be called on reactor check
         def progress(callback = nil, &blk)
             @callback = callback || blk
+            self
         end
 
 
@@ -43,11 +46,13 @@ module Libuv
 
 
         def on_check(handle)
-            begin
-                @callback.call
-            rescue Exception => e
-                @reactor.log :error, :check_cb, e
-            end
+            ::Fiber.new {
+                begin
+                    @callback.call
+                rescue Exception => e
+                    @reactor.log :error, :check_cb, e
+                end
+            }.resume
         end
     end
 end

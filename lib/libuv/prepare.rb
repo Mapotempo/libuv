@@ -22,6 +22,7 @@ module Libuv
             return if @closed
             error = check_result ::Libuv::Ext.prepare_start(handle, callback(:on_prepare))
             reject(error) if error
+            self
         end
 
         # Disables the prepare handler.
@@ -29,6 +30,7 @@ module Libuv
             return if @closed
             error = check_result ::Libuv::Ext.prepare_stop(handle)
             reject(error) if error
+            self
         end
 
         # Used to update the callback that will be triggered on reactor prepare
@@ -36,6 +38,7 @@ module Libuv
         # @param callback [Proc] the callback to be called on reactor prepare
         def progress(callback = nil, &blk)
             @callback = callback || blk
+            self
         end
 
 
@@ -43,11 +46,13 @@ module Libuv
 
 
         def on_prepare(handle)
-            begin
-                @callback.call
-            rescue Exception => e
-                @reactor.log :error, :prepare_cb, e
-            end
+            ::Fiber.new {
+                begin
+                    @callback.call
+                rescue Exception => e
+                    @reactor.log :error, :prepare_cb, e
+                end
+            }.resume
         end
     end
 end

@@ -29,7 +29,7 @@ describe Libuv::Dns do
 				end
 			end
 
-			@reactor.lookup('localhost').then proc { |addrinfo|
+			@reactor.lookup('localhost', wait: true).then proc { |addrinfo|
 				@result = addrinfo[0][0]
 				@timeout.close
 				@reactor.stop
@@ -54,7 +54,7 @@ describe Libuv::Dns do
 				end
 			end
 
-			@reactor.lookup('localhost', :IPv6).then proc { |addrinfo|
+			@reactor.lookup('localhost', :IPv6, wait: true).then proc { |addrinfo|
 				@result = addrinfo[0][0]
 				@timeout.close
 				@reactor.stop
@@ -79,7 +79,7 @@ describe Libuv::Dns do
 				end
 			end
 
-			@reactor.lookup('127.0.0.1').then proc { |addrinfo|
+			@reactor.lookup('127.0.0.1', wait: true).then proc { |addrinfo|
 				@result = addrinfo[0][0]
 				@timeout.close
 				@reactor.stop
@@ -92,5 +92,40 @@ describe Libuv::Dns do
 
 		expect(@general_failure).to eq([])
 		expect(@result).to eq('127.0.0.1')
+	end
+
+	it "should work with coroutines" do
+		@reactor.run { |reactor|
+			reactor.notifier do |level, errorid, error|
+				begin
+					p "Log called: #{level}: #{errorid}\n#{error.message}\n#{error.backtrace.join("\n")}\n"
+				rescue Exception
+					p 'error in logger'
+				end
+			end
+
+			begin
+				addrinfo = @reactor.lookup('127.0.0.1').results
+				@result = [addrinfo[0][0]]
+
+				begin
+					addrinfo = @reactor.lookup('test.fail.blah').results
+					@general_failure << "should have failed"
+					@timeout.close
+					@reactor.stop
+				rescue => err 
+					@result << err.class
+					@timeout.close
+					@reactor.stop
+				end
+			rescue => err 
+				@general_failure << err
+				@timeout.close
+				@reactor.stop
+			end
+		}
+
+		expect(@general_failure).to eq([])
+		expect(@result).to eq(['127.0.0.1', Libuv::Error::EAI_NONAME])
 	end
 end

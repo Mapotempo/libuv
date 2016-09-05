@@ -56,16 +56,18 @@ module Libuv
             @complete = true
             ::Libuv::Ext.free(req)
 
-            e = check_result(status)
-            if e
-                @defer.reject(e)
-            else
-                if @error
-                    @defer.reject(@error)
+            ::Fiber.new {
+                e = check_result(status)
+                if e
+                    @defer.reject(e)
                 else
-                    @defer.resolve(@result)
+                    if @error
+                        @defer.reject(@error)
+                    else
+                        @defer.resolve(@result)
+                    end
                 end
-            end
+            }.resume
             
             # Clean up references
             cleanup_callbacks @instance_id

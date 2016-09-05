@@ -8,7 +8,7 @@ describe Libuv::Accessors do
                 reactor.timer {
                     count += 1
                     reactor.stop if count == 3
-                }.start(100, 3)
+                }.start(50, 10)
             end
 
             expect(count).to eq(3)
@@ -31,7 +31,7 @@ describe Libuv::Accessors do
                                 sig.signal
                             }
                         end
-                    }.start(100, 3)
+                    }.start(50, 10)
                 end
 
                 sig.wait(mutex)

@@ -379,8 +379,8 @@ module Libuv
         # @param port [Integer, String] the service being connected too
         # @param callback [Proc] the callback to be called on success
         # @return [::Libuv::Dns]
-        def lookup(hostname, hint = :IPv4, port = 9, &block)
-            dns = Dns.new(@reactor, hostname, port, hint)    # Work is a promise object
+        def lookup(hostname, hint = :IPv4, port = 9, wait: false, &block)
+            dns = Dns.new(@reactor, hostname, port, hint, wait: false)    # Work is a promise object
             dns.then block if block_given?
             dns
         end
@@ -401,11 +401,11 @@ module Libuv
         # @param flags [Integer] see ruby File::Constants
         # @param mode [Integer]
         # @return [::Libuv::File]
-        def file(path, flags = 0, mode = 0)
+        def file(path, flags = 0, mode: 0, **opts, &blk)
             assert_type(String, path, "path must be a String")
             assert_type(Integer, flags, "flags must be an Integer")
             assert_type(Integer, mode, "mode must be an Integer")
-            File.new(@reactor, path, flags, mode)
+            File.new(@reactor, path, flags, mode: mode, **opts, &blk)
         end
 
         # Returns an object for manipulating the filesystem

@@ -22,6 +22,7 @@ module Libuv
             return if @closed
             error = check_result ::Libuv::Ext.idle_start(handle, callback(:on_idle))
             reject(error) if error
+            self
         end
 
         # Disables the idle handler.
@@ -29,6 +30,7 @@ module Libuv
             return if @closed
             error = check_result ::Libuv::Ext.idle_stop(handle)
             reject(error) if error
+            self
         end
 
         # Used to update the callback that will be triggered on idle
@@ -36,6 +38,7 @@ module Libuv
         # @param callback [Proc] the callback to be called on idle trigger
         def progress(callback = nil, &blk)
             @callback = callback || blk
+            self
         end
 
 
@@ -43,11 +46,13 @@ module Libuv
 
 
         def on_idle(handle)
-            begin
-                @callback.call
-            rescue Exception => e
-                @reactor.log :error, :idle_cb, e
-            end
+            ::Fiber.new {
+                begin
+                    @callback.call
+                rescue Exception => e
+                    @reactor.log :error, :idle_cb, e
+                end
+            }.resume
         end
     end
 end

@@ -36,7 +36,7 @@ describe Libuv::Filesystem do
 				reactor.notifier @logger
 
 				currentDir = Dir.pwd
-				listing = @filesystem.readdir(currentDir)
+				listing = @filesystem.readdir(currentDir, wait: false)
 				listing.then do |result|
 					@log = result
 				end
@@ -60,21 +60,18 @@ describe Libuv::Filesystem do
 				reactor.notifier @logger
 
 				file = @reactor.file(@thefile, File::CREAT|File::WRONLY)
-				file.progress do 
-					file.write('write some data to a file').then do
-						file.chmod(777).then do
-							file.close
-							@timeout.close
-							@reactor.stop
-							@log = :success
-						end
-					end
-				end
-				file.catch do |error|
+				begin
+					file.write('write some data to a file')
+					file.chmod(777)
+					@timeout.close
+					@reactor.stop
+					@log = :success
+				rescue => error
 					@general_failure << error
 					@timeout.close
-					file.close
 					@reactor.stop
+				ensure
+					file.close
 				end
 			}
 
@@ -87,19 +84,17 @@ describe Libuv::Filesystem do
 				reactor.notifier @logger
 
 				file = @reactor.file(@thefile, File::RDONLY)
-				file.progress do 
-					file.stat.then do |stats|
-						file.close
-						@timeout.close
-						@reactor.stop
-						@log << stats[:st_mtim][:tv_sec]
-					end
-				end
-				file.catch do |error|
+				begin
+					stats = file.stat
+					@timeout.close
+					@reactor.stop
+					@log << stats[:st_mtim][:tv_sec]
+				rescue => error
 					@general_failure << error
 					@timeout.close
-					file.close
 					@reactor.stop
+				ensure
+					file.close
 				end
 			}
 
@@ -113,19 +108,18 @@ describe Libuv::Filesystem do
 				reactor.notifier @logger
 
 				file = @reactor.file(@thefile, File::RDONLY)
-				file.progress do 
-					file.read(100).then do |result|
-						file.close
-						@timeout.close
-						@reactor.stop
-						@log = result
-					end
-				end
-				file.catch do |error|
+				begin
+					result = file.read(100)
+					@timeout.close
+					@reactor.stop
+					@log = result
+				rescue => error
 					@general_failure << error
 					@timeout.close
 					file.close
 					@reactor.stop
+				ensure
+					file.close
 				end
 			}
 
@@ -137,7 +131,7 @@ describe Libuv::Filesystem do
 			@reactor.run { |reactor|
 				reactor.notifier @logger
 
-				op = @reactor.filesystem.unlink(@thefile)
+				op = @reactor.filesystem.unlink(@thefile, wait: false)
 				op.then do
 					@timeout.close
 					@reactor.stop
@@ -165,9 +159,8 @@ describe Libuv::Filesystem do
 
 				@server.bind('127.0.0.1', 34570) do |client|
 					client.progress do |data|
-						file = @reactor.file('.rspec', File::RDONLY)
-						file.progress do
-							file.send_file(client).then(proc {
+						file = @reactor.file('.rspec', File::RDONLY) do
+							file.send_file(client, wait: false).then(proc {
 								file.close
 								client.close
 							}, proc { |error|
@@ -231,9 +224,8 @@ describe Libuv::Filesystem do
 
 				@server.bind('127.0.0.1', 34568) do |client|
 					client.progress do |data|
-						file = @reactor.file('.rspec', File::RDONLY)
-						file.progress do
-							file.send_file(client, :http).then(proc {
+						file = @reactor.file('.rspec', File::RDONLY) do
+							file.send_file(client, using: :http, wait: false).then(proc {
 								file.close
 								client.close
 							}, proc { |error|

@@ -239,18 +239,20 @@ module Libuv
             e = check_result(nread)
 
             if e
-                reject(e)   # Will call close
+                ::Fiber.new { reject(e) }.resume   # Will call close
             elsif nread > 0
                 data = @receive_buff.read_string(nread)
                 unless sockaddr.null?
                     ip, port = get_ip_and_port(sockaddr)
                 end
                 
-                begin
-                    @progress.call data, ip, port, self
-                rescue Exception => e
-                    @reactor.log :error, :udp_progress_cb, e
-                end
+                ::Fiber.new {
+                    begin
+                        @progress.call data, ip, port, self
+                    rescue Exception => e
+                        @reactor.log :error, :udp_progress_cb, e
+                    end
+                }.resume
             else
                 ::Libuv::Ext.free(@receive_buff)
                 @receive_buff = nil
@@ -265,7 +267,7 @@ module Libuv
             ::Libuv::Ext.free(req)
             buffer1.free
 
-            resolve deferred, status
+            ::Fiber.new { resolve deferred, status }.resume
         end
     end
 end

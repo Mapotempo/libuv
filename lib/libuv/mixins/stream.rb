@@ -130,15 +130,17 @@ module Libuv
         def on_listen(server, status)
             e = check_result(status)
 
-            if e
-                reject(e)   # is this cause for closing the handle?
-            else
-                begin
-                    @on_listen.call(self)
-                rescue Exception => e
-                    @reactor.log :error, :stream_listen_cb, e
+            ::Fiber.new {
+                if e
+                    reject(e)   # is this cause for closing the handle?
+                else
+                    begin
+                        @on_listen.call(self)
+                    rescue Exception => e
+                        @reactor.log :error, :stream_listen_cb, e
+                    end
                 end
-            end
+            }.resume
         end
 
         def on_allocate(client, suggested_size, buffer)
@@ -153,7 +155,7 @@ module Libuv
             ::Libuv::Ext.free(req)
             buffer1.free
 
-            resolve deferred, status
+            ::Fiber.new { resolve deferred, status }.resume
         end
 
         def on_read(handle, nread, buf)
@@ -166,7 +168,7 @@ module Libuv
                 if e.is_a? ::Libuv::Error::EOF
                     close   # Close gracefully 
                 else
-                    reject(e)
+                    ::Fiber.new { reject(e) }.resume
                 end
             else
                 data = base.read_string(nread)
@@ -174,12 +176,12 @@ module Libuv
                 
                 if @tls.nil?
                     begin
-                        @progress.call data, self
+                        ::Fiber.new { @progress.call data, self }.resume
                     rescue Exception => e
                         @reactor.log :error, :stream_progress_cb, e
                     end
                 else
-                    @tls.decrypt(data)
+                    ::Fiber.new { @tls.decrypt(data) }.resume
                 end
             end
         end

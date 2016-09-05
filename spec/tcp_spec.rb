@@ -121,6 +121,9 @@ describe Libuv::TCP do
 				@client.progress do |data|
 					@log << data
 
+					addrinfo = @reactor.lookup('127.0.0.1').results
+					@log << addrinfo[0][0]
+
 					@client.shutdown
 				end
 				# catch errors
@@ -139,7 +142,7 @@ describe Libuv::TCP do
 			}
 
 			expect(@general_failure).to eq([])
-			expect(@log).to eq(['ping', 'pong'])
+			expect(@log).to eq(['ping', 'pong', '127.0.0.1'])
 		end
 	end
 

@@ -14,12 +14,27 @@ module Libuv
         end
 
 
-        def stat
+        def stat(wait: true)
             @stat_deferred = @reactor.defer
 
             request = ::Libuv::Ext.allocate_request_fs
             pre_check @stat_deferred, request, ::Libuv::Ext.fs_fstat(@reactor.handle, request, @fileno, callback(:on_stat, request.address))
-            @stat_deferred.promise
+            promise = @stat_deferred.promise
+
+            wait ? co(promise) : promise
+        end
+
+
+        protected
+
+
+        def respond(wait, promise)
+            if wait
+                co(promise)
+                self
+            else
+                promise
+            end
         end
 
 
@@ -37,7 +52,7 @@ module Libuv
                 end
 
                 cleanup(req)
-                @stat_deferred.resolve(stats)
+                ::Fiber.new { @stat_deferred.resolve(stats) }.resume
             end
             @stat_deferred = nil
         end
@@ -63,7 +78,14 @@ module Libuv
             error = check_result(req[:result])
             if error
                 cleanup(req)
-                deferrable.reject(error)
+
+                ::Fiber.new {
+                    deferrable.reject(error)
+                    if @coroutine
+                        @coroutine.resolve(deferrable.promise)
+                        @coroutine = nil
+                    end
+                }.resume
                 false
             else
                 true

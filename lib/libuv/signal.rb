@@ -36,6 +36,7 @@ module Libuv
             signal = SIGNALS[signal] if signal.is_a? Symbol
             error = check_result ::Libuv::Ext.signal_start(handle, callback(:on_sig), signal)
             reject(error) if error
+            self
         end
 
         # Disables the signal handler.
@@ -43,6 +44,7 @@ module Libuv
             return if @closed
             error = check_result ::Libuv::Ext.signal_stop(handle)
             reject(error) if error
+            self
         end
 
 
@@ -50,7 +52,9 @@ module Libuv
 
 
         def on_sig(handle, signal)
-            defer.notify(signal)   # notify of a call
+            ::Fiber.new {
+                defer.notify(signal)   # notify of a call
+            }.resume
         end
     end
 end

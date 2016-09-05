@@ -113,8 +113,7 @@ describe Libuv::Pipe do
 
 
 				heartbeat = @reactor.timer
-				@file1 = @reactor.file(@pipefile, File::RDWR|File::NONBLOCK)
-				@file1.progress do
+				@file1 = @reactor.file(@pipefile, File::RDWR|File::NONBLOCK) do
 					@server.open(@file1.fileno) do |server|
 						heartbeat.progress  do
 							@server.write('workload').catch do |err|
@@ -128,8 +127,7 @@ describe Libuv::Pipe do
 					@general_failure << "Log called: #{e.inspect} - #{e.message}\n"
 				end
 
-				@file2 = @reactor.file(@pipefile, File::RDWR|File::NONBLOCK)
-				@file2.progress do
+				@file2 = @reactor.file(@pipefile, File::RDWR|File::NONBLOCK) do
 					# connect client to server
 					@client.open(@file2.fileno) do |consumer|
 						consumer.progress do |data|

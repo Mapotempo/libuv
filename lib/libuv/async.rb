@@ -22,6 +22,7 @@ module Libuv
             return if @closed
             error = check_result ::Libuv::Ext.async_send(handle)
             reject(error) if error
+            self
         end
 
         # Used to update the callback that will be triggered when async is called
@@ -29,6 +30,7 @@ module Libuv
         # @param callback [Proc] the callback to be called on reactor prepare
         def progress(callback = nil, &blk)
             @callback = callback || blk
+            self
         end
 
 
@@ -36,11 +38,13 @@ module Libuv
 
 
         def on_async(handle)
-            begin
-                @callback.call
-            rescue Exception => e
-                @reactor.log :error, :async_cb, e
-            end
+            ::Fiber.new {
+                begin
+                    @callback.call
+                rescue Exception => e
+                    @reactor.log :error, :async_cb, e
+                end
+            }.resume
         end
     end
 end

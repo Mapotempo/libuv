@@ -27,7 +27,8 @@ module Libuv
             if e
                 reject(e)
             else
-                defer.notify(filename, EVENTS[events])   # notify of a change
+                # notify of a change
+                ::Fiber.new { defer.notify(filename, EVENTS[events]) }.resume
             end
         end
     end

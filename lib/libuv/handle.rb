@@ -85,11 +85,13 @@ module Libuv
             #clear_callbacks
             cleanup_callbacks
 
-            if @close_error
-                defer.reject(@close_error)
-            else
-                defer.resolve(nil)
-            end
+            ::Fiber.new {
+                if @close_error
+                    defer.reject(@close_error)
+                else
+                    defer.resolve(nil)
+                end
+            }.resume
 
             if @coroutine
                 @coroutine.resolve(self)
