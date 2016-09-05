@@ -15,15 +15,18 @@ module Libuv
         def enable_raw_mode
             return if @closed
             check_result ::Libuv::Ext.tty_set_mode(handle, 1)
+            self
         end
 
         def disable_raw_mode
             return if @closed
             check_result ::Libuv::Ext.tty_set_mode(handle, 0)
+            self
         end
 
         def reset_mode
             ::Libuv::Ext.tty_reset_mode
+            self
         end
 
         def winsize
