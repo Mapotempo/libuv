@@ -83,6 +83,9 @@ module Libuv
             self.signal(:INT, sig_callback).unref
             self.signal(:HUP, sig_callback).unref
             self.signal(:TERM, sig_callback).unref
+
+            # Notify of errors
+            @reactor_notify = proc {}
         end
 
         attr_reader :run_count
@@ -148,8 +151,6 @@ module Libuv
         #   exceptions on the reactor.
         def run(run_type = :UV_RUN_DEFAULT)
             if @reactor_thread.nil?
-                @reactor_notify = @reactor.defer
-
                 begin
                     @reactor_thread = ::Thread.current
                     raise 'only one reactor allowed per-thread' if REACTORS[@reactor_thread]
@@ -193,7 +194,7 @@ module Libuv
         #
         # @return [::Libuv::Q::Promise]
         def notifier(callback = nil, &blk)
-            @reactor_notify.promise.progress(callback || blk)
+            @reactor_notify = callback || blk
         end
 
         # Creates a deferred result object for where the result of an operation may only be returned 
@@ -380,7 +381,7 @@ module Libuv
         # @param callback [Proc] the callback to be called on success
         # @return [::Libuv::Dns]
         def lookup(hostname, hint = :IPv4, port = 9, wait: false, &block)
-            dns = Dns.new(@reactor, hostname, port, hint, wait: false)    # Work is a promise object
+            dns = Dns.new(@reactor, hostname, port, hint, wait: wait)    # Work is a promise object
             dns.then block if block_given?
             dns
         end
@@ -458,7 +459,7 @@ module Libuv
         # @param id [Object] some kind of identifying information
         # @param *args [*args] any additional information
         def log(level, id, *args)
-            @reactor_notify.notify(level, id, *args)
+            @reactor_notify.call(level, id, *args)
         end
 
         # Closes handles opened by the reactor class and completes the current reactor iteration (thread safe)
