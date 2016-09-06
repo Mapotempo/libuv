@@ -50,7 +50,7 @@ module Libuv
                 begin
                     @callback.call
                 rescue Exception => e
-                    @reactor.log :error, :prepare_cb, e
+                    @reactor.log e, 'performing prepare callback'
                 end
             }.resume
         end

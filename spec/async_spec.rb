@@ -22,9 +22,9 @@ describe Libuv::Async do
 	
 	it "Should call the async function from the thread pool stopping the counter" do
 		@reactor.run { |reactor|
-			reactor.notifier do |level, errorid, error|
+			reactor.notifier do |error, context|
 				begin
-					p "Log called: #{level}: #{errorid}\n#{error.message}\n#{error.backtrace.join("\n")}\n"
+					p "Log called: #{context}\n#{error.message}\n#{error.backtrace.join("\n")}\n"
 				rescue Exception
 					p 'error in logger'
 				end

@@ -16,6 +16,14 @@ describe Libuv::UDP do
 		end
 		@timeout.start(5000)
 
+		@reactor.notifier do |error, context|
+			begin
+				@general_failure << "Log called: #{context}\n#{error.message}\n#{error.backtrace.join("\n") if error.backtrace}\n"
+			rescue Exception => e
+				@general_failure << "error in logger #{e.inspect}"
+			end
+		end
+
 		@reactor.all(@server, @client, @timeout).catch do |reason|
 			@general_failure << reason.inspect
 		end
@@ -24,15 +32,6 @@ describe Libuv::UDP do
 	describe 'basic client server' do
 		it "should send a ping and return a pong", :network => true do
 			@reactor.run { |reactor|
-				reactor.notifier do |level, errorid, error|
-					begin
-						@general_failure << "Log called: #{level}: #{errorid}\n#{error.message}\n#{error.backtrace.join("\n") if error.backtrace}\n"
-					rescue Exception => e
-						@general_failure << "error in logger #{e.inspect}"
-					end
-				end
-
-
 				@server.bind('127.0.0.1', 34567)
 				@server.progress do |data, ip, port, server|
 					@log << data

@@ -137,7 +137,7 @@ module Libuv
                     begin
                         @on_listen.call(self)
                     rescue Exception => e
-                        @reactor.log :error, :stream_listen_cb, e
+                        @reactor.log e, 'performing stream listening callback'
                     end
                 end
             }.resume
@@ -178,7 +178,7 @@ module Libuv
                     begin
                         ::Fiber.new { @progress.call data, self }.resume
                     rescue Exception => e
-                        @reactor.log :error, :stream_progress_cb, e
+                        @reactor.log e, 'performing stream read callback'
                     end
                 else
                     ::Fiber.new { @tls.decrypt(data) }.resume

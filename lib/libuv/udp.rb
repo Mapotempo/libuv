@@ -272,7 +272,7 @@ module Libuv
                     begin
                         @progress.call data, ip, port, self
                     rescue Exception => e
-                        @reactor.log :error, :udp_progress_cb, e
+                        @reactor.log e, 'performing UDP data received callback'
                     end
                 }.resume
             else

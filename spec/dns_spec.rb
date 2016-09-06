@@ -7,6 +7,13 @@ describe Libuv::Dns do
 		@general_failure = []
 
 		@reactor = Libuv::Reactor.default
+		@reactor.notifier do |error, context|
+			begin
+				p "Log called: #{context}\n#{error.message}\n#{error.backtrace.join("\n")}\n"
+			rescue Exception
+				p 'error in logger'
+			end
+		end
 		@timeout = @reactor.timer do
 			@reactor.stop
 			@general_failure << "test timed out"
@@ -21,14 +28,6 @@ describe Libuv::Dns do
 	
 	it "should resolve localhost using IP4", :network => true do
 		@reactor.run { |reactor|
-			reactor.notifier do |level, errorid, error|
-				begin
-					p "Log called: #{level}: #{errorid}\n#{error.message}\n#{error.backtrace.join("\n")}\n"
-				rescue Exception
-					p 'error in logger'
-				end
-			end
-
 			@reactor.lookup('localhost', wait: true).then proc { |addrinfo|
 				@result = addrinfo[0][0]
 				@timeout.close
@@ -46,14 +45,6 @@ describe Libuv::Dns do
 
 	it "should resolve localhost using IP6", :network => true do
 		@reactor.run { |reactor|
-			reactor.notifier do |level, errorid, error|
-				begin
-					p "Log called: #{level}: #{errorid}\n#{error.message}\n#{error.backtrace.join("\n")}\n"
-				rescue Exception
-					p 'error in logger'
-				end
-			end
-
 			@reactor.lookup('localhost', :IPv6, wait: true).then proc { |addrinfo|
 				@result = addrinfo[0][0]
 				@timeout.close
@@ -71,14 +62,6 @@ describe Libuv::Dns do
 
 	it "should resolve reactor back" do
 		@reactor.run { |reactor|
-			reactor.notifier do |level, errorid, error|
-				begin
-					p "Log called: #{level}: #{errorid}\n#{error.message}\n#{error.backtrace.join("\n")}\n"
-				rescue Exception
-					p 'error in logger'
-				end
-			end
-
 			@reactor.lookup('127.0.0.1', wait: true).then proc { |addrinfo|
 				@result = addrinfo[0][0]
 				@timeout.close
@@ -96,14 +79,6 @@ describe Libuv::Dns do
 
 	it "should work with coroutines" do
 		@reactor.run { |reactor|
-			reactor.notifier do |level, errorid, error|
-				begin
-					p "Log called: #{level}: #{errorid}\n#{error.message}\n#{error.backtrace.join("\n")}\n"
-				rescue Exception
-					p 'error in logger'
-				end
-			end
-
 			begin
 				addrinfo = @reactor.lookup('127.0.0.1').results
 				@result = [addrinfo[0][0]]

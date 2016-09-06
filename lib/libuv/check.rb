@@ -50,7 +50,7 @@ module Libuv
                 begin
                     @callback.call
                 rescue Exception => e
-                    @reactor.log :error, :check_cb, e
+                    @reactor.log e, 'performing check callback'
                 end
             }.resume
         end

@@ -46,7 +46,7 @@ module Libuv
                 begin
                     @callback.call(self) if @callback
                 rescue Exception => e
-                    @reactor.log :error, :pipe_connect_cb, e
+                    @reactor.log e, 'performing pipe connect callback'
                     raise e unless @callback
                 end
             rescue Exception => e
@@ -160,14 +160,14 @@ module Libuv
                 raise RuntimeError, CLOSED_HANDLE_ERROR if @closed
                 pipe = Pipe.new(reactor, @ipc, handle)
             rescue Exception => e
-                @reactor.log :info, :pipe_accept_failed, e
+                @reactor.log e, 'pipe accept failed'
             end
             if pipe
                 ::Fiber.new {
                     begin
                         @on_accept.call(pipe)
                     rescue Exception => e
-                        @reactor.log :error, :pipe_accept_cb, e
+                        @reactor.log e, 'performing pipe accept callback'
                     end
                 }.resume
             end
@@ -185,7 +185,7 @@ module Libuv
                     begin
                         @callback.call(self)
                     rescue Exception => e
-                        @reactor.log :error, :pipe_connect_cb, e
+                        @reactor.log e, 'performing pipe connected callback'
                     end
                 end
             }.resume

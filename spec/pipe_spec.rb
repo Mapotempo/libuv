@@ -22,6 +22,14 @@ describe Libuv::Pipe do
 			@general_failure << "Failed with: #{reason.message}\n#{reason.backtrace}\n"
 		end
 
+		@reactor.notifier do |error, context|
+			begin
+				@general_failure << "Log called: #{context}\n#{error.message}\n#{error.backtrace.join("\n") if error.backtrace}\n"
+			rescue Exception => e
+				@general_failure << "error in logger #{e.inspect}"
+			end
+		end
+
 		begin
 			File.unlink(@pipefile)
 		rescue
@@ -39,14 +47,6 @@ describe Libuv::Pipe do
 
 		it "should send a ping and return a pong" do
 			@reactor.run { |reactor|
-				reactor.notifier do |level, errorid, error|
-					begin
-						@general_failure << "Log called: #{level}: #{errorid}\n#{error.message}\n#{error.backtrace}\n"
-					rescue Exception
-						@general_failure << 'error in logger'
-					end
-				end
-
 				@server.bind(@pipefile) do |client|
 					client.progress do |data|
 						@log << data
@@ -107,11 +107,6 @@ describe Libuv::Pipe do
 
 		it "should send work to a consumer" do
 			@reactor.run { |reactor|
-				reactor.notifier do |level, errorid, error|
-					@general_failure << "Log called: #{level}: #{errorid}\n#{error.message}\n#{error.backtrace.join("\n")}\n"
-				end
-
-
 				heartbeat = @reactor.timer
 				@file1 = @reactor.file(@pipefile, File::RDWR|File::NONBLOCK) do
 					@server.open(@file1.fileno) do |server|

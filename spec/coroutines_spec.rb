@@ -11,6 +11,14 @@ if RUBY_PLATFORM != 'java'
 			@general_failure = []
 
 			@reactor = Libuv::Reactor.default
+			@reactor.notifier do |error, context|
+				begin
+					@general_failure << "Log called: #{context}\n#{error.message}\n#{error.backtrace.join("\n") if error.backtrace}\n"
+				rescue Exception => e
+					@general_failure << "error in logger #{e.inspect}"
+				end
+			end
+
 			@timeout = @reactor.timer do
 				@timeout.close
 				@reactor.stop
@@ -22,14 +30,6 @@ if RUBY_PLATFORM != 'java'
 		describe 'serial execution' do
 			it "should wait for work to complete and return the result" do
 				@reactor.run { |reactor|
-					reactor.notifier do |level, errorid, error|
-						begin
-							@general_failure << "Log called: #{level}: #{errorid}\n#{error.message}\n#{error.backtrace.join("\n") if error.backtrace}\n"
-						rescue Exception => e
-							@general_failure << "error in logger #{e.inspect}"
-						end
-					end
-
 
 					@log << co(@reactor.work(proc {
 						sleep 1
@@ -47,14 +47,6 @@ if RUBY_PLATFORM != 'java'
 
 			it "should raise an error if the promise is rejected" do
 				@reactor.run { |reactor|
-					reactor.notifier do |level, errorid, error|
-						begin
-							@general_failure << "Log called: #{level}: #{errorid}\n#{error.message}\n#{error.backtrace.join("\n") if error.backtrace}\n"
-						rescue Exception => e
-							@general_failure << "error in logger #{e.inspect}"
-						end
-					end
-
 					begin
 						@log << co(@reactor.work(proc {
 							raise 'rejected'
@@ -74,15 +66,6 @@ if RUBY_PLATFORM != 'java'
 
 			it "should return the results of multiple promises" do
 				@reactor.run { |reactor|
-					reactor.notifier do |level, errorid, error|
-						begin
-							@general_failure << "Log called: #{level}: #{errorid}\n#{error.message}\n#{error.backtrace.join("\n") if error.backtrace}\n"
-						rescue Exception => e
-							@general_failure << "error in logger #{e.inspect}"
-						end
-					end
-
-
 					job1 = @reactor.work(proc {
 						sleep 1
 						'job1'
@@ -111,14 +94,6 @@ if RUBY_PLATFORM != 'java'
 
 			it "should provide a callback option for progress events" do
 				@reactor.run { |reactor|
-					reactor.notifier do |level, errorid, error|
-						begin
-							@general_failure << "Log called: #{level}: #{errorid}\n#{error.message}\n#{error.backtrace.join("\n") if error.backtrace}\n"
-						rescue Exception => e
-							@general_failure << "error in logger #{e.inspect}"
-						end
-					end
-
 					timer = @reactor.timer
 					timer.start(0)
 					co(timer) do

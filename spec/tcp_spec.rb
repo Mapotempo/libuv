@@ -23,6 +23,13 @@ describe Libuv::TCP do
 
 
 		@pipefile = "/tmp/test-pipe.pipe"
+		@reactor.notifier do |error, context|
+			begin
+				@general_failure << "Log called: #{context}\n#{error.message}\n#{error.backtrace.join("\n") if error.backtrace}\n"
+			rescue Exception => e
+				@general_failure << "error in logger #{e.inspect}"
+			end
+		end
 
 		begin
 			File.unlink(@pipefile)
@@ -33,15 +40,6 @@ describe Libuv::TCP do
 	describe 'basic client server' do
 		it "should send a ping and return a pong", :network => true do
 			@reactor.run { |reactor|
-				reactor.notifier do |level, errorid, error|
-					begin
-						@general_failure << "Log called: #{level}: #{errorid}\n#{error.message}\n#{error.backtrace.join("\n") if error.backtrace}\n"
-					rescue Exception => e
-						@general_failure << "error in logger #{e.inspect}"
-					end
-				end
-
-
 				@server.bind('127.0.0.1', 34567) do |client|
 					client.progress do |data|
 						@log << data
@@ -91,15 +89,6 @@ describe Libuv::TCP do
 
 		it "should work with coroutines", :network => true do
 			@reactor.run { |reactor|
-				reactor.notifier do |level, errorid, error|
-					begin
-						@general_failure << "Log called: #{level}: #{errorid}\n#{error.message}\n#{error.backtrace.join("\n") if error.backtrace}\n"
-					rescue Exception => e
-						@general_failure << "error in logger #{e.inspect}"
-					end
-				end
-
-
 				@server.bind('127.0.0.1', 34567) do |client|
 					client.progress do |data|
 						@log << data
@@ -150,15 +139,6 @@ describe Libuv::TCP do
 		@sync = Mutex.new
 
 		@reactor.run { |reactor|
-			reactor.notifier do |level, errorid, error|
-				begin
-					@general_failure << "Log called: #{level}: #{errorid}\n#{error.message}\n#{error.backtrace.join("\n") if error.backtrace}\n"
-				rescue Exception
-					@general_failure << "error in logger #{e.inspect}"
-				end
-			end
-
-
 			@remote = nil
 			@server.bind('127.0.0.1', 45678) do |client|
 				@remote.write2(client)
@@ -213,18 +193,17 @@ describe Libuv::TCP do
 
 			Thread.new do
 				@reactor2 = Libuv::Reactor.new
+				@reactor2.notifier do |error, context|
+					begin
+						@general_failure << "Log called: #{context}\n#{error.message}\n#{error.backtrace.join("\n") if error.backtrace}\n"
+					rescue Exception
+						@general_failure << "error in logger #{e.inspect}"
+					end
+				end
 				@pipeclient = @reactor2.pipe(true)
 
 
 				@reactor2.run do  |reactor|
-					reactor.notifier do |level, errorid, error|
-						begin
-							@general_failure << "Log called: #{level}: #{errorid}\n#{error.message}\n#{error.backtrace.join("\n") if error.backtrace}\n"
-						rescue Exception
-							@general_failure << "error in logger #{e.inspect}"
-						end
-					end
-			
 					# connect client to server
 					@pipeclient.connect(@pipefile) do |client|
 						@pipeclient.progress do |data|
@@ -257,15 +236,6 @@ describe Libuv::TCP do
 	describe 'basic TLS client and server' do
 		it "should send a ping and return a pong", :network => true do
 			@reactor.run { |reactor|
-				reactor.notifier do |level, errorid, error|
-					begin
-						@general_failure << "Log called: #{level}: #{errorid}\n#{error.message}\n#{error.backtrace.join("\n") if error.backtrace}\n"
-					rescue Exception
-						@general_failure << "error in logger #{e.inspect}"
-					end
-				end
-
-
 				@server.bind('127.0.0.1', 56789) do |client|
 					client.start_tls(server: true)
 					client.progress do |data|

@@ -99,7 +99,7 @@ module Libuv
                 begin
                     @callback.call
                 rescue Exception => e
-                    @reactor.log :error, :timer_cb, e
+                    @reactor.log e, 'performing timer callback'
                 end
             }.resume
         end

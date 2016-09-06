@@ -50,7 +50,7 @@ module Libuv
                 begin
                     @callback.call
                 rescue Exception => e
-                    @reactor.log :error, :idle_cb, e
+                    @reactor.log e, 'performing idle callback'
                 end
             }.resume
         end

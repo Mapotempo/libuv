@@ -42,7 +42,7 @@ module Libuv
                 begin
                     @callback.call
                 rescue Exception => e
-                    @reactor.log :error, :async_cb, e
+                    @reactor.log e, 'performing async callback'
                 end
             }.resume
         end

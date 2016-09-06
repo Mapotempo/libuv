@@ -69,7 +69,7 @@ module Libuv
             begin
                 @on_handshake.call(self, protocol) if @on_handshake
             rescue => e
-                @reactor.log :warn, :tls_handshake_callback_error, e
+                @reactor.log e, 'performing TLS handshake callback'
             end
         end
 
@@ -85,7 +85,7 @@ module Libuv
             begin
                 @progress.call data, self
             rescue Exception => e
-                @reactor.log :error, :stream_progress_cb, e
+                @reactor.log e, 'performing TLS read data callback'
             end
         end
 
@@ -116,7 +116,7 @@ module Libuv
                 begin
                     return @on_verify.call cert
                 rescue => e
-                    @reactor.log :warn, :tls_verify_callback_failed, e
+                    @reactor.log e, 'performing TLS verify callback'
                     return false
                 end
             end
@@ -332,7 +332,7 @@ module Libuv
                         raise ArgumentError, 'no callback provided'
                     end
                 rescue Exception => e
-                    @reactor.log :error, :connect_cb, e
+                    @reactor.log e, 'performing TCP connection callback'
                 end
             end
         end
@@ -344,10 +344,10 @@ module Libuv
                 begin
                     @on_accept.call(tcp)
                 rescue Exception => e
-                    @reactor.log :error, :tcp_accept_cb, e
+                    @reactor.log e, 'performing TCP accept callback'
                 end
             rescue Exception => e
-                @reactor.log :info, :tcp_accept_failed, e
+                @reactor.log e, 'failed to accept TCP connection'
             end
         end
 

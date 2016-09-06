@@ -15,13 +15,13 @@ describe Libuv::Filesystem do
 		end
 		@timeout.start(4000)
 
-		@logger = proc { |level, errorid, error|
+		@reactor.notifier do |error, context|
 			begin
-				@general_failure << "Log called: #{level}: #{errorid}\n#{error.message}\n#{error.backtrace.join("\n")}\n"
-			rescue Exception
-				@general_failure << 'error in logger'
+				@general_failure << "Log called: #{context}\n#{error.message}\n#{error.backtrace.join("\n") if error.backtrace}\n"
+			rescue Exception => e
+				@general_failure << "error in logger #{e.inspect}"
 			end
-		}
+		end
 
 		@thefile = "test-file.txt"
 
@@ -33,8 +33,6 @@ describe Libuv::Filesystem do
 	describe 'directory navigation' do
 		it "should list the contents of a folder" do
 			@reactor.run { |reactor|
-				reactor.notifier @logger
-
 				currentDir = Dir.pwd
 				listing = @filesystem.readdir(currentDir, wait: false)
 				listing.then do |result|
@@ -57,8 +55,6 @@ describe Libuv::Filesystem do
 	describe 'file manipulation' do
 		it "should create and write to a file" do
 			@reactor.run { |reactor|
-				reactor.notifier @logger
-
 				file = @reactor.file(@thefile, File::CREAT|File::WRONLY)
 				begin
 					file.write('write some data to a file')
@@ -81,8 +77,6 @@ describe Libuv::Filesystem do
 
 		it "should return stats on the file" do
 			@reactor.run { |reactor|
-				reactor.notifier @logger
-
 				file = @reactor.file(@thefile, File::RDONLY)
 				begin
 					stats = file.stat
@@ -105,8 +99,6 @@ describe Libuv::Filesystem do
 
 		it "should read from a file" do
 			@reactor.run { |reactor|
-				reactor.notifier @logger
-
 				file = @reactor.file(@thefile, File::RDONLY)
 				begin
 					result = file.read(100)
@@ -129,8 +121,6 @@ describe Libuv::Filesystem do
 
 		it "should delete a file" do
 			@reactor.run { |reactor|
-				reactor.notifier @logger
-
 				op = @reactor.filesystem.unlink(@thefile, wait: false)
 				op.then do
 					@timeout.close
@@ -152,8 +142,6 @@ describe Libuv::Filesystem do
 	describe 'file streaming' do
 		it "should send a file over a stream", :network => true do
 			@reactor.run { |reactor|
-				reactor.notifier @logger
-
 				@server = @reactor.tcp
 				@client = @reactor.tcp
 
@@ -217,8 +205,6 @@ describe Libuv::Filesystem do
 
 		it "should send a file as a HTTP chunked response", :network => true do
 			@reactor.run { |reactor|
-				reactor.notifier @logger
-
 				@server = @reactor.tcp
 				@client = @reactor.tcp
 

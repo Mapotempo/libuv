@@ -53,7 +53,7 @@ module Libuv
                     begin
                         callbackOutput = callback.call
                     rescue Exception => e
-                        @reactor.log(:error, :q_finally_cb, e)
+                        @reactor.log e, 'performing promise finally callback'
                         return MAKE_PROMISE.call(e, false, @reactor)
                     end
 
@@ -110,7 +110,7 @@ module Libuv
                     rescue Exception => e
                         #warn "\nUnhandled exception: #{e.message}\n#{e.backtrace.join("\n")}\n"
                         result.reject(e)
-                        @reactor.log(:error, :q_resolve_cb, e)
+                        @reactor.log e, 'performing promise resolution callback'
                     end
                 }
                 
@@ -120,7 +120,7 @@ module Libuv
                     rescue Exception => e
                         #warn "Unhandled exception: #{e.message}\n#{e.backtrace.join("\n")}\n"
                         result.reject(e)
-                        @reactor.log(:error, :q_reject_cb, e)
+                        @reactor.log e, 'performing promise rejection callback'
                     end
                 }
 
@@ -129,7 +129,7 @@ module Libuv
                         result.notify(progback.nil? ? progress : progback.call(*progress))
                     rescue Exception => e
                         #warn "Unhandled exception: #{e.message}\n#{e.backtrace.join("\n")}\n"
-                        @reactor.log(:error, :q_progress_cb, e)
+                        @reactor.log e, 'performing promise progress callback'
                     end
                 }
                 
@@ -193,7 +193,7 @@ module Libuv
                         rescue Exception => e
                             #warn "Unhandled exception: #{e.message}\n#{e.backtrace.join("\n")}\n"
                             result.reject(e)
-                            @reactor.log(:error, :q_reject_cb, e)
+                            @reactor.log e, 'performing promise rejection callback'
                         end
                     else
                         begin
@@ -201,7 +201,7 @@ module Libuv
                         rescue Exception => e
                             #warn "\nUnhandled exception: #{e.message}\n#{e.backtrace.join("\n")}\n"
                             result.reject(e)
-                            @reactor.log(:error, :q_resolve_cb, e)
+                            @reactor.log e, 'performing promise resolution callback'
                         end
                     end
                 }

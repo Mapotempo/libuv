@@ -470,8 +470,8 @@ describe Libuv::Q do
 
 			it "should stop notification propagation in case of error" do
 				@reactor.run { |reactor|
-					reactor.notifier do |type, id, error|
-						@log << id
+					reactor.notifier do |error, context|
+						@log << context
 					end
 
 
@@ -497,7 +497,7 @@ describe Libuv::Q do
 					@deferred.notify(:foo)
 				}
 
-				expect(@log).to eq([:foo, :bar, :q_progress_cb])
+				expect(@log).to eq([:foo, :bar, "performing promise progress callback"])
 			end
 			
 			

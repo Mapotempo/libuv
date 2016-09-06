@@ -7,6 +7,13 @@ describe Libuv::Idle do
 		@general_failure = []
 
 		@reactor = Libuv::Reactor.default
+		@reactor.notifier do |error, context|
+			begin
+				@general_failure << "Log called: #{context}\n#{error.message}\n#{error.backtrace.join("\n") if error.backtrace}\n"
+			rescue Exception => e
+				@general_failure << "error in logger #{e.inspect}"
+			end
+		end
 		@timeout = @reactor.timer {
 			@reactor.stop
 			@general_failure << "test timed out"
@@ -15,14 +22,6 @@ describe Libuv::Idle do
 	
 	it "should increase the idle count when there is nothing to process" do
 		@reactor.run { |reactor|
-			reactor.notifier do |level, errorid, error|
-				begin
-					p "Log called: #{level}: #{errorid}\n#{error.message}\n#{error.backtrace.join("\n")}\n"
-				rescue Exception
-					p 'error in logger'
-				end
-			end
-
 			@idle_calls = 0
   
 			idle = @reactor.idle { |e|

@@ -127,7 +127,7 @@ module Libuv
                 run = @run_queue.pop true  # pop non-block
                 run.call
             rescue Exception => e
-                @reactor.log :error, :next_tick_cb, e
+                @reactor.log e, 'performing next tick callback'
             end
         end
 
@@ -195,6 +195,7 @@ module Libuv
         # @return [::Libuv::Q::Promise]
         def notifier(callback = nil, &blk)
             @reactor_notify = callback || blk
+            self
         end
 
         # Creates a deferred result object for where the result of an operation may only be returned 
@@ -244,6 +245,7 @@ module Libuv
         # @return nil
         def update_time
             ::Libuv::Ext.update_time(@pointer)
+            self
         end
 
         # Get current time in milliseconds
@@ -268,7 +270,7 @@ module Libuv
                 raise "error lookup failed for code #{err}"
             end
         rescue Exception => e
-            @reactor.log :warn, :error_lookup_failed, e
+            @reactor.log e, 'performing error lookup'
             e
         end
 
@@ -430,6 +432,8 @@ module Libuv
                 @run_queue << callback
                 @process_queue.call
             end
+
+            self
         end
 
         # Queue some work to be processed in the next iteration of the event reactor (thread safe)
@@ -451,15 +455,17 @@ module Libuv
             else
                 @process_queue.call
             end
+
+            self
         end
 
         # Notifies the reactor there was an event that should be logged
         #
-        # @param level [Symbol] the error level (info, warn, error etc)
-        # @param id [Object] some kind of identifying information
-        # @param *args [*args] any additional information
-        def log(level, id, *args)
-            @reactor_notify.call(level, id, *args)
+        # @param error [Exception] the error
+        # @param msg [String] optional context on the error
+        # @param trace [Array<String>] optional additional trace of caller if async
+        def log(error, msg = '', trace = nil)
+            @reactor_notify.call(error, msg, trace)
         end
 
         # Closes handles opened by the reactor class and completes the current reactor iteration (thread safe)
