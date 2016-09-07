@@ -18,11 +18,11 @@ module Libuv
         HANDLE_CLOSED_ERROR = "unable to send as handle closed".freeze
 
 
-        def initialize(loop)
-            @loop = loop
+        def initialize(reactor)
+            @reactor = reactor
 
             udp_ptr = ::Libuv::Ext.allocate_handle_udp
-            error = check_result(::Libuv::Ext.udp_init(loop.handle, udp_ptr))
+            error = check_result(::Libuv::Ext.udp_init(reactor.handle, udp_ptr))
             @request_refs = {}
 
             super(udp_ptr, error)
@@ -36,12 +36,16 @@ module Libuv
             sockaddr = create_sockaddr(ip, port)
             error = check_result ::Libuv::Ext.udp_bind(handle, sockaddr, 0)
             reject(error) if error
+
+            self
         end
 
         def open(fd, binding = true, callback = nil, &blk)
             return if @closed
             error = check_result UV.udp_open(handle, fd)
             reject(error) if error
+
+            self
         end
 
         def sockname
@@ -58,6 +62,7 @@ module Libuv
 
             error = check_result ::Libuv::Ext.udp_set_membership(handle, multicast_address, interface_address, :uv_join_group)
             reject(error) if error
+            self
         end
 
         def leave(multicast_address, interface_address)
@@ -67,6 +72,7 @@ module Libuv
 
             error = check_result ::Libuv::Ext.udp_set_membership(handle, multicast_address, interface_address, :uv_leave_group)
             reject(error) if error
+            self
         end
 
         # Starts reading from the handle
@@ -75,6 +81,7 @@ module Libuv
             return if @closed
             error = check_result ::Libuv::Ext.udp_recv_start(handle, callback(:on_allocate), callback(:on_recv))
             reject(error) if error
+            self
         end
 
         # Stops reading from the handle
@@ -83,6 +90,7 @@ module Libuv
             return if @closed
             error = check_result ::Libuv::Ext.udp_recv_stop(handle)
             reject(error) if error
+            self
         end
 
         def try_send(ip, port, data)
@@ -108,9 +116,9 @@ module Libuv
             return result
         end
 
-        def send(ip, port, data)
+        def send(ip, port, data, wait: false)
             # NOTE:: Similar to stream.rb -> write
-            deferred = @loop.defer
+            deferred = @reactor.defer
             if !@closed
                 begin
                     assert_type(String, ip, IP_ARGUMENT_ERROR)
@@ -149,18 +157,27 @@ module Libuv
                 deferred.reject(RuntimeError.new(HANDLE_CLOSED_ERROR))
             end
             deferred.promise
+
+            if wait
+                return deferred.promise if wait == :promise
+                co deferred.promise
+            end
+
+            self
         end
 
-        def enable_multicast_loop
+        def enable_multicast_reactor
             return if @closed
-            error = check_result ::Libuv::Ext.udp_set_multicast_loop(handle, 1)
+            error = check_result ::Libuv::Ext.udp_set_multicast_reactor(handle, 1)
             reject(error) if error
+            self
         end
 
-        def disable_multicast_loop
+        def disable_multicast_reactor
             return if @closed
-            error = check_result ::Libuv::Ext.udp_set_multicast_loop(handle, 0)
+            error = check_result ::Libuv::Ext.udp_set_multicast_reactor(handle, 0)
             reject(error) if error
+            self
         end
 
         def multicast_ttl=(ttl)
@@ -168,18 +185,21 @@ module Libuv
             assert_type(Integer, ttl, TTL_ARGUMENT_ERROR)
             error = check_result ::Libuv::Ext.udp_set_multicast_ttl(handle, ttl)
             reject(error) if error
+            self
         end
 
         def enable_broadcast
             return if @closed
             error = check_result ::Libuv::Ext.udp_set_broadcast(handle, 1)
             reject(error) if error
+            self
         end
 
         def disable_broadcast
             return if @closed
             error = check_result ::Libuv::Ext.udp_set_broadcast(handle, 0)
             reject(error) if error
+            self
         end
 
         def ttl=(ttl)
@@ -187,10 +207,12 @@ module Libuv
             assert_type(Integer, ttl, TTL_ARGUMENT_ERROR)
             error = check_result ::Libuv::Ext.udp_set_ttl(handle, Integer(ttl))
             reject(error) if error
+            self
         end
 
         def progress(callback = nil, &blk)
             @progress = callback || blk
+            self
         end
 
 
@@ -239,18 +261,20 @@ module Libuv
             e = check_result(nread)
 
             if e
-                reject(e)   # Will call close
+                ::Fiber.new { reject(e) }.resume   # Will call close
             elsif nread > 0
                 data = @receive_buff.read_string(nread)
                 unless sockaddr.null?
                     ip, port = get_ip_and_port(sockaddr)
                 end
-                
-                begin
-                    @progress.call data, ip, port, self
-                rescue Exception => e
-                    @loop.log :error, :udp_progress_cb, e
-                end
+
+                ::Fiber.new {
+                    begin
+                        @progress.call data, ip, port, self
+                    rescue Exception => e
+                        @reactor.log e, 'performing UDP data received callback'
+                    end
+                }.resume
             else
                 ::Libuv::Ext.free(@receive_buff)
                 @receive_buff = nil
@@ -265,7 +289,7 @@ module Libuv
             ::Libuv::Ext.free(req)
             buffer1.free
 
-            resolve deferred, status
+            ::Fiber.new { resolve deferred, status }.resume
         end
     end
 end

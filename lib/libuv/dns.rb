@@ -28,11 +28,11 @@ module Libuv
         end
 
 
-        # @param loop [::Libuv::Loop] loop this work request will be associated
+        # @param reactor [::Libuv::Reactor] reactor this work request will be associated
         # @param domain [String] the domain name to resolve
         # @param port [Integer, String] the port we wish to use
-        def initialize(loop, domain, port, hint = :IPv4)
-            super(loop, loop.defer)
+        def initialize(reactor, domain, port, hint = :IPv4, wait: false)
+            super(reactor, reactor.defer)
 
             @domain = domain
             @port = port
@@ -42,13 +42,15 @@ module Libuv
             @error = nil    # error in callback
 
             @instance_id = @pointer.address
-            error = check_result ::Libuv::Ext.getaddrinfo(@loop, @pointer, callback(:on_complete), domain, port.to_s, HINTS[hint])
+            error = check_result ::Libuv::Ext.getaddrinfo(@reactor, @pointer, callback(:on_complete), domain, port.to_s, HINTS[hint])
 
             if error
                 ::Libuv::Ext.free(@pointer)
                 @complete = true
                 @defer.reject(error)
             end
+
+            co(@defer.promise) unless wait
         end
 
         # Indicates if the lookup has completed yet or not.
@@ -67,22 +69,25 @@ module Libuv
             ::Libuv::Ext.free(req)
 
             e = check_result(status)
-            if e
-                @defer.reject(e)
-            else
-                begin
-                    current = addrinfo
-                    @results = []
-                    while !current.null?
-                        @results << get_ip_and_port(current[:addr])
-                        current = current[:next]
-                    end
-                    @defer.resolve(@results)
-                rescue Exception => e
+
+            ::Fiber.new { 
+                if e
                     @defer.reject(e)
+                else
+                    begin
+                        current = addrinfo
+                        @results = []
+                        while !current.null?
+                            @results << get_ip_and_port(current[:addr])
+                            current = current[:next]
+                        end
+                        @defer.resolve(@results)
+                    rescue Exception => e
+                        @defer.reject(e)
+                    end
+                    ::Libuv::Ext.freeaddrinfo(addrinfo)
                 end
-                ::Libuv::Ext.freeaddrinfo(addrinfo)
-            end
+            }.resume
 
             # Clean up references
             cleanup_callbacks

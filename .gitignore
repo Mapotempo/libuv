@@ -17,3 +17,5 @@ Gemfile-custom
 ext/*
 
 *.gem
+
+*.rdb

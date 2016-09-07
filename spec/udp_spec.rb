@@ -7,32 +7,31 @@ describe Libuv::UDP do
 		@log = []
 		@general_failure = []
 
-		@loop = Libuv::Loop.new
-		@server = @loop.udp
-		@client = @loop.udp
-		@timeout = @loop.timer do
-			@loop.stop
+		@reactor = Libuv::Reactor.new
+		@server = @reactor.udp
+		@client = @reactor.udp
+		@timeout = @reactor.timer do
+			@reactor.stop
 			@general_failure << "test timed out"
 		end
 		@timeout.start(5000)
 
-		@loop.all(@server, @client, @timeout).catch do |reason|
+		@reactor.notifier do |error, context|
+			begin
+				@general_failure << "Log called: #{context}\n#{error.message}\n#{error.backtrace.join("\n") if error.backtrace}\n"
+			rescue Exception => e
+				@general_failure << "error in logger #{e.inspect}"
+			end
+		end
+
+		@reactor.all(@server, @client, @timeout).catch do |reason|
 			@general_failure << reason.inspect
 		end
 	end
 	
 	describe 'basic client server' do
 		it "should send a ping and return a pong", :network => true do
-			@loop.run { |logger|
-				logger.progress do |level, errorid, error|
-					begin
-						@general_failure << "Log called: #{level}: #{errorid}\n#{error.message}\n#{error.backtrace.join("\n") if error.backtrace}\n"
-					rescue Exception => e
-						@general_failure << "error in logger #{e.inspect}"
-					end
-				end
-
-
+			@reactor.run { |reactor|
 				@server.bind('127.0.0.1', 34567)
 				@server.progress do |data, ip, port, server|
 					@log << data
@@ -63,7 +62,7 @@ describe Libuv::UDP do
 				# close the handle
 				@client.finally do
 					@server.close
-					@loop.stop
+					@reactor.stop
 				end
 			}
 

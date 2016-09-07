@@ -10,11 +10,11 @@ module Libuv
         WRITE2_ERROR = "data must be a String".freeze
 
 
-        def initialize(loop, ipc, acceptor = nil)
-            @loop, @ipc = loop, ipc
+        def initialize(reactor, ipc, acceptor = nil)
+            @reactor, @ipc = reactor, ipc
 
             pipe_ptr = ::Libuv::Ext.allocate_handle_pipe
-            error = check_result(::Libuv::Ext.pipe_init(loop.handle, pipe_ptr, ipc ? 1 : 0))
+            error = check_result(::Libuv::Ext.pipe_init(reactor.handle, pipe_ptr, ipc ? 1 : 0))
             error = check_result(::Libuv::Ext.accept(acceptor, pipe_ptr)) if acceptor && error.nil?
             
             super(pipe_ptr, error)
@@ -30,6 +30,8 @@ module Libuv
 
             error = check_result ::Libuv::Ext.pipe_bind(handle, name)
             reject(error) if error
+
+            self
         end
 
         def open(fileno, callback = nil, &blk)
@@ -44,11 +46,15 @@ module Libuv
                 begin
                     @callback.call(self) if @callback
                 rescue Exception => e
-                    @loop.log :error, :pipe_connect_cb, e
+                    @reactor.log e, 'performing pipe connect callback'
+                    raise e unless @callback
                 end
             rescue Exception => e
                 reject(e)
+                raise e unless @callback
             end
+
+            self
         end
 
         def connect(name, callback = nil, &blk)
@@ -62,10 +68,17 @@ module Libuv
             rescue Exception => e
                 reject(e)
             end
+
+            if @callback.nil?
+                @coroutine = @reactor.defer
+                co @coroutine.promise
+            end
+
+            self
         end
 
-        def write2(fd, data = ".")
-            deferred = @loop.defer
+        def write2(fd, data = ".", wait: false)
+            deferred = @reactor.defer
             if @ipc && !@closed
                 begin
                     assert_type(String, data, WRITE_ERROR)
@@ -93,7 +106,13 @@ module Libuv
             else
                 deferred.reject(TypeError.new('pipe not initialized for interprocess communication'))
             end
-            deferred.promise
+            
+            if wait
+                return deferred.promise if wait == :promise
+                co deferred.promise
+            end
+
+            self
         end
 
         # Windows only
@@ -113,9 +132,9 @@ module Libuv
             remote = nil
             case pending
             when :tcp
-                remote = TCP.new(loop, handle)
+                remote = TCP.new(reactor, handle)
             when :pipe
-                remote = Pipe.new(loop, @ipc, handle)
+                remote = Pipe.new(reactor, @ipc, handle)
             else
                 raise NotImplementedError, "IPC for handle #{pending} not supported"
             end
@@ -139,16 +158,18 @@ module Libuv
             pipe = nil
             begin
                 raise RuntimeError, CLOSED_HANDLE_ERROR if @closed
-                pipe = Pipe.new(loop, @ipc, handle)
+                pipe = Pipe.new(reactor, @ipc, handle)
             rescue Exception => e
-                @loop.log :info, :pipe_accept_failed, e
+                @reactor.log e, 'pipe accept failed'
             end
             if pipe
-                begin
-                    @on_accept.call(pipe)
-                rescue Exception => e
-                    @loop.log :error, :pipe_accept_cb, e
-                end
+                ::Fiber.new {
+                    begin
+                        @on_accept.call(pipe)
+                    rescue Exception => e
+                        @reactor.log e, 'performing pipe accept callback'
+                    end
+                }.resume
             end
         end
 
@@ -157,15 +178,17 @@ module Libuv
             ::Libuv::Ext.free(req)
             e = check_result(status)
 
-            if e
-                reject(e)
-            else
-                begin
-                    @callback.call(self)
-                rescue Exception => e
-                    @loop.log :error, :pipe_connect_cb, e
+            ::Fiber.new {
+                if e
+                    reject(e)
+                else
+                    begin
+                        @callback.call(self)
+                    rescue Exception => e
+                        @reactor.log e, 'performing pipe connected callback'
+                    end
                 end
-            end
+            }.resume
         end
 
         def write2_complete(req, status)
@@ -174,7 +197,9 @@ module Libuv
 
             ::Libuv::Ext.free(req)
             
-            resolve promise, status
+            ::Fiber.new {
+                resolve promise, status
+            }.resume
         end
 
         def windows_path(name)

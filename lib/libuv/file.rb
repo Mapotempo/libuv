@@ -27,7 +27,7 @@ module Libuv
         attr_reader :fileno, :closed
 
 
-        def initialize(thread, path, flags = 0, mode = 0)
+        def initialize(thread, path, flags = 0, mode: 0, wait: true, &blk)
             super(thread, thread.defer)
 
             @fileno = -1
@@ -36,21 +36,27 @@ module Libuv
             @request_refs = {}
 
             request = ::Libuv::Ext.allocate_request_fs
-            pre_check @defer, request, ::Libuv::Ext.fs_open(@loop, request, @path, @flags, @mode, callback(:on_open, request.address))
-            nil
+            pre_check @defer, request, ::Libuv::Ext.fs_open(@reactor, request, @path, @flags, @mode, callback(:on_open, request.address))
+
+            if block_given?
+                self.progress blk
+            elsif wait
+                @coroutine = @reactor.defer
+                co @coroutine.promise
+            end
         end
 
         def close
             @closed = true
             request = ::Libuv::Ext.allocate_request_fs
-            pre_check(@defer, request, ::Libuv::Ext.fs_close(@loop.handle, request, @fileno, callback(:on_close, request.address)))
-            nil # pre-check returns a promise
+            pre_check(@defer, request, ::Libuv::Ext.fs_close(@reactor.handle, request, @fileno, callback(:on_close, request.address)))
+            self
         end
 
-        def read(length, offset = 0)
+        def read(length, offset = 0, wait: true)
             assert_type(Integer, length, "length must be an Integer")
             assert_type(Integer, offset, "offset must be an Integer")
-            deferred = @loop.defer
+            deferred = @reactor.defer
 
             buffer1 = FFI::MemoryPointer.new(length)
             buffer  = ::Libuv::Ext.buf_init(buffer1, length)
@@ -58,13 +64,14 @@ module Libuv
 
             @request_refs[request.address] = [deferred, buffer1]
 
-            pre_check(deferred, request, ::Libuv::Ext.fs_read(@loop.handle, request, @fileno, buffer, 1, offset, callback(:on_read, request.address)))
+            promise = pre_check(deferred, request, ::Libuv::Ext.fs_read(@reactor.handle, request, @fileno, buffer, 1, offset, callback(:on_read, request.address)))
+            wait ? co(promise) : promise
         end
 
-        def write(data, offset = 0)
+        def write(data, offset = 0, wait: true)
             assert_type(String, data, "data must be a String")
             assert_type(Integer, offset, "offset must be an Integer")
-            deferred = @loop.defer
+            deferred = @reactor.defer
 
             length = data.respond_to?(:bytesize) ? data.bytesize : data.size
 
@@ -74,84 +81,87 @@ module Libuv
 
             @request_refs[request.address] = [deferred, buffer1]
 
-            pre_check(deferred, request, ::Libuv::Ext.fs_write(@loop.handle, request, @fileno, buffer, 1, offset, callback(:on_write, request.address)))
+            respond wait, pre_check(deferred, request, ::Libuv::Ext.fs_write(@reactor.handle, request, @fileno, buffer, 1, offset, callback(:on_write, request.address)))
         end
 
-        def sync
-            deferred = @loop.defer
+        def sync(wait: false)
+            deferred = @reactor.defer
 
             request = ::Libuv::Ext.allocate_request_fs
             @request_refs[request.address] = deferred
 
-            pre_check deferred, request, ::Libuv::Ext.fs_fsync(@loop.handle, request, @fileno, callback(:on_sync, request.address))
+            respond wait, pre_check(deferred, request, ::Libuv::Ext.fs_fsync(@reactor.handle, request, @fileno, callback(:on_sync, request.address)))
         end
 
-        def datasync
-            deferred = @loop.defer
+        def datasync(wait: false)
+            deferred = @reactor.defer
 
             request = ::Libuv::Ext.allocate_request_fs
             @request_refs[request.address] = deferred
 
-            pre_check deferred, request, ::Libuv::Ext.fs_fdatasync(@loop.handle, request, @fileno, callback(:on_datasync, request.address))
+            respond wait, pre_check(deferred, request, ::Libuv::Ext.fs_fdatasync(@reactor.handle, request, @fileno, callback(:on_datasync, request.address)))
         end
 
-        def truncate(offset)
+        def truncate(offset, wait: true)
             assert_type(Integer, offset, "offset must be an Integer")
-            deferred = @loop.defer
+            deferred = @reactor.defer
 
             request = ::Libuv::Ext.allocate_request_fs
             @request_refs[request.address] = deferred
 
-            pre_check deferred, request, ::Libuv::Ext.fs_ftruncate(@loop.handle, request, @fileno, offset, callback(:on_truncate, request.address))
+            respond wait, pre_check(deferred, request, ::Libuv::Ext.fs_ftruncate(@reactor.handle, request, @fileno, offset, callback(:on_truncate, request.address)))
         end
 
-        def utime(atime, mtime)
+        def utime(atime:, mtime:, wait: true)
             assert_type(Integer, atime, "atime must be an Integer")
             assert_type(Integer, mtime, "mtime must be an Integer")
-            deferred = @loop.defer
+            deferred = @reactor.defer
 
             request = ::Libuv::Ext.allocate_request_fs
             @request_refs[request.address] = deferred
 
-            pre_check deferred, request, ::Libuv::Ext.fs_futime(@loop.handle, request, @fileno, atime, mtime, callback(:on_utime, request.address))
+            promise = pre_check deferred, request, ::Libuv::Ext.fs_futime(@reactor.handle, request, @fileno, atime, mtime, callback(:on_utime, request.address))
+            wait ? co(promise) : promise
         end
 
-        def chmod(mode)
+        def chmod(mode, wait: true)
             assert_type(Integer, mode, "mode must be an Integer")
-            deferred = @loop.defer
+            deferred = @reactor.defer
 
             request = ::Libuv::Ext.allocate_request_fs
             @request_refs[request.address] = deferred
 
-            pre_check deferred, request, ::Libuv::Ext.fs_fchmod(@loop.handle, request, @fileno, mode, callback(:on_chmod, request.address))
+            respond wait, pre_check(deferred, request, ::Libuv::Ext.fs_fchmod(@reactor.handle, request, @fileno, mode, callback(:on_chmod, request.address)))
         end
 
-        def chown(uid, gid)
+        def chown(uid:, gid:, wait: true)
             assert_type(Integer, uid, "uid must be an Integer")
             assert_type(Integer, gid, "gid must be an Integer")
-            deferred = @loop.defer
+            deferred = @reactor.defer
 
             request = ::Libuv::Ext.allocate_request_fs
             @request_refs[request.address] = deferred
 
-            pre_check deferred, request, ::Libuv::Ext.fs_fchown(@loop.handle, request, @fileno, uid, gid, callback(:on_chown, request.address))
+            respond wait, pre_check(deferred, request, ::Libuv::Ext.fs_fchown(@reactor.handle, request, @fileno, uid, gid, callback(:on_chown, request.address)))
         end
 
-        def send_file(stream, type = :raw, chunk_size = 4096)
+        def send_file(stream, using: :raw, chunk_size: 4096, wait: true)
             @transmit_failure ||= method(:transmit_failure)
             @transmit_data ||= method(:transmit_data)
             @start_transmit ||= method(:start_transmit)
             @next_chunk ||= method(:next_chunk)
 
-            @sending_file = @loop.defer
+            @sending_file = @reactor.defer
             @file_stream = stream
-            @file_stream_type = type
+            @file_stream_type = using
             @file_chunk_size = chunk_size
             @file_chunk_count = 0
 
-            stat.then @start_transmit, @transmit_failure
+            stat(wait: false).then @start_transmit, @transmit_failure
             
-            @sending_file.promise.finally &method(:clean_up_send)
+            promise = @sending_file.promise
+            promise.finally &method(:clean_up_send)
+            respond wait, promise
         end
 
 
@@ -174,7 +184,7 @@ module Libuv
                 resp << CRLF
                 data = resp
             end
-            @file_stream.write(data).then @next_chunk, @transmit_failure
+            @file_stream.write(data, wait: :promise).then @next_chunk, @transmit_failure
             nil
         end
 
@@ -184,7 +194,7 @@ module Libuv
             
             if next_offset >= @file_stream_total
                 if @file_stream_type == :http
-                    @file_stream.write(EOF.dup).then(proc {
+                    @file_stream.write(EOF, wait: :promise).then(proc {
                         @sending_file.resolve(@file_stream_total)
                     }, @transmit_failure)
                 else
@@ -194,7 +204,7 @@ module Libuv
                 if next_offset + next_size > @file_stream_total
                     next_size = @file_stream_total - next_offset
                 end
-                read(next_size, next_offset).then(@transmit_data, @transmit_failure)
+                read(next_size, next_offset, wait: false).then(@transmit_data, @transmit_failure)
             end
             nil
         end
@@ -220,14 +230,19 @@ module Libuv
                 @fileno = req[:result]
                 cleanup(req)
                 @closed = false
-                @defer.notify(self)
+                ::Fiber.new { @defer.notify(self) }.resume
+
+                if @coroutine
+                    @coroutine.resolve(nil)
+                    @coroutine = nil
+                end
             end
         end
 
         def on_close(req)
             if post_check(req, @defer)
                 cleanup(req)
-                @defer.resolve(nil)
+                ::Fiber.new { @defer.resolve(nil) }.resume
             end
         end
 
@@ -236,7 +251,7 @@ module Libuv
             if post_check(req, deferred)
                 data = buffer1.read_string(req[:result])
                 cleanup(req)
-                deferred.resolve(data)
+                ::Fiber.new { deferred.resolve(data) }.resume
             end
         end
 
@@ -244,7 +259,7 @@ module Libuv
             deferred, buffer1 = @request_refs.delete req.to_ptr.address
             if post_check(req, deferred)
                 cleanup(req)
-                deferred.resolve(nil)
+                ::Fiber.new { deferred.resolve(nil) }.resume
             end
         end
 
@@ -252,7 +267,7 @@ module Libuv
             deferred = @request_refs.delete req.to_ptr.address
             if post_check(req, deferred)
                 cleanup(req)
-                deferred.resolve(nil)
+                ::Fiber.new { deferred.resolve(nil) }.resume
             end
         end
 
@@ -260,7 +275,7 @@ module Libuv
             deferred = @request_refs.delete req.to_ptr.address
             if post_check(req, deferred)
                 cleanup(req)
-                deferred.resolve(nil)
+                ::Fiber.new { deferred.resolve(nil) }.resume
             end
         end
 
@@ -268,7 +283,7 @@ module Libuv
             deferred = @request_refs.delete req.to_ptr.address
             if post_check(req, deferred)
                 cleanup(req)
-                deferred.resolve(nil)
+                ::Fiber.new { deferred.resolve(nil) }.resume
             end
         end
 
@@ -276,7 +291,7 @@ module Libuv
             deferred = @request_refs.delete req.to_ptr.address
             if post_check(req, deferred)
                 cleanup(req)
-                deferred.resolve(nil)
+                ::Fiber.new { deferred.resolve(nil) }.resume
             end
         end
 
@@ -284,7 +299,7 @@ module Libuv
             deferred = @request_refs.delete req.to_ptr.address
             if post_check(req, deferred)
                 cleanup(req)
-                deferred.resolve(nil)
+                ::Fiber.new { deferred.resolve(nil) }.resume
             end
         end
 
@@ -292,7 +307,7 @@ module Libuv
             deferred = @request_refs.delete req.to_ptr.address
             if post_check(req, deferred)
                 cleanup(req)
-                deferred.resolve(nil)
+                ::Fiber.new { deferred.resolve(nil) }.resume
             end
         end
     end

@@ -4,12 +4,12 @@ require 'libuv'
 describe Libuv::Q do
 	
 	before :each do
-		@loop = Libuv::Loop.default
-		@deferred = @loop.defer
+		@reactor = Libuv::Reactor.default
+		@deferred = @reactor.defer
 		@promise = @deferred.promise
 		@log = []
 		@default_fail = proc { |reason|
-			@loop.stop
+			@reactor.stop
 		}
 	end
 	
@@ -18,16 +18,12 @@ describe Libuv::Q do
 		
 		
 		it "should call the callback in the next turn" do
-			@loop.run {
+			@reactor.run {
 				@promise.then nil, @default_fail do |result|
 					@log << result
 				end
 				
 				@deferred.resolve(:foo)
-				
-				@loop.next_tick do
-					@loop.stop
-				end
 			}
 
 			expect(@log).to eq([:foo])
@@ -36,7 +32,7 @@ describe Libuv::Q do
 		
 		
 		it "should be able to resolve the callback after it has already been resolved" do
-			@loop.run {
+			@reactor.run {
 				@promise.then nil, @default_fail do |result|
 					@log << result
 					@promise.then nil, @default_fail do |result|
@@ -45,12 +41,6 @@ describe Libuv::Q do
 				end
 				
 				@deferred.resolve(:foo)
-				
-				@loop.next_tick do
-					@loop.next_tick do
-						@loop.stop
-					end
-				end
 			}
 			expect(@log).to eq([:foo, :foo])
 		end
@@ -58,7 +48,7 @@ describe Libuv::Q do
 		
 		
 		it "should fulfill success callbacks in the registration order" do
-			@loop.run {
+			@reactor.run {
 				@promise.then nil, @default_fail do |result|
 					@log << :first
 				end
@@ -68,17 +58,13 @@ describe Libuv::Q do
 				end
 				
 				@deferred.resolve(:foo)
-				
-				@loop.next_tick do
-					@loop.stop
-				end
 			}
 			expect(@log).to eq([:first, :second])
 		end
 		
 		
 		it "should do nothing if a promise was previously resolved" do
-			@loop.run {
+			@reactor.run {
 				@promise.then nil, @default_fail do |result|
 					@log << result
 					expect(@log).to eq([:foo])
@@ -87,30 +73,17 @@ describe Libuv::Q do
 				
 				@deferred.resolve(:foo)
 				@deferred.reject(:baz)
-				
-				#
-				# 4 ticks should detect any errors
-				#
-				@loop.next_tick do
-					@loop.next_tick do
-						@loop.next_tick do
-							@loop.next_tick do
-								@loop.stop
-							end
-						end
-					end
-				end
 			}
 			expect(@log).to eq([:foo])
 		end
 		
 		
 		it "should allow deferred resolution with a new promise" do
-			deferred2 = @loop.defer
-			@loop.run {
+			deferred2 = @reactor.defer
+			@reactor.run {
 				@promise.then nil, @default_fail do |result|
 					@log << result
-					@loop.stop
+					@reactor.stop
 				end
 				
 				@deferred.resolve(deferred2.promise)
@@ -121,7 +94,7 @@ describe Libuv::Q do
 		
 		
 		it "should not break if a callbacks registers another callback" do
-			@loop.run {
+			@reactor.run {
 				@promise.then nil, @default_fail do |result|
 					@log << :outer
 					@promise.then nil, @default_fail do |result|
@@ -130,12 +103,6 @@ describe Libuv::Q do
 				end
 				
 				@deferred.resolve(:foo)
-				
-				@loop.next_tick do
-					@loop.next_tick do
-						@loop.stop
-					end
-				end
 			}
 
 			expect(@log).to eq([:outer, :inner])
@@ -144,9 +111,9 @@ describe Libuv::Q do
 		
 		
 		it "can modify the result of a promise before returning" do
-			@loop.run {
+			@reactor.run {
 				proc { |name|
-					@loop.work { @deferred.resolve("Hello #{name}") }
+					@reactor.work { @deferred.resolve("Hello #{name}") }
 					@promise.then nil, @default_fail do |result|
 						@log << result
 						result += "?"
@@ -154,7 +121,7 @@ describe Libuv::Q do
 					end
 				}.call('Robin Hood').then nil, @default_fail do |greeting|
 					@log << greeting
-					@loop.stop
+					@reactor.stop
 				end
 			}
 
@@ -167,7 +134,7 @@ describe Libuv::Q do
 	describe 'reject' do
 	
 		it "should reject the promise and execute all error callbacks" do
-			@loop.run {
+			@reactor.run {
 				@promise.then(@default_fail, proc {|result|
 					@log << :first
 				})
@@ -176,17 +143,13 @@ describe Libuv::Q do
 				})
 				
 				@deferred.reject(:foo)
-				
-				@loop.next_tick do
-					@loop.stop
-				end
 			}
 			expect(@log).to eq([:first, :second])
 		end
 		
 		
 		it "should do nothing if a promise was previously rejected" do
-			@loop.run {
+			@reactor.run {
 				@promise.then(@default_fail, proc {|result|
 					@log << result
 					@deferred.resolve(:bar)
@@ -194,33 +157,20 @@ describe Libuv::Q do
 				
 				@deferred.reject(:baz)
 				@deferred.resolve(:foo)
-				
-				#
-				# 4 ticks should detect any errors
-				#
-				@loop.next_tick do
-					@loop.next_tick do
-						@loop.next_tick do
-							@loop.next_tick do
-								@loop.stop
-							end
-						end
-					end
-				end
 			}
 			expect(@log).to eq([:baz])
 		end
 		
 		
 		it "should not defer rejection with a new promise" do
-			deferred2 = @loop.defer
-			@loop.run {
+			deferred2 = @reactor.defer
+			@reactor.run {
 				@promise.then(@default_fail, @default_fail)
 				begin
 					@deferred.reject(deferred2.promise)
 				rescue => e
 					@log << e.is_a?(ArgumentError)
-					@loop.stop
+					@reactor.stop
 				end
 			}
 
@@ -232,7 +182,7 @@ describe Libuv::Q do
 
 	describe 'notify' do
 		it "should execute all progress callbacks in the registration order" do
-			@loop.run {
+			@reactor.run {
 				@promise.progress do |update|
 					@log << :first
 				end
@@ -242,17 +192,13 @@ describe Libuv::Q do
 				end
 				
 				@deferred.notify(:foo)
-				
-				@loop.next_tick do
-					@loop.stop
-				end
 			}
 
 			expect(@log).to eq([:first, :second])
 		end
 
 		it "should do nothing if a promise was previously resolved" do
-			@loop.run {
+			@reactor.run {
 
 				@promise.progress do |update|
 					@log << update
@@ -260,48 +206,19 @@ describe Libuv::Q do
 
 				@deferred.resolve(:foo)
 				@deferred.notify(:baz)
-				
-				
-				#
-				# 4 ticks should detect any errors
-				#
-				@loop.next_tick do
-					@loop.next_tick do
-						@loop.next_tick do
-							@loop.next_tick do
-								@loop.stop
-							end
-						end
-					end
-				end
 			}
 
 			expect(@log).to eq([])
 		end
 
 		it "should do nothing if a promise was previously rejected" do
-			@loop.run {
+			@reactor.run {
 
 				@promise.progress do |update|
 					@log << update
 				end
 				@deferred.reject(:foo)
 				@deferred.notify(:baz)
-				
-				
-				
-				#
-				# 4 ticks should detect any errors
-				#
-				@loop.next_tick do
-					@loop.next_tick do
-						@loop.next_tick do
-							@loop.next_tick do
-								@loop.stop
-							end
-						end
-					end
-				end
 			}
 
 			expect(@log).to eq([])
@@ -309,17 +226,13 @@ describe Libuv::Q do
 
 
 		it "should not apply any special treatment to promises passed to notify" do
-			@loop.run {
-				deferred2 = @loop.defer
+			@reactor.run {
+				deferred2 = @reactor.defer
 
 				@promise.progress do |update|
 					@log << update.is_a?(::Libuv::Q::Promise)
 				end
 				@deferred.notify(deferred2.promise)
-
-				@loop.next_tick do
-					@loop.stop
-				end
 			}
 
 			expect(@log).to eq([true])
@@ -327,7 +240,7 @@ describe Libuv::Q do
 
 
 		it "should call the progress callbacks in the next turn" do
-			@loop.run {
+			@reactor.run {
 				@promise.progress do |update|
 					@log << :first
 				end
@@ -339,14 +252,14 @@ describe Libuv::Q do
 				@deferred.notify(:foo)
 				
 				@log << @log.length	# Has notify run in this tick
-				@loop.stop	# Stop will run through the next tick before stopping
+				@reactor.stop	# Stop will run through the next tick before stopping
 			}
 
 			expect(@log).to eq([0, :first, :second])
 		end
 
 		it "should ignore notifications sent out in the same turn before listener registration" do
-			@loop.run {
+			@reactor.run {
 				@deferred.notify(:foo)
 
 				@promise.progress do |update|
@@ -356,10 +269,6 @@ describe Libuv::Q do
 				@promise.progress do |update|
 					@log << :second
 				end
-				
-				@loop.next_tick do
-					@loop.stop
-				end
 			}
 
 			expect(@log).to eq([])
@@ -368,20 +277,16 @@ describe Libuv::Q do
 	
 	
 	describe Libuv::Q::Promise do
-		
+
 		describe 'then' do
 			
 			it "should allow registration of a success callback without an errback and resolve" do
-				@loop.run {
+				@reactor.run {
 					@promise.then do |result|
 						@log << result
 					end
 
 					@deferred.resolve(:foo)
-					
-					@loop.next_tick do
-						@loop.stop
-					end
 				}
 
 				expect(@log).to eq([:foo])
@@ -389,16 +294,12 @@ describe Libuv::Q do
 			
 			
 			it "should allow registration of a success callback without an errback and reject" do
-				@loop.run {
+				@reactor.run {
 					@promise.then do |result|
 						@log << result
 					end
 
 					@deferred.reject(:foo)
-					
-					@loop.next_tick do
-						@loop.stop
-					end
 				}
 
 				expect(@log).to eq([])
@@ -406,16 +307,12 @@ describe Libuv::Q do
 			
 			
 			it "should allow registration of an errback without a success callback and reject" do
-				@loop.run {
+				@reactor.run {
 					@promise.catch(proc {|reason|
 						@log << reason
 					})
 
 					@deferred.reject(:foo)
-					
-					@loop.next_tick do
-						@loop.stop
-					end
 				}
 
 				expect(@log).to eq([:foo])
@@ -423,16 +320,12 @@ describe Libuv::Q do
 			
 			
 			it "should allow registration of an errback without a success callback and resolve" do
-				@loop.run {
+				@reactor.run {
 					@promise.catch(proc {|reason|
 						@log << reason
 					})
 
 					@deferred.resolve(:foo)
-					
-					@loop.next_tick do
-						@loop.stop
-					end
 				}
 
 				expect(@log).to eq([])
@@ -440,7 +333,7 @@ describe Libuv::Q do
 			
 			
 			it "should resolve all callbacks with the original value" do
-				@loop.run {
+				@reactor.run {
 					@promise.then nil, @default_fail do |result|
 						@log << result
 						:alt1
@@ -451,7 +344,7 @@ describe Libuv::Q do
 					end
 					@promise.then nil, @default_fail do |result|
 						@log << result
-						Libuv::Q.reject(@loop, 'some reason')
+						Libuv::Q.reject(@reactor, 'some reason')
 					end
 					@promise.then nil, @default_fail do |result|
 						@log << result
@@ -459,10 +352,6 @@ describe Libuv::Q do
 					end
 					
 					@deferred.resolve(:foo)
-					
-					@loop.next_tick do
-						@loop.stop
-					end
 				}
 
 				expect(@log).to eq([:foo, :foo, :foo, :foo])
@@ -470,7 +359,7 @@ describe Libuv::Q do
 
 
 			it "should notify all callbacks with the original value" do
-				@loop.run { |loop_promise|
+				@reactor.run { |reactor_promise|
 					@promise.progress do |result|
 						@log << result
 						:alt1
@@ -481,7 +370,7 @@ describe Libuv::Q do
 					end
 					@promise.progress do |result|
 						@log << result
-						Libuv::Q.reject(@loop, 'some reason')
+						Libuv::Q.reject(@reactor, 'some reason')
 					end
 					@promise.progress do |result|
 						@log << result
@@ -490,18 +379,6 @@ describe Libuv::Q do
 
 					
 					@deferred.notify(:foo)
-					
-					@loop.next_tick do
-						@loop.next_tick do
-							@loop.next_tick do
-								@loop.next_tick do
-									@loop.next_tick do
-										@loop.stop
-									end
-								end
-							end
-						end
-					end
 				}
 
 				expect(@log).to eq([:foo, :foo, :foo, :foo])
@@ -509,7 +386,7 @@ describe Libuv::Q do
 			
 			
 			it "should reject all callbacks with the original reason" do
-				@loop.run {
+				@reactor.run {
 					@promise.then(@default_fail, proc {|result|
 						@log << result
 						:alt1
@@ -520,7 +397,7 @@ describe Libuv::Q do
 					})
 					@promise.then(@default_fail, proc {|result|
 						@log << result
-						Libuv::Q.reject(@loop, 'some reason')
+						Libuv::Q.reject(@reactor, 'some reason')
 					})
 					@promise.then(@default_fail, proc {|result|
 						@log << result
@@ -528,10 +405,6 @@ describe Libuv::Q do
 					})
 					
 					@deferred.reject(:foo)
-					
-					@loop.next_tick do
-						@loop.stop
-					end
 				}
 
 				expect(@log).to eq([:foo, :foo, :foo, :foo])
@@ -539,7 +412,7 @@ describe Libuv::Q do
 			
 			
 			it "should propagate resolution and rejection between dependent promises" do
-				@loop.run {
+				@reactor.run {
 					@promise.then(proc { |result|
 						@log << result
 						:bar
@@ -557,20 +430,6 @@ describe Libuv::Q do
 					}, @default_fail)
 					
 					@deferred.resolve(:foo)
-					
-					@loop.next_tick do
-						@loop.next_tick do
-							@loop.next_tick do
-								@loop.next_tick do
-									@loop.next_tick do
-										@loop.next_tick do 	# extra tick?
-											@loop.stop
-										end
-									end
-								end
-							end
-						end
-					end
 				}
 
 				expect(@log).to eq([:foo, :bar, 'baz', 'bob', :done])
@@ -578,8 +437,8 @@ describe Libuv::Q do
 
 
 			it "should propagate notification between dependent promises" do
-				@loop.run { |loop_promise|
-					loop_promise.progress do |type, id, error|
+				@reactor.run { |reactor|
+					reactor.notifier do |type, id, error|
 						@log << id
 					end
 
@@ -603,20 +462,6 @@ describe Libuv::Q do
 
 					
 					@deferred.notify(:foo)
-					
-					@loop.next_tick do
-						@loop.next_tick do
-							@loop.next_tick do
-								@loop.next_tick do
-									@loop.next_tick do
-										@loop.next_tick do # extra tick?
-											@loop.stop
-										end
-									end
-								end
-							end
-						end
-					end
 				}
 
 				expect(@log).to eq([:foo, :bar, :bar, :bar, :done])
@@ -624,9 +469,9 @@ describe Libuv::Q do
 
 
 			it "should stop notification propagation in case of error" do
-				@loop.run { |loop_logger|
-					loop_logger.progress do |type, id, error|
-						@log << id
+				@reactor.run { |reactor|
+					reactor.notifier do |error, context|
+						@log << context
 					end
 
 
@@ -650,34 +495,22 @@ describe Libuv::Q do
 
 					
 					@deferred.notify(:foo)
-					
-					@loop.next_tick do
-						@loop.next_tick do
-							@loop.next_tick do
-								@loop.next_tick do
-									@loop.next_tick do
-										@loop.stop
-									end
-								end
-							end
-						end
-					end
 				}
 
-				expect(@log).to eq([:foo, :bar, :q_progress_cb])
+				expect(@log).to eq([:foo, :bar, "performing promise progress callback"])
 			end
 			
 			
 			it "should call error callback in the next turn even if promise is already rejected" do
-				@loop.run {
+				@reactor.run {
 					@deferred.reject(:foo)
 					
 					@promise.catch(proc {|reason|
 						@log << reason
 					})
 					
-					@loop.next_tick do
-						@loop.stop
+					@reactor.next_tick do
+						@reactor.stop
 					end
 				}
 
@@ -693,15 +526,15 @@ describe Libuv::Q do
 			describe 'when the promise is fulfilled' do
 
 				it "should call the callback" do
-					@loop.run {
+					@reactor.run {
 						@promise.finally do
 							@log << :finally
 						end
 
 						@deferred.resolve(:foo)
 						
-						@loop.next_tick do
-							@loop.stop
+						@reactor.next_tick do
+							@reactor.stop
 						end
 					}
 
@@ -709,7 +542,7 @@ describe Libuv::Q do
 				end
 
 				it "should fulfill with the original value" do
-					@loop.run {
+					@reactor.run {
 						@promise.finally(proc {
 							@log << :finally
 							:finally
@@ -719,19 +552,13 @@ describe Libuv::Q do
 						
 
 						@deferred.resolve(:foo)
-						
-						@loop.next_tick do
-							@loop.next_tick do
-								@loop.stop
-							end
-						end
 					}
 
 					expect(@log).to eq([:finally, :foo])
 				end
 
 				it "should fulfill with the original value (larger test)" do
-					@loop.run {
+					@reactor.run {
 						@promise.then(proc { |result|
 							@log << result
 							result
@@ -754,25 +581,6 @@ describe Libuv::Q do
 						
 
 						@deferred.resolve(:foo)
-
-						
-						@loop.next_tick do
-						@loop.next_tick do
-						@loop.next_tick do
-						@loop.next_tick do
-							@loop.next_tick do
-								@loop.next_tick do
-									@loop.next_tick do
-										@loop.next_tick do
-											@loop.stop
-										end
-									end
-								end
-							end
-						end
-						end
-						end
-						end
 					}
 
 					expect(@log).to eq([:foo, :finally, :foo, :change, :finally, :change])
@@ -780,7 +588,7 @@ describe Libuv::Q do
 
 				describe "when the callback throws an exception" do
 					it "should reject with this new exception" do
-						@loop.run {
+						@reactor.run {
 							@promise.finally(proc {
 								@log << :finally
 								raise 'error'
@@ -789,12 +597,6 @@ describe Libuv::Q do
 							end
 							
 							@deferred.resolve(:foo)
-							
-							@loop.next_tick do
-								@loop.next_tick do
-									@loop.stop
-								end
-							end
 						}
 
 						expect(@log).to eq([:finally, true])
@@ -803,8 +605,8 @@ describe Libuv::Q do
 
 				describe "when the callback returns a promise" do
 					it "should fulfill with the original reason after that promise resolves" do
-						@loop.run {
-							deferred2 = @loop.defer
+						@reactor.run {
+							deferred2 = @reactor.defer
 
 							@promise.finally(proc {
 								@log << :finally
@@ -815,17 +617,12 @@ describe Libuv::Q do
 							
 							@deferred.resolve(:foo)
 							
-							@loop.next_tick do
-								@loop.next_tick do
-									@loop.next_tick do
-										@loop.next_tick do
+							@reactor.next_tick do
+								@reactor.next_tick do
+									@reactor.next_tick do
+										@reactor.next_tick do
 											@log << :resolving
 											deferred2.resolve('working')
-											@loop.next_tick do
-												@loop.next_tick do
-													@loop.stop
-												end
-											end
 										end
 									end
 								end
@@ -837,8 +634,8 @@ describe Libuv::Q do
 
 
 					it "should reject with the new reason when it is rejected" do
-						@loop.run {
-							deferred2 = @loop.defer
+						@reactor.run {
+							deferred2 = @reactor.defer
 
 							@promise.finally(proc {
 								@log << :finally
@@ -849,17 +646,12 @@ describe Libuv::Q do
 							
 							@deferred.resolve(:foo)
 							
-							@loop.next_tick do
-								@loop.next_tick do
-									@loop.next_tick do
-										@loop.next_tick do
+							@reactor.next_tick do
+								@reactor.next_tick do
+									@reactor.next_tick do
+										@reactor.next_tick do
 											@log << :rejecting
 											deferred2.reject(:rejected)
-											@loop.next_tick do
-												@loop.next_tick do
-													@loop.stop
-												end
-											end
 										end
 									end
 								end
@@ -881,18 +673,14 @@ describe Libuv::Q do
 	describe 'reject' do
 		
 		it "should package a string into a rejected promise" do
-			@loop.run {
-				rejectedPromise = Libuv::Q.reject(@loop, 'not gonna happen')
+			@reactor.run {
+				rejectedPromise = Libuv::Q.reject(@reactor, 'not gonna happen')
 				
 				@promise.then(@default_fail, proc {|reason|
 					@log << reason
 				})
 				
 				@deferred.resolve(rejectedPromise)
-				
-				@loop.next_tick do
-					@loop.stop
-				end
 			}
 
 			expect(@log).to eq(['not gonna happen'])
@@ -900,20 +688,14 @@ describe Libuv::Q do
 		
 		
 		it "should return a promise that forwards callbacks if the callbacks are missing" do
-			@loop.run {
-				rejectedPromise = Libuv::Q.reject(@loop, 'not gonna happen')
+			@reactor.run {
+				rejectedPromise = Libuv::Q.reject(@reactor, 'not gonna happen')
 				
 				@promise.then(@default_fail, proc {|reason|
 					@log << reason
 				})
 				
 				@deferred.resolve(rejectedPromise.then())
-				
-				@loop.next_tick do
-					@loop.next_tick do
-						@loop.stop
-					end
-				end
 			}
 
 			expect(@log).to eq(['not gonna happen'])
@@ -926,13 +708,9 @@ describe Libuv::Q do
 	describe 'all' do
 		
 		it "should resolve all of nothing" do
-			@loop.run {
-				Libuv::Q.all(@loop).then nil, @default_fail do |result|
+			@reactor.run {
+				Libuv::Q.all(@reactor).then nil, @default_fail do |result|
 					@log << result
-				end
-				
-				@loop.next_tick do
-					@loop.stop
 				end
 			}
 
@@ -940,18 +718,18 @@ describe Libuv::Q do
 		end
 		
 		it "should take an array of promises and return a promise for an array of results" do
-			@loop.run {
-				deferred1 = @loop.defer
-				deferred2 = @loop.defer
+			@reactor.run {
+				deferred1 = @reactor.defer
+				deferred2 = @reactor.defer
 				
-				Libuv::Q.all(@loop, @promise, deferred1.promise, deferred2.promise).then nil, @default_fail do |result|
+				Libuv::Q.all(@reactor, @promise, deferred1.promise, deferred2.promise).then nil, @default_fail do |result|
 					@log = result
-					@loop.stop
+					@reactor.stop
 				end
 				
-				@loop.work { @deferred.resolve(:foo) }
-				@loop.work { deferred2.resolve(:baz) }
-				@loop.work { deferred1.resolve(:bar) }
+				@reactor.work { @deferred.resolve(:foo) }
+				@reactor.work { deferred2.resolve(:baz) }
+				@reactor.work { deferred1.resolve(:bar) }
 			}
 
 			expect(@log).to eq([:foo, :bar, :baz])
@@ -959,17 +737,17 @@ describe Libuv::Q do
 		
 		
 		it "should reject the derived promise if at least one of the promises in the array is rejected" do
-			@loop.run {
-				deferred1 = @loop.defer
-				deferred2 = @loop.defer
+			@reactor.run {
+				deferred1 = @reactor.defer
+				deferred2 = @reactor.defer
 				
-				Libuv::Q.all(@loop, @promise, deferred1.promise, deferred2.promise).then(@default_fail, proc {|reason|
+				Libuv::Q.all(@reactor, @promise, deferred1.promise, deferred2.promise).then(@default_fail, proc {|reason|
 					@log << reason
-					@loop.stop
+					@reactor.stop
 				})
 				
-				@loop.work { @deferred.resolve(:foo) }
-				@loop.work { deferred2.reject(:baz) }
+				@reactor.work { @deferred.resolve(:foo) }
+				@reactor.work { deferred2.reject(:baz) }
 			}
 
 			expect(@log).to eq([:baz])

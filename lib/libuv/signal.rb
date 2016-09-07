@@ -10,6 +10,8 @@ module Libuv
             :SIGHUP => 1,
             :INT => 2,
             :SIGINT => 2,
+            :TERM => 15,
+            :SIGTERM => 15,
             :BREAK => 21,
             :SIGBREAK => 21,
             :WINCH => 28,
@@ -17,13 +19,13 @@ module Libuv
         }
 
 
-        # @param loop [::Libuv::Loop] loop this signal handler will be associated
+        # @param reactor [::Libuv::Reactor] reactor this signal handler will be associated
         # @param callback [Proc] callback to be called when the signal is triggered
-        def initialize(loop)
-            @loop = loop
+        def initialize(reactor)
+            @reactor = reactor
 
             signal_ptr = ::Libuv::Ext.allocate_handle_signal
-            error = check_result(::Libuv::Ext.signal_init(loop.handle, signal_ptr))
+            error = check_result(::Libuv::Ext.signal_init(reactor.handle, signal_ptr))
 
             super(signal_ptr, error)
         end
@@ -34,6 +36,7 @@ module Libuv
             signal = SIGNALS[signal] if signal.is_a? Symbol
             error = check_result ::Libuv::Ext.signal_start(handle, callback(:on_sig), signal)
             reject(error) if error
+            self
         end
 
         # Disables the signal handler.
@@ -41,6 +44,7 @@ module Libuv
             return if @closed
             error = check_result ::Libuv::Ext.signal_stop(handle)
             reject(error) if error
+            self
         end
 
 
@@ -48,7 +52,9 @@ module Libuv
 
 
         def on_sig(handle, signal)
-            defer.notify(signal)   # notify of a call
+            ::Fiber.new {
+                defer.notify(signal)   # notify of a call
+            }.resume
         end
     end
 end

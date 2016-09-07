@@ -20,11 +20,12 @@ module Libuv
         def tls?; !@tls.nil?; end
 
 
-        def initialize(loop, acceptor = nil)
-            @loop = loop
+        def initialize(reactor, acceptor = nil, progress: nil)
+            @reactor = reactor
+            @progress = progress
 
             tcp_ptr = ::Libuv::Ext.allocate_handle_tcp
-            error = check_result(::Libuv::Ext.tcp_init(loop.handle, tcp_ptr))
+            error = check_result(::Libuv::Ext.tcp_init(reactor.handle, tcp_ptr))
 
             if acceptor && error.nil?
                 error = check_result(::Libuv::Ext.accept(acceptor, tcp_ptr))
@@ -42,7 +43,7 @@ module Libuv
         # --------------------------------------
         #
         def start_tls(args = {})
-            return unless @connected && @tls.nil?
+            return self unless @connected && @tls.nil?
 
             args[:verify_peer] = true if @on_verify
 
@@ -50,6 +51,7 @@ module Libuv
             @pending_writes = []
             @tls = ::RubyTls::SSL::Box.new(args[:server], self, args)
             @tls.start
+            self
         end
 
         # Push through any pending writes when handshake has completed
@@ -67,13 +69,14 @@ module Libuv
             begin
                 @on_handshake.call(self, protocol) if @on_handshake
             rescue => e
-                @loop.log :warn, :tls_handshake_callback_error, e
+                @reactor.log e, 'performing TLS handshake callback'
             end
         end
 
         # Provide a callback once the TLS handshake has completed
         def on_handshake(callback = nil, &blk)
             @on_handshake = callback || blk
+            self
         end
 
         # This is clear text data that has been decrypted
@@ -82,7 +85,7 @@ module Libuv
             begin
                 @progress.call data, self
             rescue Exception => e
-                @loop.log :error, :stream_progress_cb, e
+                @reactor.log e, 'performing TLS read data callback'
             end
         end
 
@@ -113,7 +116,7 @@ module Libuv
                 begin
                     return @on_verify.call cert
                 rescue => e
-                    @loop.log :warn, :tls_verify_callback_failed, e
+                    @reactor.log e, 'performing TLS verify callback'
                     return false
                 end
             end
@@ -124,12 +127,12 @@ module Libuv
         # overwrite the default close to ensure
         # pending writes are rejected
         def close
-            return if @closed
+            return self if @closed
 
             # Free tls memory
             # Next tick as may recieve data after closing
             if @tls
-                @loop.next_tick do
+                @reactor.next_tick do
                     @tls.cleanup
                 end
             end
@@ -148,12 +151,13 @@ module Libuv
         # Verify peers will be called for each cert in the chain
         def verify_peer(callback = nil, &blk)
             @on_verify = callback || blk
+            self
         end
 
         alias_method :direct_write, :write
-        def write(data)
+        def write(data, wait: false)
             if @tls
-                deferred = @loop.defer
+                deferred = @reactor.defer
                 
                 if @handshake
                     @pending_write = deferred
@@ -162,9 +166,14 @@ module Libuv
                     @pending_writes << [deferred, data]
                 end
 
-                deferred.promise
+                if wait
+                    return deferred.promise if wait == :promise
+                    co deferred.promise
+                end
+
+                self
             else
-                direct_write(data)
+                direct_write(data, wait: wait)
             end
         end
 
@@ -175,6 +184,7 @@ module Libuv
             else
                 do_shutdown
             end
+            self
         end
         #
         # END TLS Abstraction ------------------
@@ -182,7 +192,8 @@ module Libuv
         #
 
         def bind(ip, port, callback = nil, &blk)
-            return if @closed
+            return self if @closed
+
             @on_accept = callback || blk
             @on_listen = method(:accept)
 
@@ -195,22 +206,30 @@ module Libuv
             rescue Exception => e
                 reject(e)
             end
+
+            self
         end
 
         def open(fd, binding = true, callback = nil, &blk)
-            return if @closed
+            return self if @closed
+
             if binding
                 @on_listen = method(:accept)
                 @on_accept = callback || blk
             else
                 @callback = callback || blk
+                @coroutine = @reactor.defer if @callback.nil?
             end
             error = check_result UV.tcp_open(handle, fd)
             reject(error) if error
+            co @coroutine.promise if @coroutine
+
+            self
         end
 
         def connect(ip, port, callback = nil, &blk)
-            return if @closed
+            return self if @closed
+
             @callback = callback || blk
             assert_type(String, ip, IP_ARGUMENT_ERROR)
             assert_type(Integer, port, PORT_ARGUMENT_ERROR)
@@ -221,6 +240,13 @@ module Libuv
             rescue Exception => e
                 reject(e)
             end
+
+            if @callback.nil?
+                @coroutine = @reactor.defer
+                co @coroutine.promise
+            end
+
+            self
         end
 
         def sockname
@@ -238,33 +264,39 @@ module Libuv
         end
 
         def enable_nodelay
-            return if @closed
+            return self if @closed
             check_result ::Libuv::Ext.tcp_nodelay(handle, 1)
+            self
         end
 
         def disable_nodelay
-            return if @closed
+            return self if @closed
             check_result ::Libuv::Ext.tcp_nodelay(handle, 0)
+            self
         end
 
         def enable_keepalive(delay)
-            return if @closed                   # The to_i asserts integer
+            return self if @closed                   # The to_i asserts integer
             check_result ::Libuv::Ext.tcp_keepalive(handle, 1, delay.to_i)
+            self
         end
 
         def disable_keepalive
-            return if @closed
+            return self if @closed
             check_result ::Libuv::Ext.tcp_keepalive(handle, 0, 0)
+            self
         end
 
         def enable_simultaneous_accepts
-            return if @closed
+            return self if @closed
             check_result ::Libuv::Ext.tcp_simultaneous_accepts(handle, 1)
+            self
         end
 
         def disable_simultaneous_accepts
-            return if @closed
+            return self if @closed
             check_result ::Libuv::Ext.tcp_simultaneous_accepts(handle, 0)
+            self
         end
 
 
@@ -273,9 +305,9 @@ module Libuv
 
         def create_socket(ip, port)
             if ip.ipv4?
-                Socket4.new(loop, handle, ip.to_s, port)
+                Socket4.new(reactor, handle, ip.to_s, port)
             else
-                Socket6.new(loop, handle, ip.to_s, port)
+                Socket6.new(reactor, handle, ip.to_s, port)
             end
         end
 
@@ -290,9 +322,17 @@ module Libuv
                 @connected = true
 
                 begin
-                    @callback.call(self)
+                    if @callback
+                        @callback.call(self)
+                        @callback = nil
+                    elsif @coroutine
+                        @coroutine.resolve(nil)
+                        @coroutine = nil
+                    else
+                        raise ArgumentError, 'no callback provided'
+                    end
                 rescue Exception => e
-                    @loop.log :error, :connect_cb, e
+                    @reactor.log e, 'performing TCP connection callback'
                 end
             end
         end
@@ -300,14 +340,14 @@ module Libuv
         def accept(_)
             begin
                 raise RuntimeError, CLOSED_HANDLE_ERROR if @closed
-                tcp = TCP.new(loop, handle)
+                tcp = TCP.new(reactor, handle)
                 begin
                     @on_accept.call(tcp)
                 rescue Exception => e
-                    @loop.log :error, :tcp_accept_cb, e
+                    @reactor.log e, 'performing TCP accept callback'
                 end
             rescue Exception => e
-                @loop.log :info, :tcp_accept_failed, e
+                @reactor.log e, 'failed to accept TCP connection'
             end
         end
 
@@ -315,9 +355,9 @@ module Libuv
         class SocketBase
             include Resource
 
-            def initialize(loop, tcp, ip, port)
+            def initialize(reactor, tcp, ip, port)
                 @tcp, @sockaddr = tcp, ip_addr(ip, port)
-                @loop = loop
+                @reactor = reactor
             end
 
             def bind

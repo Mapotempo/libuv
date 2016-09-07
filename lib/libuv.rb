@@ -1,21 +1,26 @@
 require 'forwardable'
+require 'thread'
 require 'ffi'
 
 module Libuv
+    DefaultThread = Thread.current
+
     require 'libuv/ext/ext'     # The libuv ffi ext
     require 'libuv/error'       # List of errors (matching those in uv.h)
     require 'libuv/q'           # The promise library
 
-    # -- The classes required for a loop instance --
+    # -- The classes required for a reactor instance --
     require 'libuv/mixins/assertions'  # Common code to check arguments
+    require 'libuv/mixins/accessors'   # Helper methods for accessing reactor functions
     require 'libuv/mixins/resource'    # Common code to check for errors
     require 'libuv/mixins/listener'    # Common callback code
 
     require 'libuv/handle'      # Base class for most libuv functionality
-    require 'libuv/prepare'     # Called at the end of a loop cycle
-    require 'libuv/async'       # Provide a threadsafe way to signal the event loop
+    require 'libuv/prepare'     # Called at the end of a reactor cycle
+    require 'libuv/async'       # Provide a threadsafe way to signal the event reactor
     require 'libuv/timer'       # High resolution timer
-    require 'libuv/loop'        # The libuv reactor or event loop
+    require 'libuv/reactor'        # The libuv reactor or event reactor
+    require 'libuv/coroutines'
     # --
 
     autoload :FsChecks, 'libuv/mixins/fs_checks'   # Common code to check file system results
@@ -25,7 +30,7 @@ module Libuv
     autoload :Filesystem, 'libuv/filesystem'  # Async directory manipulation
     autoload :FSEvent,    'libuv/fs_event'    # Notifies of changes to files and folders as they occur
     autoload :Signal,     'libuv/signal'      # Used to handle OS signals
-    autoload :Check,      'libuv/check'       # Called before processing events on the loop
+    autoload :Check,      'libuv/check'       # Called before processing events on the reactor
     autoload :File,       'libuv/file'        # Async file reading and writing
     autoload :Idle,       'libuv/idle'        # Called when there are no events to process
     autoload :Work,       'libuv/work'        # Provide work to be completed on another thread (thread pool)
@@ -51,5 +56,23 @@ module Libuv
         else
             return nil
         end
+    end
+
+    # Include all the accessors at this level
+    extend Accessors
+
+    # Run the default reactor
+    at_exit do
+        reactor = Reactor.default
+        reactor.run if $!.nil? && reactor.run_count == 0
+    end
+end
+
+
+class Object
+    private
+
+    def reactor(&blk)
+        Libuv.reactor &blk
     end
 end

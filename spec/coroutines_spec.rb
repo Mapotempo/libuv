@@ -10,10 +10,18 @@ if RUBY_PLATFORM != 'java'
 			@log = []
 			@general_failure = []
 
-			@loop = Libuv::Loop.default
-			@timeout = @loop.timer do
+			@reactor = Libuv::Reactor.default
+			@reactor.notifier do |error, context|
+				begin
+					@general_failure << "Log called: #{context}\n#{error.message}\n#{error.backtrace.join("\n") if error.backtrace}\n"
+				rescue Exception => e
+					@general_failure << "error in logger #{e.inspect}"
+				end
+			end
+
+			@timeout = @reactor.timer do
 				@timeout.close
-				@loop.stop
+				@reactor.stop
 				@general_failure << "test timed out"
 			end
 			@timeout.start(5000)
@@ -21,24 +29,16 @@ if RUBY_PLATFORM != 'java'
 		
 		describe 'serial execution' do
 			it "should wait for work to complete and return the result" do
-				@loop.run { |logger|
-					logger.progress do |level, errorid, error|
-						begin
-							@general_failure << "Log called: #{level}: #{errorid}\n#{error.message}\n#{error.backtrace.join("\n") if error.backtrace}\n"
-						rescue Exception => e
-							@general_failure << "error in logger #{e.inspect}"
-						end
-					end
+				@reactor.run { |reactor|
 
-
-					@log << co(@loop.work(proc {
+					@log << co(@reactor.work(proc {
 						sleep 1
 						'work done'
 					}))
 					@log << 'after work'
 
 					@timeout.close
-					@loop.stop
+					@reactor.stop
 				}
 
 				expect(@general_failure).to eq([])
@@ -46,17 +46,9 @@ if RUBY_PLATFORM != 'java'
 			end
 
 			it "should raise an error if the promise is rejected" do
-				@loop.run { |logger|
-					logger.progress do |level, errorid, error|
-						begin
-							@general_failure << "Log called: #{level}: #{errorid}\n#{error.message}\n#{error.backtrace.join("\n") if error.backtrace}\n"
-						rescue Exception => e
-							@general_failure << "error in logger #{e.inspect}"
-						end
-					end
-
+				@reactor.run { |reactor|
 					begin
-						@log << co(@loop.work(proc {
+						@log << co(@reactor.work(proc {
 							raise 'rejected'
 						}))
 						@log << 'after work'
@@ -65,7 +57,7 @@ if RUBY_PLATFORM != 'java'
 					end
 
 					@timeout.close
-					@loop.stop
+					@reactor.stop
 				}
 
 				expect(@general_failure).to eq([])
@@ -73,22 +65,13 @@ if RUBY_PLATFORM != 'java'
 			end
 
 			it "should return the results of multiple promises" do
-				@loop.run { |logger|
-					logger.progress do |level, errorid, error|
-						begin
-							@general_failure << "Log called: #{level}: #{errorid}\n#{error.message}\n#{error.backtrace.join("\n") if error.backtrace}\n"
-						rescue Exception => e
-							@general_failure << "error in logger #{e.inspect}"
-						end
-					end
-
-
-					job1 = @loop.work(proc {
+				@reactor.run { |reactor|
+					job1 = @reactor.work(proc {
 						sleep 1
 						'job1'
 					})
 
-					job2 = @loop.work(proc {
+					job2 = @reactor.work(proc {
 						sleep 1
 						'job2'
 					})
@@ -101,7 +84,7 @@ if RUBY_PLATFORM != 'java'
 					@log << 'after work'
 
 					@timeout.close
-					@loop.stop
+					@reactor.stop
 				}
 
 				expect(@general_failure).to eq([])
@@ -110,16 +93,8 @@ if RUBY_PLATFORM != 'java'
 
 
 			it "should provide a callback option for progress events" do
-				@loop.run { |logger|
-					logger.progress do |level, errorid, error|
-						begin
-							@general_failure << "Log called: #{level}: #{errorid}\n#{error.message}\n#{error.backtrace.join("\n") if error.backtrace}\n"
-						rescue Exception => e
-							@general_failure << "error in logger #{e.inspect}"
-						end
-					end
-
-					timer = @loop.timer
+				@reactor.run { |reactor|
+					timer = @reactor.timer
 					timer.start(0)
 					co(timer) do
 						@log << 'in timer'
@@ -129,7 +104,7 @@ if RUBY_PLATFORM != 'java'
 					@log << 'after timer'
 
 					@timeout.close
-					@loop.stop
+					@reactor.stop
 				}
 
 				expect(@log).to eq(['in timer', 'after timer'])

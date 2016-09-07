@@ -20,32 +20,36 @@ module Libuv
 
 
         def listen(backlog)
-            return if @closed
+            return self if @closed
             assert_type(Integer, backlog, BACKLOG_ERROR)
             error = check_result ::Libuv::Ext.listen(handle, Integer(backlog), callback(:on_listen))
             reject(error) if error
+            self
         end
 
         # Starts reading from the handle
         def start_read
-            return if @closed
+            return self if @closed
             error = check_result ::Libuv::Ext.read_start(handle, callback(:on_allocate), callback(:on_read))
             reject(error) if error
+            self
         end
 
         # Stops reading from the handle
         def stop_read
-            return if @closed
+            return self if @closed
             error = check_result ::Libuv::Ext.read_stop(handle)
             reject(error) if error
+            self
         end
 
         # Shutsdown the writes on the handle waiting until the last write is complete before triggering the callback
         def shutdown
-            return if @closed
+            return self if @closed
             req = ::Libuv::Ext.allocate_request_shutdown
             error = check_result ::Libuv::Ext.shutdown(req, handle, callback(:on_shutdown, req.address))
             reject(error) if error
+            self
         end
 
         def try_write(data)
@@ -62,9 +66,9 @@ module Libuv
             return result
         end
 
-        def write(data)
+        def write(data, wait: false)
             # NOTE:: Similar to udp.rb -> send
-            deferred = @loop.defer
+            deferred = @reactor.defer
             if !@closed
                 begin
                     assert_type(String, data, WRITE_ERROR)
@@ -94,7 +98,13 @@ module Libuv
             else
                 deferred.reject(RuntimeError.new(STREAM_CLOSED_ERROR))
             end
-            deferred.promise
+
+            if wait
+                return deferred.promise if wait == :promise
+                co deferred.promise
+            end
+
+            self
         end
         alias_method :puts, :write
 
@@ -110,6 +120,7 @@ module Libuv
 
         def progress(callback = nil, &blk)
             @progress = callback || blk
+            self
         end
 
 
@@ -119,15 +130,17 @@ module Libuv
         def on_listen(server, status)
             e = check_result(status)
 
-            if e
-                reject(e)   # is this cause for closing the handle?
-            else
-                begin
-                    @on_listen.call(self)
-                rescue Exception => e
-                    @loop.log :error, :stream_listen_cb, e
+            ::Fiber.new {
+                if e
+                    reject(e)   # is this cause for closing the handle?
+                else
+                    begin
+                        @on_listen.call(self)
+                    rescue Exception => e
+                        @reactor.log e, 'performing stream listening callback'
+                    end
                 end
-            end
+            }.resume
         end
 
         def on_allocate(client, suggested_size, buffer)
@@ -142,7 +155,7 @@ module Libuv
             ::Libuv::Ext.free(req)
             buffer1.free
 
-            resolve deferred, status
+            ::Fiber.new { resolve deferred, status }.resume
         end
 
         def on_read(handle, nread, buf)
@@ -155,7 +168,7 @@ module Libuv
                 if e.is_a? ::Libuv::Error::EOF
                     close   # Close gracefully 
                 else
-                    reject(e)
+                    ::Fiber.new { reject(e) }.resume
                 end
             else
                 data = base.read_string(nread)
@@ -163,12 +176,12 @@ module Libuv
                 
                 if @tls.nil?
                     begin
-                        @progress.call data, self
+                        ::Fiber.new { @progress.call data, self }.resume
                     rescue Exception => e
-                        @loop.log :error, :stream_progress_cb, e
+                        @reactor.log e, 'performing stream read callback'
                     end
                 else
-                    @tls.decrypt(data)
+                    ::Fiber.new { @tls.decrypt(data) }.resume
                 end
             end
         end

@@ -8,56 +8,89 @@ The Libuv gem contains Libuv and a Ruby wrapper that implements [pipelined promi
 
 ## Usage
 
-using promises
+Libuv supports multiple reactors that can run on different threads.
+
+For convenience the thread local or default reactor can be accessed via the `reactor` method
+You can pass a block to be executed on the reactor and the reactor will run until there is nothing left to do.
 
 ```ruby
   require 'libuv'
 
-  loop = Libuv::Loop.default
-  # or
-  # loop = Libuv::Loop.new
-
-  loop.run do
-    timer = loop.timer do
+  reactor do |reactor|
+    reactor.timer {
       puts "5 seconds passed"
-      timer.close
-    end
-    timer.catch do |error|
-      puts "error with timer: #{error}"
-    end
-    timer.finally do
-      puts "timer handle was closed"
-    end
-    timer.start(5000)
+    }.start(5000)
   end
+
+  puts "reactor stopped. No more IO to process"
 ```
 
-using coroutines (if a somewhat abstract example)
+Promises are used to simplify code flow.
 
 ```ruby
   require 'libuv'
-  require 'libuv/coroutines'
 
-  loop = Libuv::Loop.default
-  loop.run do
+  reactor do |reactor|
+    reactor.tcp { |data, socket|
+      puts "received: #{data}"
+      socket.close
+    }
+    .connect('127.0.0.1', 3000) { |socket|
+      socket.start_read
+            .write("GET / HTTP/1.1\r\n\r\n")
+    }
+    .catch { |error|
+      puts "error: #{error}"
+    }
+    .finally {
+      puts "socket closed"
+    }
+  end
+```
+
+Continuations are used if callbacks are not defined
+
+```ruby
+  require 'libuv'
+
+  reactor do |reactor|
     begin
-      timer = loop.timer do
-        puts "5 seconds passed"
-        timer.close
-      end
-      timer.start(5000)
-
-      # co-routine waits for timer to close
-      co timer
-
-      puts "timer handle was closed"
+      reactor.tcp { |data, socket|
+        puts "received: #{data}"
+        socket.close
+      }
+      .connect('127.0.0.1', 3000)
+      .start_read
+      .write("GET / HTTP/1.1\r\n\r\n")
     rescue => error
-      puts "error with timer: #{error}"
+      puts "error: #{error}"
     end
   end
 ```
 
-Check out the [yard documentation](http://rubydoc.info/gems/libuv/Libuv/Loop)
+Any promise can be converted into a continuation
+
+```ruby
+  require 'libuv'
+
+  reactor do |reactor|
+    # Perform work on the thread pool with promises
+    reactor.work {
+      10 * 2
+    }.then { |result|
+      puts "result using a promise #{result}"
+    }
+
+    # Use the coroutine helper to obtain the result without a callback
+    result = co reactor.work {
+      10 * 3
+    }
+    puts "no additional callbacks here #{result}"
+  end
+```
+
+
+Check out the [yard documentation](http://rubydoc.info/gems/libuv/Libuv/Reactor)
 
 
 ## Installation
@@ -107,6 +140,6 @@ Windows users will additionally require:
 * Filesystem Events
 * Filesystem manipulation
 * File manipulation
-* Errors (with a catch-all fallback for anything unhandled on the event loop)
+* Errors (with a catch-all fallback for anything unhandled on the event reactor)
 * Work queue (thread pool)
-* Coroutines (optional - makes use of Fibers)
+* Coroutines (makes use of Fibers)

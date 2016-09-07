@@ -3,11 +3,11 @@ module Libuv
         include Stream
 
 
-        def initialize(loop, fileno, readable)
-            @loop = loop
+        def initialize(reactor, fileno, readable)
+            @reactor = reactor
 
             tty_ptr = ::Libuv::Ext.allocate_handle_tty
-            error = check_result(::Libuv::Ext.tty_init(loop.handle, tty_ptr, fileno, readable ? 1 : 0))
+            error = check_result(::Libuv::Ext.tty_init(reactor.handle, tty_ptr, fileno, readable ? 1 : 0))
             
             super(tty_ptr, error)
         end
@@ -15,15 +15,18 @@ module Libuv
         def enable_raw_mode
             return if @closed
             check_result ::Libuv::Ext.tty_set_mode(handle, 1)
+            self
         end
 
         def disable_raw_mode
             return if @closed
             check_result ::Libuv::Ext.tty_set_mode(handle, 0)
+            self
         end
 
         def reset_mode
             ::Libuv::Ext.tty_reset_mode
+            self
         end
 
         def winsize
