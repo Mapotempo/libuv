@@ -316,36 +316,41 @@ module Libuv
             ::Libuv::Ext.free(req)
             e = check_result(status)
 
-            if e
-                reject(e)
-            else
-                @connected = true
+            ::Fiber.new {
+                if e
+                    reject(e)
+                else
+                    @connected = true
 
-                begin
-                    if @callback
-                        @callback.call(self)
-                        @callback = nil
-                    elsif @coroutine
-                        @coroutine.resolve(nil)
-                        @coroutine = nil
-                    else
-                        raise ArgumentError, 'no callback provided'
+                    begin
+                        if @callback
+                            @callback.call(self)
+                            @callback = nil
+                        elsif @coroutine
+                            @coroutine.resolve(nil)
+                            @coroutine = nil
+                        else
+                            raise ArgumentError, 'no callback provided'
+                        end
+                    rescue Exception => e
+                        @reactor.log e, 'performing TCP connection callback'
                     end
-                rescue Exception => e
-                    @reactor.log e, 'performing TCP connection callback'
                 end
-            end
+            }.resume
         end
 
         def accept(_)
             begin
                 raise RuntimeError, CLOSED_HANDLE_ERROR if @closed
                 tcp = TCP.new(reactor, handle)
-                begin
-                    @on_accept.call(tcp)
-                rescue Exception => e
-                    @reactor.log e, 'performing TCP accept callback'
-                end
+
+                ::Fiber.new {
+                    begin
+                        @on_accept.call(tcp)
+                    rescue Exception => e
+                        @reactor.log e, 'performing TCP accept callback'
+                    end
+                }.resume
             rescue Exception => e
                 @reactor.log e, 'failed to accept TCP connection'
             end
@@ -356,20 +361,23 @@ module Libuv
             include Resource
 
             def initialize(reactor, tcp, ip, port)
-                @tcp, @sockaddr = tcp, ip_addr(ip, port)
+                @ip = ip
+                @port = port
+                @tcp = tcp
                 @reactor = reactor
+                @req = ::Libuv::Ext.allocate_request_connect
             end
 
             def bind
-                check_result!(tcp_bind)
+                check_result! ::Libuv::Ext.tcp_bind(@tcp, ip_addr)
             end
 
             def connect(callback)
-                check_result!(tcp_connect(callback))
+                @callback = callback
+                check_result!(tcp_connect)
             end
 
             def connect_req
-                @req ||= ::Libuv::Ext.allocate_request_connect
                 @req
             end
 
@@ -377,17 +385,13 @@ module Libuv
             protected
 
 
-            def tcp_connect(callback)
+            def tcp_connect
                 ::Libuv::Ext.tcp_connect(
-                  connect_req,
+                  @req,
                   @tcp,
-                  @sockaddr,
-                  callback
+                  ip_addr,
+                  @callback
                 )
-            end
-
-            def tcp_bind
-                ::Libuv::Ext.tcp_bind(@tcp, @sockaddr)
             end
         end
 
@@ -396,10 +400,10 @@ module Libuv
             protected
 
 
-            def ip_addr(ip, port)
-                addr = Ext::SockaddrIn.new
-                check_result! ::Libuv::Ext.ip4_addr(ip, port, addr)
-                addr
+            def ip_addr
+                @sockaddr = Ext::SockaddrIn.new
+                check_result! ::Libuv::Ext.ip4_addr(@ip, @port, @sockaddr)
+                @sockaddr
             end
         end
 
@@ -408,10 +412,10 @@ module Libuv
             protected
 
 
-            def ip_addr(ip, port)
-                addr = Ext::SockaddrIn6.new
-                check_result! ::Libuv::Ext.ip6_addr(ip, port, addr)
-                addr
+            def ip_addr
+                @sockaddr = Ext::SockaddrIn6.new
+                check_result! ::Libuv::Ext.ip6_addr(@ip, @port, @sockaddr)
+                @sockaddr
             end
         end
     end
