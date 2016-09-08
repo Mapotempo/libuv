@@ -6,8 +6,8 @@ module Libuv
         extend Accessors
 
 
-        REACTORS = ThreadSafe::Cache.new
-        CRITICAL = Mutex.new
+        REACTORS = ::Concurrent::Map.new
+        CRITICAL = ::Mutex.new
 
 
         module ClassMethods
@@ -103,8 +103,8 @@ module Libuv
             ::Libuv::Ext.stop(@pointer)
         end
 
-        def signal_cb
-            @on_signal.call(self)
+        def signal_cb(_)
+            @on_signal.call
         end
 
         def next_tick_cb

@@ -4,24 +4,24 @@ Gem::Specification.new do |gem|
     gem.name          = "libuv"
     gem.version       = Libuv::VERSION
     gem.license       = 'MIT'
-    gem.authors       = ["Bulat Shakirzyanov", "Stephen von Takach"]
-    gem.email         = ["mallluhuct@gmail.com", "steve@cotag.me"]
+    gem.authors       = ["Stephen von Takach"]
+    gem.email         = ["steve@cotag.me"]
     gem.homepage      = "https://github.com/cotag/libuv"
     gem.summary       = "libuv bindings for Ruby"
     gem.description   = "An opinionated wrapper around libuv for Ruby"
 
     gem.extensions << "ext/Rakefile"
 
-    gem.required_ruby_version = '>= 1.9.2'
+    gem.required_ruby_version = '>= 2.0.0'
     gem.require_paths = ["lib"]
 
-    gem.add_runtime_dependency     'ffi', '>= 1.9'
-    gem.add_runtime_dependency     'thread_safe'
-    gem.add_runtime_dependency     'ruby-tls', '>= 2.0.0'
+    gem.add_runtime_dependency     'ffi', '~> 1.9'
+    gem.add_runtime_dependency     'concurrent-ruby', '~> 1.0'
+    gem.add_runtime_dependency     'ruby-tls', '~> 2.1'
 
-    gem.add_development_dependency 'rspec', '>= 2.14'
-    gem.add_development_dependency 'rake', '>= 10.1'
-    gem.add_development_dependency 'yard'
+    gem.add_development_dependency 'rspec', '~> 3.5'
+    gem.add_development_dependency 'rake', '~> 11.2'
+    gem.add_development_dependency 'yard', '~> 0.9'
 
     gem.files         = `git ls-files`.split("\n")
     gem.test_files    = `git ls-files -- {test,spec,features}/*`.split("\n")
