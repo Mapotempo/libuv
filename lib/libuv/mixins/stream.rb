@@ -42,6 +42,11 @@ module Libuv
             reject(error) if error
             self
         end
+        alias_method :close_read, :stop_read
+
+        # These are NOOP, here purely for compatibility with rack hijack IO
+        def close_write; end
+        def flush; end
 
         # Shutsdown the writes on the handle waiting until the last write is complete before triggering the callback
         def shutdown
@@ -107,6 +112,7 @@ module Libuv
             self
         end
         alias_method :puts, :write
+        alias_method :write_nonblock, :write
 
         def readable?
             return false if @closed
@@ -123,8 +129,57 @@ module Libuv
             self
         end
 
+        # Very basic IO emulation, in no way trying to be exact
+        def read(maxlen = nil, outbuf = nil)
+            @read_defer = @reactor.defer
+
+            if @read_buffer.nil?
+                start_read
+                @read_buffer = String.new
+                self.finally do
+                    @read_defer.reject(::EOFError.new('socket closed'))
+                end
+            end
+
+            if check_read_buffer(maxlen, outbuf, @read_defer)
+                progress do |data|
+                    @read_buffer << data
+                    check_read_buffer(maxlen, outbuf, @read_defer)
+                end
+            end
+
+            co @read_defer.promise
+        end
+        alias_method :read_nonblock, :read
+
 
         private
+
+
+        def check_read_buffer(maxlen, outbuf, defer)
+            if maxlen && @read_buffer.bytesize >= maxlen
+                if outbuf
+                    outbuf << @read_buffer[0...maxlen]
+                    defer.resolve outbuf
+                else
+                    defer.resolve @read_buffer[0...maxlen]
+                end
+                @read_buffer = @read_buffer[maxlen..-1]
+                progress do |data|
+                    @read_buffer << data
+                end
+                false
+            elsif maxlen.nil?
+                defer.resolve @read_buffer
+                @read_buffer = String.new
+                progress do |data|
+                    @read_buffer << data
+                end
+                false
+            else
+                true
+            end
+        end
 
 
         def on_listen(server, status)

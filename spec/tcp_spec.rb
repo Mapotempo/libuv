@@ -133,6 +133,43 @@ describe Libuv::TCP do
 			expect(@general_failure).to eq([])
 			expect(@log).to eq(['ping', 'pong', '127.0.0.1'])
 		end
+
+		it "should quack a bit like an IO object", :network => true do
+			@reactor.run { |reactor|
+				@server.bind('127.0.0.1', 34567) do |client|
+					@log << client.read(4)
+					client.write('pong')
+				end
+
+				# catch errors
+				@server.catch do |reason|
+					@general_failure << reason.inspect
+				end
+
+				# start listening
+				@server.listen(1024)
+
+				# catch errors
+				@client.catch do |reason|
+					@general_failure << reason.inspect
+				end
+
+				# close the handle
+				@client.finally do
+					@server.close
+					@reactor.stop
+				end
+				@client.connect('127.0.0.1', 34567)
+				@client.write('ping')
+				@log << @client.read(4)
+				addrinfo = @reactor.lookup('127.0.0.1').results
+				@log << addrinfo[0][0]
+				@client.shutdown
+			}
+
+			expect(@general_failure).to eq([])
+			expect(@log).to eq(['ping', 'pong', '127.0.0.1'])
+		end
 	end
 
 	it "should handle requests on different threads", :network => true do

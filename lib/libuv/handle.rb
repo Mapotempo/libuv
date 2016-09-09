@@ -54,6 +54,10 @@ module Libuv
             self
         end
 
+        def closed?
+            !!@closed
+        end
+
         def active?
             ::Libuv::Ext.is_active(handle) > 0
         end
