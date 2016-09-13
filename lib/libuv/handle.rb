@@ -95,12 +95,12 @@ module Libuv
                 else
                     defer.resolve(nil)
                 end
-            }.resume
 
-            if @coroutine
-                @coroutine.resolve(self)
-                @coroutine = nil
-            end
+                if @coroutine
+                    @coroutine.resolve(self)
+                    @coroutine = nil
+                end
+            }.resume
         end
     end
 end

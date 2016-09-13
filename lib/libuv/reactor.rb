@@ -264,7 +264,7 @@ module Libuv
 
             if name
                 msg  = ::Libuv::Ext.strerror(err)
-                ::Libuv::Error.const_get(name.to_sym).new(msg)
+                ::Libuv::Error.const_get(name.to_sym).new("#{msg}, #{name}:#{err}")
             else
                 # We want a back-trace in this case
                 raise "error lookup failed for code #{err}"

@@ -44,10 +44,6 @@ module Libuv
         end
         alias_method :close_read, :stop_read
 
-        # These are NOOP, here purely for compatibility with rack hijack IO
-        def close_write; end
-        def flush; end
-
         # Shutsdown the writes on the handle waiting until the last write is complete before triggering the callback
         def shutdown
             return self if @closed
@@ -131,6 +127,7 @@ module Libuv
 
         # Very basic IO emulation, in no way trying to be exact
         def read(maxlen = nil, outbuf = nil)
+            raise ::EOFError.new('socket closed') if @closed
             @read_defer = @reactor.defer
 
             if @read_buffer.nil?
@@ -151,6 +148,16 @@ module Libuv
             co @read_defer.promise
         end
         alias_method :read_nonblock, :read
+
+        # These are here purely for compatibility with rack hijack IO
+        def close_write; end
+        def flush
+            raise ::EOFError.new('socket closed') if @closed
+
+            @flush_defer = @reactor.defer
+            check_flush_buffer
+            co @flush_defer.promise
+        end
 
 
         private
@@ -178,6 +185,13 @@ module Libuv
                 false
             else
                 true
+            end
+        end
+
+        def check_flush_buffer
+            if @flush_defer && (@write_callbacks.nil? || @write_callbacks.empty?) && (@pending_writes.nil? || @pending_writes.empty?) && @pending_write.nil?
+                @flush_defer.resolve(nil)
+                @flush_defer = nil
             end
         end
 
@@ -210,7 +224,10 @@ module Libuv
             ::Libuv::Ext.free(req)
             buffer1.free
 
-            ::Fiber.new { resolve deferred, status }.resume
+            ::Fiber.new {
+                resolve deferred, status
+                check_flush_buffer if @flush_defer
+            }.resume
         end
 
         def on_read(handle, nread, buf)
@@ -219,25 +236,30 @@ module Libuv
 
             if e
                 ::Libuv::Ext.free(base)
-                # I assume this is desirable behaviour
-                if e.is_a? ::Libuv::Error::EOF
-                    close   # Close gracefully 
-                else
-                    ::Fiber.new { reject(e) }.resume
-                end
+
+                ::Fiber.new { 
+                    # I assume this is desirable behaviour
+                    if e.is_a? ::Libuv::Error::EOF
+                        close   # Close gracefully 
+                    else
+                        reject(e)
+                    end
+                }.resume
             else
                 data = base.read_string(nread)
                 ::Libuv::Ext.free(base)
                 
-                if @tls.nil?
-                    begin
-                        ::Fiber.new { @progress.call data, self }.resume
-                    rescue Exception => e
-                        @reactor.log e, 'performing stream read callback'
+                ::Fiber.new {
+                    if @tls.nil?
+                        begin
+                            @progress.call data, self
+                        rescue Exception => e
+                            @reactor.log e, 'performing stream read callback'
+                        end
+                    else
+                        @tls.decrypt(data)
                     end
-                else
-                    ::Fiber.new { @tls.decrypt(data) }.resume
-                end
+                }.resume
             end
         end
 
@@ -245,7 +267,8 @@ module Libuv
             cleanup_callbacks(req.address)
             ::Libuv::Ext.free(req)
             @close_error = check_result(status)
-            close
+
+            ::Fiber.new { close }.resume
         end
     end
 end
