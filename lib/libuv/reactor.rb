@@ -287,8 +287,9 @@ module Libuv
         # Get a new UDP instance
         #
         # @return [::Libuv::UDP]
-        def udp
-            UDP.new(@reactor)
+        def udp(callback = nil, &blk)
+            callback ||= blk
+            UDP.new(@reactor, progress: callback)
         end
 
         # Get a new TTY instance

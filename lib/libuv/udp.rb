@@ -20,8 +20,9 @@ module Libuv
         HANDLE_CLOSED_ERROR = "unable to send as handle closed"
 
 
-        def initialize(reactor)
+        def initialize(reactor, progress: nil)
             @reactor = reactor
+            @progress = progress
 
             udp_ptr = ::Libuv::Ext.allocate_handle_udp
             error = check_result(::Libuv::Ext.udp_init(reactor.handle, udp_ptr))
