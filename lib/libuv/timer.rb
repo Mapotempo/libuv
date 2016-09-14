@@ -32,6 +32,7 @@ module Libuv
             timeout = timeout.to_i
             repeat = repeat.to_i
 
+            @loop.update_time
             error = check_result ::Libuv::Ext.timer_start(handle, callback(:on_timer), timeout, repeat)
             reject(error) if error
         end
@@ -47,6 +48,7 @@ module Libuv
         # Resets the current repeat
         def again
             return if @closed
+            @loop.update_time
             error = check_result ::Libuv::Ext.timer_again(handle)
             reject(error) if error
         end

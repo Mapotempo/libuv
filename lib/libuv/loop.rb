@@ -92,6 +92,7 @@ module Libuv
         def process_queue_cb
             # ensure we only execute what was required for this tick
             length = @run_queue.length
+            update_time
             length.times do
                 process_item
             end
@@ -132,6 +133,7 @@ module Libuv
                     @reactor_thread = Thread.current
                     LOOPS[@reactor_thread] = @loop
                     if block_given?
+                        update_time
                         if @@use_fibers
                             Fiber.new { yield @loop_notify.promise }.resume
                         else
