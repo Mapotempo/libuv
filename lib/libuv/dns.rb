@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Libuv
     class Dns < Q::DeferredPromise
         include Resource, Listener, Net

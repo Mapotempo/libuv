@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'ipaddr'
 
 
@@ -11,11 +13,11 @@ module Libuv
         define_callback function: :send_complete, params: [:pointer, :int]
 
 
-        SEND_DATA_ERROR = "data must be a String".freeze
-        TTL_ARGUMENT_ERROR = "ttl must be an Integer".freeze
-        MULTICAST_ARGUMENT_ERROR = "multicast_address must be a String".freeze
-        INTERFACE_ARGUMENT_ERROR = "interface_address must be a String".freeze
-        HANDLE_CLOSED_ERROR = "unable to send as handle closed".freeze
+        SEND_DATA_ERROR = "data must be a String"
+        TTL_ARGUMENT_ERROR = "ttl must be an Integer"
+        MULTICAST_ARGUMENT_ERROR = "multicast_address must be a String"
+        INTERFACE_ARGUMENT_ERROR = "interface_address must be a String"
+        HANDLE_CLOSED_ERROR = "unable to send as handle closed"
 
 
         def initialize(reactor)

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 file "ext/libuv/Release/libuv.#{FFI::Platform::LIBSUFFIX}" do
     target_arch = 'ia32'
     target_arch = 'x64' if FFI::Platform.x64?

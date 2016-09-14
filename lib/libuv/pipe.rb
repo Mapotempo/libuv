@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Libuv
     class Pipe < Handle
         include Stream
@@ -7,7 +9,7 @@ module Libuv
         define_callback function: :write2_complete, params: [:pointer, :int]
 
 
-        WRITE2_ERROR = "data must be a String".freeze
+        WRITE2_ERROR = "data must be a String"
 
 
         def initialize(reactor, ipc, acceptor = nil)
@@ -36,7 +38,7 @@ module Libuv
 
         def open(fileno, callback = nil, &blk)
             @callback = callback || blk
-            assert_type(Integer, fileno, 'fileno must be an integer file descriptor'.freeze)
+            assert_type(Integer, fileno, 'fileno must be an integer file descriptor')
 
             begin
                 raise RuntimeError, CLOSED_HANDLE_ERROR if @closed

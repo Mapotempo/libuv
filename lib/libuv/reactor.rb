@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'thread'
 
 module Libuv
@@ -462,9 +464,9 @@ module Libuv
         # Notifies the reactor there was an event that should be logged
         #
         # @param error [Exception] the error
-        # @param msg [String] optional context on the error
+        # @param msg [String|nil] optional context on the error
         # @param trace [Array<String>] optional additional trace of caller if async
-        def log(error, msg = '', trace = nil)
+        def log(error, msg = nil, trace = nil)
             @reactor_notify.call(error, msg, trace)
         end
 

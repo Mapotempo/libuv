@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Libuv
     module Ext
         class UvFSStat < FFI::Struct

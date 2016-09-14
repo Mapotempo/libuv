@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Libuv
     class Error < StandardError
         class E2BIG < Error; end

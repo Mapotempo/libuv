@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Libuv
     module Ext
         typedef :uint32_t, :in_addr_t

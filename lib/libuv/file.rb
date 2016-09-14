@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Libuv
     class File < Q::DeferredPromise
         include Assertions, Resource, Listener, FsChecks
@@ -20,8 +22,8 @@ module Libuv
         define_callback function: :on_stat, **fs_params
 
 
-        EOF = "0\r\n\r\n".freeze
-        CRLF = "\r\n".freeze
+        EOF = "0\r\n\r\n"
+        CRLF = "\r\n"
 
 
         attr_reader :fileno, :closed
@@ -178,7 +180,7 @@ module Libuv
         def transmit_data(data)
             @file_chunk_count += 1
             if @file_stream_type == :http
-                resp = ''
+                resp = String.new
                 resp << data.bytesize.to_s(16) << CRLF
                 resp << data
                 resp << CRLF

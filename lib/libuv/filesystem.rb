@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Libuv
     class Filesystem
         include Assertions, Resource, Listener, FsChecks

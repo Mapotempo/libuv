@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Libuv
     module Ext
         typedef :int, :uv_os_sock_t

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'forwardable'
 require 'ffi'
 
@@ -13,8 +15,8 @@ module Libuv
             extend FFI::Library
             ffi_lib(FFI::Library::LIBC).first
 
-            attach_function :malloc, [:size_t], :pointer, :blocking => true
-            attach_function :free, [:pointer], :void, :blocking => true
+            attach_function :malloc, [:size_t], :pointer
+            attach_function :free, [:pointer], :void
         end
         def_delegators :LIBC, :malloc, :free
         module_function :malloc, :free
@@ -64,8 +66,8 @@ module Libuv
         require 'libuv/ext/types'
 
 
-        attach_function :handle_size, :uv_handle_size, [:uv_handle_type], :size_t, :blocking => true
-        attach_function :req_size, :uv_req_size, [:uv_req_type], :size_t, :blocking => true
+        attach_function :handle_size, :uv_handle_size, [:uv_handle_type], :size_t
+        attach_function :req_size, :uv_req_size, [:uv_req_type], :size_t
 
 
         # We need to calculate where the FS request data is located using req_size
@@ -82,8 +84,8 @@ module Libuv
         callback :uv_fs_cb, [FsRequest.by_ref], :void
 
 
-        attach_function :version_number, :uv_version, [], :uint, :blocking => true
-        attach_function :version_string, :uv_version_string, [], :string, :blocking => true
+        attach_function :version_number, :uv_version, [], :uint
+        attach_function :version_string, :uv_version_string, [], :string
 
         attach_function :loop_new, :uv_loop_new, [], :uv_loop_t, :blocking => true
         attach_function :loop_delete, :uv_loop_delete, [:uv_loop_t], :void, :blocking => true
@@ -91,13 +93,13 @@ module Libuv
         attach_function :run, :uv_run, [:uv_loop_t, :uv_run_mode], :int, :blocking => true
         attach_function :stop, :uv_stop, [:uv_loop_t], :void, :blocking => true
         attach_function :update_time, :uv_update_time, [:uv_loop_t], :void, :blocking => true
-        attach_function :now, :uv_now, [:uv_loop_t], :uint64, :blocking => true
+        attach_function :now, :uv_now, [:uv_loop_t], :uint64
 
         attach_function :backend_timeout, :uv_backend_timeout, [:uv_loop_t], :int, :blocking => true
         attach_function :backend_fd, :uv_backend_fd, [:uv_loop_t], :int, :blocking => true
 
-        attach_function :strerror, :uv_strerror, [:int], :string, :blocking => true
-        attach_function :err_name, :uv_err_name, [:int], :string, :blocking => true
+        attach_function :strerror, :uv_strerror, [:int], :string
+        attach_function :err_name, :uv_err_name, [:int], :string
 
         attach_function :ref, :uv_ref, [:uv_handle_t], :void, :blocking => true
         attach_function :unref, :uv_unref, [:uv_handle_t], :void, :blocking => true
@@ -112,7 +114,7 @@ module Libuv
         # https://github.com/joyent/libuv/commit/4ca9a363897cfa60f4e2229e4f15ac5abd7fd103
         # uv_fileno
 
-        attach_function :buf_init, :uv_buf_init, [:pointer, :size_t], UvBuf.by_value, :blocking => true
+        attach_function :buf_init, :uv_buf_init, [:pointer, :size_t], UvBuf.by_value
 
         attach_function :listen, :uv_listen, [:uv_stream_t, :int, :uv_connection_cb], :int, :blocking => true
         attach_function :accept, :uv_accept, [:uv_stream_t, :uv_stream_t], :int, :blocking => true
@@ -188,8 +190,8 @@ module Libuv
         attach_function :timer_set_repeat, :uv_timer_set_repeat, [:uv_timer_t, :int64_t], :void, :blocking => true
         attach_function :timer_get_repeat, :uv_timer_get_repeat, [:uv_timer_t], :int64_t, :blocking => true
         #:addrinfo
-        attach_function :getaddrinfo, :uv_getaddrinfo, [:uv_loop_t, :uv_getaddrinfo_t, :uv_getaddrinfo_cb, :string, :string, UvAddrinfo.by_ref], :int, :blocking => true
-        attach_function :freeaddrinfo, :uv_freeaddrinfo, [UvAddrinfo.by_ref], :void, :blocking => true
+        attach_function :getaddrinfo, :uv_getaddrinfo, [:uv_loop_t, :uv_getaddrinfo_t, :uv_getaddrinfo_cb, :string, :string, UvAddrinfo.by_ref], :int
+        attach_function :freeaddrinfo, :uv_freeaddrinfo, [UvAddrinfo.by_ref], :void
 
         attach_function :spawn, :uv_spawn, [:uv_loop_t, :uv_process_t, :uv_options_t], :int, :blocking => true
         attach_function :process_kill, :uv_process_kill, [:uv_process_t, :int], :int, :blocking => true
@@ -239,10 +241,10 @@ module Libuv
 
         attach_function :fs_event_init, :uv_fs_event_init, [:uv_loop_t, :uv_fs_event_t, :string, :uv_fs_event_cb, :int], :int, :blocking => true
 
-        attach_function :ip4_addr, :uv_ip4_addr, [:string, :int, :sockaddr_in4], :int, :blocking => true
-        attach_function :ip6_addr, :uv_ip6_addr, [:string, :int, :sockaddr_in6], :int, :blocking => true
-        attach_function :ip4_name, :uv_ip4_name, [:sockaddr_in4, :pointer, :size_t], :int, :blocking => true
-        attach_function :ip6_name, :uv_ip6_name, [:sockaddr_in6, :pointer, :size_t], :int, :blocking => true
+        attach_function :ip4_addr, :uv_ip4_addr, [:string, :int, :sockaddr_in4], :int
+        attach_function :ip6_addr, :uv_ip6_addr, [:string, :int, :sockaddr_in6], :int
+        attach_function :ip4_name, :uv_ip4_name, [:sockaddr_in4, :pointer, :size_t], :int
+        attach_function :ip6_name, :uv_ip6_name, [:sockaddr_in6, :pointer, :size_t], :int
         #TODO:: attach_function :inet_ntop, :uv_inet_ntop, [:int, :pointer, ]
         #TODO:: attach_function :uv_inet_pton
 

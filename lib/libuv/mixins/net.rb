@@ -1,11 +1,13 @@
+# frozen_string_literal: true
+
 require 'socket'
 
 module Libuv
     module Net
 
 
-        IP_ARGUMENT_ERROR = "ip must be a String".freeze                # Arguments specifying an IP address
-        PORT_ARGUMENT_ERROR = "port must be an Integer".freeze          # Arguments specifying an IP port
+        IP_ARGUMENT_ERROR = "ip must be a String"                # Arguments specifying an IP address
+        PORT_ARGUMENT_ERROR = "port must be an Integer"          # Arguments specifying an IP port
         INET_ADDRSTRLEN = 16
         INET6_ADDRSTRLEN = 46
 

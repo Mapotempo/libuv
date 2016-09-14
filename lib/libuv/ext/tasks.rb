@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module FFI::Platform
     def self.ia32?
         ARCH == "i386"

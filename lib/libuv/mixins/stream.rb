@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Libuv
     module Stream
 
@@ -13,10 +15,10 @@ module Libuv
 
 
 
-        BACKLOG_ERROR = "backlog must be an Integer".freeze
-        WRITE_ERROR = "data must be a String".freeze
-        STREAM_CLOSED_ERROR = "unable to write to a closed stream".freeze
-        CLOSED_HANDLE_ERROR = "handle closed before accept called".freeze
+        BACKLOG_ERROR = "backlog must be an Integer"
+        WRITE_ERROR = "data must be a String"
+        STREAM_CLOSED_ERROR = "unable to write to a closed stream"
+        CLOSED_HANDLE_ERROR = "handle closed before accept called"
 
 
         def listen(backlog)

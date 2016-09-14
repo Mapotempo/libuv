@@ -1,5 +1,6 @@
-require 'socket'    # Addrinfo
+# frozen_string_literal: true
 
+require 'socket'    # Addrinfo
 
 module Libuv
     module Ext

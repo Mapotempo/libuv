@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 file 'ext/libuv/out' => 'ext/libuv/build/gyp' do
     target_arch = 'ia32'if FFI::Platform.ia32?
     target_arch = 'x64' if FFI::Platform.x64?
