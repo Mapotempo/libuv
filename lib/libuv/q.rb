@@ -38,6 +38,10 @@ module Libuv
                 self.then(nil, nil, callback || blk)
             end
 
+            # A future that provides the value or raises an error if a rejection occurs
+            def value
+                co self
+            end
 
             #
             # allows you to observe either the fulfillment or rejection of a promise, but to do so
@@ -142,7 +146,7 @@ module Libuv
                     pending_array = pending
                     
                     if pending_array.nil?
-                        value.then(wrappedCallback, wrappedErrback, wrappedProgback)
+                        reference.then(wrappedCallback, wrappedErrback, wrappedProgback)
                     else
                         pending_array << [wrappedCallback, wrappedErrback, wrappedProgback]
                     end
@@ -154,39 +158,39 @@ module Libuv
             def resolved?
                 pending.nil?
             end
-            
-            
+
+
             private
-            
-            
+
+
             def pending
                 @defer.pending
             end
             
-            def value
-                @defer.value
+            def reference
+                @defer.reference
             end
         end
-        
-        
-        
+
+
+
         class ResolvedPromise < Promise
             public_class_method :new
-            
+
             def initialize(reactor, response, error = false)
                 raise ArgumentError if error && response.is_a?(Promise)
                 super()
-                
+
                 @reactor = reactor
                 @error = error
                 @response = response
             end
-            
+
             def then(callback = nil, errback = nil, progback = nil, &blk)
                 result = Q.defer(@reactor)
-                
+
                 callback ||= blk
-                
+
                 @reactor.next_tick {
                     if @error
                         begin
@@ -206,7 +210,7 @@ module Libuv
                         end
                     end
                 }
-                
+
                 result.promise
             end
 
@@ -214,25 +218,25 @@ module Libuv
                 true
             end
         end
-        
-        
+
+
         #
         # The purpose of the deferred object is to expose the associated Promise instance as well
         # as APIs that can be used for signalling the successful or unsuccessful completion of a task.
         #
         class Deferred
             include Q
-            
+
             def initialize(reactor)
                 super()
-                
+
                 @pending = []
-                @value = nil
+                @reference = nil
                 @reactor = reactor
             end
 
-            attr_reader :pending, :value
-            
+            attr_reader :pending, :reference
+
             #
             # resolves the derived promise with the value. If the value is a rejection constructed via
             # Q.reject, the promise will be rejected instead.
@@ -243,17 +247,17 @@ module Libuv
                     if not @pending.nil?
                         callbacks = @pending
                         @pending = nil
-                        @value = ref(@reactor, val)
+                        @reference = ref(@reactor, val)
                         
                         if callbacks.length > 0
                             callbacks.each do |callback|
-                                @value.then(callback[0], callback[1], callback[2])
+                                @reference.then(callback[0], callback[1], callback[2])
                             end
                         end
                     end
                 end
             end
-            
+
             #
             # rejects the derived promise with the reason. This is equivalent to resolving it with a rejection
             # constructed via Q.reject.
@@ -262,7 +266,7 @@ module Libuv
             def reject(reason = nil)
                 resolve(Q.reject(@reactor, reason))
             end
-            
+
             #
             # Creates a promise object associated with this deferred
             #
@@ -292,21 +296,25 @@ module Libuv
                 @pending.nil?
             end
 
+            def value
+                co self.promise
+            end
+
             # Overwrite to prevent inspecting errors hanging the VM
             def inspect
                 if @pending.nil?
-                    "#<#{self.class}:0x#{self.__id__.to_s(16)} @reactor=#{@reactor.inspect} @value=#{@value.inspect}>"
+                    "#<#{self.class}:0x#{self.__id__.to_s(16)} @reactor=#{@reactor.inspect} @reference=#{@reference.inspect}>"
                 else
 					"#<#{self.class}:0x#{self.__id__.to_s(16)} @reactor=#{@reactor.inspect} @pending.count=#{@pending.length}>"
                 end
             end
         end
-        
-        
-        
-        
-        
-        
+
+
+
+
+
+
         #
         # Creates a Deferred object which represents a task which will finish in the future.
         #
@@ -314,8 +322,8 @@ module Libuv
         def defer(reactor)
             return Deferred.new(reactor)
         end
-        
-        
+
+
         #
         # Creates a promise that is resolved as rejected with the specified reason. This api should be
         # used to forward rejection in a chain of promises. If you are dealing with the last promise in
@@ -352,7 +360,7 @@ module Libuv
         def reject(reactor, reason = nil)
             return ResolvedPromise.new(reactor, reason, true)    # A resolved failed promise
         end
-        
+
         #
         # Combines multiple promises into a single promise that is resolved when all of the input
         # promises are resolved.
@@ -366,7 +374,7 @@ module Libuv
             deferred = Q.defer(reactor)
             counter = promises.length
             results = []
-            
+
             if counter > 0
                 promises.each_index do |index|
                     ref(reactor, promises[index]).then(proc {|result|
@@ -386,7 +394,7 @@ module Libuv
             else
                 deferred.resolve(results)
             end
-            
+
             return deferred.promise
         end
 
@@ -426,7 +434,7 @@ module Libuv
             deferred = Q.defer(reactor)
             counter = promises.length
             results = []
-            
+
             if counter > 0
                 promises.each_index do |index|
                     ref(reactor, promises[index]).then(proc {|result|
@@ -448,20 +456,20 @@ module Libuv
             else
                 deferred.resolve(results)
             end
-            
+
             return deferred.promise
         end
-        
-        
+
+
         private
-        
-        
+
+
         def ref(reactor, value)
             return value if value.is_a?(Promise)
             return ResolvedPromise.new(reactor, value)            # A resolved success promise
         end
-        
-        
+
+
         module_function :all, :reject, :defer, :ref, :any
         private_class_method :ref
     end

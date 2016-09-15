@@ -2,6 +2,10 @@
 
 require 'fiber'
 
+class CoroutineRejection < RuntimeError
+    attr_accessor :value
+end
+
 class Object
     private
 
@@ -38,7 +42,15 @@ class Object
         result = Fiber.yield
 
         # Either return the result or raise an error
-        raise result if wasError
+        if wasError
+            if result.is_a?(Exception)
+                raise result
+            else
+                e = result.is_a?(String) ? CoroutineRejection.new(result) : CoroutineRejection.new
+                e.value = result
+                raise e
+            end
+        end
         result
     end
 end

@@ -252,7 +252,6 @@ describe Libuv::Q do
 				@deferred.notify(:foo)
 				
 				@log << @log.length	# Has notify run in this tick
-				@reactor.stop	# Stop will run through the next tick before stopping
 			}
 
 			expect(@log).to eq([0, :first, :second])
@@ -532,10 +531,6 @@ describe Libuv::Q do
 						end
 
 						@deferred.resolve(:foo)
-						
-						@reactor.next_tick do
-							@reactor.stop
-						end
 					}
 
 					expect(@log).to eq([:finally])
@@ -664,6 +659,104 @@ describe Libuv::Q do
 
 			end
 
+		end
+
+
+		describe 'value' do
+			it "should resolve a promise value as a future" do
+				@reactor.run {
+					@reactor.next_tick do
+						@deferred.resolve(:foo)
+					end
+					@log << @deferred.promise.value
+				}
+
+				expect(@log).to eq([:foo])
+			end
+
+			it "should reject a promise value as a future" do
+				@reactor.run {
+					@reactor.next_tick do
+						@deferred.reject(:foo)
+					end
+
+					begin
+						@deferred.promise.value
+						@log << 'should raise exception'
+					rescue => e
+						expect(e.class).to eq(CoroutineRejection)
+						@log << e.value
+					end
+				}
+
+				expect(@log).to eq([:foo])
+			end
+
+			it "should resolve a deferred value as a future" do
+				@reactor.run {
+					@reactor.next_tick do
+						@deferred.resolve(:foo)
+					end
+					@log << @deferred.value
+				}
+
+				expect(@log).to eq([:foo])
+			end
+
+			it "should reject a deferred value as a future" do
+				@reactor.run {
+					@reactor.next_tick do
+						@deferred.reject(:foo)
+					end
+
+					begin
+						@deferred.value
+						@log << 'should raise exception'
+					rescue => e
+						expect(e.class).to eq(CoroutineRejection)
+						@log << e.value
+					end
+				}
+
+				expect(@log).to eq([:foo])
+			end
+
+			it "should reject with message when rejection was a string" do
+				@reactor.run {
+					@reactor.next_tick do
+						@deferred.reject('foo')
+					end
+
+					begin
+						@deferred.value
+						@log << 'should raise exception'
+					rescue => e
+						expect(e.class).to eq(CoroutineRejection)
+						@log << e.message
+						@log << e.value
+					end
+				}
+
+				expect(@log).to eq(['foo', 'foo'])
+			end
+
+			it "should pass through exceptions without modification" do
+				@reactor.run {
+					@reactor.next_tick do
+						@deferred.reject(RuntimeError.new('fail'))
+					end
+
+					begin
+						@deferred.value
+						@log << 'should raise exception'
+					rescue => e
+						expect(e.class).to eq(RuntimeError)
+						@log << e.message
+					end
+				}
+
+				expect(@log).to eq(['fail'])
+			end
 		end
 		
 	end
