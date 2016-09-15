@@ -4,7 +4,7 @@
 
 [Libuv](https://github.com/libuv/libuv) is a cross platform asynchronous IO implementation that powers NodeJS. It supports sockets, both UDP and TCP, filesystem watch, TTY, Pipes and other asynchronous primitives like timer, check, prepare and idle.
 
-The Libuv gem contains Libuv and a Ruby wrapper that implements [pipelined promises](http://en.wikipedia.org/wiki/Futures_and_promises#Promise_pipelining) for asynchronous flow control and [coroutines](http://en.wikipedia.org/wiki/Coroutine) for untangling evented code
+The Libuv gem contains Libuv and a Ruby wrapper that implements [pipelined promises](http://en.wikipedia.org/wiki/Futures_and_promises#Promise_pipelining) for asynchronous flow control and [coroutines](http://en.wikipedia.org/wiki/Coroutine) / [futures](https://en.wikipedia.org/wiki/Futures_and_promises) for untangling evented code
 
 ## Usage
 
@@ -82,9 +82,9 @@ Any promise can be converted into a continuation
     }
 
     # Use the coroutine helper to obtain the result without a callback
-    result = co reactor.work {
+    result = reactor.work {
       10 * 3
-    }
+    }.value
     puts "no additional callbacks here #{result}"
   end
 ```
@@ -142,4 +142,4 @@ Windows users will additionally require:
 * File manipulation
 * Errors (with a catch-all fallback for anything unhandled on the event reactor)
 * Work queue (thread pool)
-* Coroutines (makes use of Fibers)
+* Coroutines / futures (makes use of Fibers)

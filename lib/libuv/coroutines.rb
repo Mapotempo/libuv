@@ -20,11 +20,11 @@ class Object
         f = Fiber.current
         wasError = false
 
-        # Convert the input into a promise
+        # Convert the input into a promise on the current reactor
         if yieldable.length == 1
-            promise = yieldable[0]
+            promise = reactor.defer.resolve(yieldable[0]).promise
         else
-            promise = ::Libuv::Reactor.current.all(*yieldable)
+            promise = reactor.all(*yieldable)
         end
 
         # Use the promise to resume the Fiber

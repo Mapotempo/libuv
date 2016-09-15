@@ -256,6 +256,7 @@ module Libuv
                         end
                     end
                 end
+                self
             end
 
             #
@@ -290,6 +291,7 @@ module Libuv
                         end
                     end
                 end
+                self
             end
 
             def resolved?
