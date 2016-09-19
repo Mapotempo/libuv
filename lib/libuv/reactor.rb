@@ -87,7 +87,10 @@ module Libuv
             self.signal(:TERM, sig_callback).unref
 
             # Notify of errors
-            @reactor_notify = proc {}
+            @throw_on_exit = nil
+            @reactor_notify = proc { |error|
+                @throw_on_exit = error
+            }
         end
 
         attr_reader :run_count
@@ -176,6 +179,10 @@ module Libuv
                     @reactor_thread = nil
                     @run_queue.clear
                 end
+
+                # Raise the last unhandled error to occur on the reactor thread
+                raise @throw_on_exit if @throw_on_exit
+
             elsif block_given?
                 update_time
                 schedule { ::Fiber.new {
