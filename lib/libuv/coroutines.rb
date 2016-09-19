@@ -22,7 +22,10 @@ class Object
 
         # Convert the input into a promise on the current reactor
         if yieldable.length == 1
-            promise = reactor.defer.resolve(yieldable[0]).promise
+            promise = yieldable[0]
+            # Passed independently as this is often overwritten for performance
+            promise.progress(block) if block_given?
+            promise = reactor.defer.resolve(promise).promise
         else
             promise = reactor.all(*yieldable)
         end
@@ -34,9 +37,6 @@ class Object
             wasError = true
             f.resume err
         })
-
-        # Passed independently as this is often overwritten for performance
-        promise.progress(block) if block_given?
 
         # Assign the result from the resume
         result = Fiber.yield

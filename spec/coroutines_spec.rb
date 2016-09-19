@@ -38,7 +38,6 @@ if RUBY_PLATFORM != 'java'
 					@log << 'after work'
 
 					@timeout.close
-					@reactor.stop
 				}
 
 				expect(@general_failure).to eq([])
@@ -57,7 +56,6 @@ if RUBY_PLATFORM != 'java'
 					end
 
 					@timeout.close
-					@reactor.stop
 				}
 
 				expect(@general_failure).to eq([])
@@ -84,7 +82,6 @@ if RUBY_PLATFORM != 'java'
 					@log << 'after work'
 
 					@timeout.close
-					@reactor.stop
 				}
 
 				expect(@general_failure).to eq([])
@@ -102,9 +99,7 @@ if RUBY_PLATFORM != 'java'
 					end
 
 					@log << 'after timer'
-
 					@timeout.close
-					@reactor.stop
 				}
 
 				expect(@log).to eq(['in timer', 'after timer'])
