@@ -28,7 +28,7 @@ describe Libuv::Dns do
 	
 	it "should resolve localhost using IP4", :network => true do
 		@reactor.run { |reactor|
-			@reactor.lookup('localhost', wait: true).then proc { |addrinfo|
+			@reactor.lookup('localhost', wait: false).then proc { |addrinfo|
 				@result = addrinfo[0][0]
 				@timeout.close
 				@reactor.stop
@@ -45,7 +45,7 @@ describe Libuv::Dns do
 
 	it "should resolve localhost using IP6", :network => true do
 		@reactor.run { |reactor|
-			@reactor.lookup('localhost', :IPv6, wait: true).then proc { |addrinfo|
+			@reactor.lookup('localhost', :IPv6, wait: false).then proc { |addrinfo|
 				@result = addrinfo[0][0]
 				@timeout.close
 				@reactor.stop
@@ -62,7 +62,7 @@ describe Libuv::Dns do
 
 	it "should resolve reactor back" do
 		@reactor.run { |reactor|
-			@reactor.lookup('127.0.0.1', wait: true).then proc { |addrinfo|
+			@reactor.lookup('127.0.0.1', wait: false).then proc { |addrinfo|
 				@result = addrinfo[0][0]
 				@timeout.close
 				@reactor.stop
@@ -80,7 +80,7 @@ describe Libuv::Dns do
 	it "should work with coroutines" do
 		@reactor.run { |reactor|
 			begin
-				addrinfo = @reactor.lookup('127.0.0.1').results
+				addrinfo = @reactor.lookup('127.0.0.1')
 				@result = [addrinfo[0][0]]
 
 				begin

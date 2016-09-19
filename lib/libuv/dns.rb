@@ -33,7 +33,7 @@ module Libuv
         # @param reactor [::Libuv::Reactor] reactor this work request will be associated
         # @param domain [String] the domain name to resolve
         # @param port [Integer, String] the port we wish to use
-        def initialize(reactor, domain, port, hint = :IPv4, wait: false)
+        def initialize(reactor, domain, port, hint = :IPv4, wait: true)
             super(reactor, reactor.defer)
 
             @domain = domain
@@ -52,7 +52,7 @@ module Libuv
                 @defer.reject(error)
             end
 
-            co(@defer.promise) unless wait
+            co(@defer.promise) if wait
         end
 
         # Indicates if the lookup has completed yet or not.

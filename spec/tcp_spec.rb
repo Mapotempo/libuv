@@ -110,7 +110,7 @@ describe Libuv::TCP do
 				@client.progress do |data|
 					@log << data
 
-					addrinfo = @reactor.lookup('127.0.0.1').results
+					addrinfo = @reactor.lookup('127.0.0.1')
 					@log << addrinfo[0][0]
 
 					@client.shutdown
@@ -162,7 +162,7 @@ describe Libuv::TCP do
 				@client.connect('127.0.0.1', 34567)
 				@client.write('ping')
 				@log << @client.read(4)
-				addrinfo = @reactor.lookup('127.0.0.1').results
+				addrinfo = @reactor.lookup('127.0.0.1')
 				@log << addrinfo[0][0]
 				@client.shutdown
 			}

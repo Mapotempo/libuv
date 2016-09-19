@@ -385,10 +385,14 @@ module Libuv
         # @param port [Integer, String] the service being connected too
         # @param callback [Proc] the callback to be called on success
         # @return [::Libuv::Dns]
-        def lookup(hostname, hint = :IPv4, port = 9, wait: false, &block)
+        def lookup(hostname, hint = :IPv4, port = 9, wait: true, &block)
             dns = Dns.new(@reactor, hostname, port, hint, wait: wait)    # Work is a promise object
-            dns.then block if block_given?
-            dns
+            if block_given? || !wait
+                dns.then block
+                dns
+            else
+                dns.results
+            end
         end
 
         # Get a new FSEvent instance
