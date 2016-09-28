@@ -10,6 +10,8 @@ module Libuv
             # This allows subclasses to make use of the catch feature
             alias_method :ruby_catch, :catch
 
+            # Allows a backtrace to be included in any errors
+            attr_accessor :trace
 
             # Used by finally method
             MAKE_PROMISE = proc { |value, resolved, reactor|
@@ -58,7 +60,7 @@ module Libuv
                     begin
                         callbackOutput = callback.call
                     rescue Exception => e
-                        @reactor.log e, 'performing promise finally callback'
+                        @reactor.log e, 'performing promise finally callback', @trace
                         return MAKE_PROMISE.call(e, false, @reactor)
                     end
 
@@ -113,9 +115,8 @@ module Libuv
                     begin
                         result.resolve(callback.nil? ? val : callback.call(val))
                     rescue Exception => e
-                        #warn "\nUnhandled exception: #{e.message}\n#{e.backtrace.join("\n")}\n"
                         result.reject(e)
-                        @reactor.log e, 'performing promise resolution callback'
+                        @reactor.log e, 'performing promise resolution callback', @trace
                     end
                 }
                 
@@ -123,9 +124,8 @@ module Libuv
                     begin
                         result.resolve(errback.nil? ? Q.reject(@reactor, reason) : errback.call(reason))
                     rescue Exception => e
-                        #warn "Unhandled exception: #{e.message}\n#{e.backtrace.join("\n")}\n"
                         result.reject(e)
-                        @reactor.log e, 'performing promise rejection callback'
+                        @reactor.log e, 'performing promise rejection callback', @trace
                     end
                 }
 
@@ -133,8 +133,7 @@ module Libuv
                     begin
                         result.notify(progback.nil? ? progress : progback.call(*progress))
                     rescue Exception => e
-                        #warn "Unhandled exception: #{e.message}\n#{e.backtrace.join("\n")}\n"
-                        @reactor.log e, 'performing promise progress callback'
+                        @reactor.log e, 'performing promise progress callback', @trace
                     end
                 }
                 
@@ -196,17 +195,15 @@ module Libuv
                         begin
                             result.resolve(errback.nil? ? Q.reject(@reactor, @response) : errback.call(@response))
                         rescue Exception => e
-                            #warn "Unhandled exception: #{e.message}\n#{e.backtrace.join("\n")}\n"
                             result.reject(e)
-                            @reactor.log e, 'performing promise rejection callback'
+                            @reactor.log e, 'performing promise rejection callback', @trace
                         end
                     else
                         begin
                             result.resolve(callback.nil? ? @response : callback.call(@response))
                         rescue Exception => e
-                            #warn "\nUnhandled exception: #{e.message}\n#{e.backtrace.join("\n")}\n"
                             result.reject(e)
-                            @reactor.log e, 'performing promise resolution callback'
+                            @reactor.log e, 'performing promise resolution callback', @trace
                         end
                     end
                 }

@@ -19,23 +19,31 @@ class Object
     def co(*yieldable, &block)
         f = Fiber.current
         wasError = false
+        on_reactor = reactor
 
         # Convert the input into a promise on the current reactor
         if yieldable.length == 1
             promise = yieldable[0]
             # Passed independently as this is often overwritten for performance
             promise.progress(block) if block_given?
-            promise = reactor.defer.resolve(promise).promise
         else
-            promise = reactor.all(*yieldable)
+            promise = on_reactor.all(*yieldable)
         end
 
         # Use the promise to resume the Fiber
         promise.then(proc { |res|
-            f.resume res
+            if reactor == on_reactor
+                f.resume res
+            else
+                on_reactor.schedule { f.resume(res) }
+            end
         }, proc { |err|
             wasError = true
-            f.resume err
+            if reactor == on_reactor
+                f.resume err
+            else
+                on_reactor.schedule { f.resume(err) }
+            end
         })
 
         # Assign the result from the resume

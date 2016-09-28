@@ -123,7 +123,8 @@ module Libuv
             length = @run_queue.length
             update_time
             length.times do
-                process_item
+                # This allows any item to pause its execution without effecting this loop
+                ::Fiber.new { process_item }.resume
             end
         end
 
