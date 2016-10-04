@@ -54,7 +54,12 @@ class Object
             if result.is_a?(Exception)
                 raise result
             else
-                e = result.is_a?(String) ? CoroutineRejection.new(result) : CoroutineRejection.new
+                e = case result
+                when String, Symbol
+                    CoroutineRejection.new(result.to_s)
+                else
+                    CoroutineRejection.new
+                end
                 e.value = result
                 raise e
             end
