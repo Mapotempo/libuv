@@ -185,13 +185,7 @@ module Libuv
 
             elsif block_given?
                 update_time
-                schedule { ::Fiber.new {
-                    begin
-                        yield @reactor
-                    rescue Exception => e
-                        log(e, 'in reactor run block')
-                    end
-                }.resume }
+                yield @reactor
             end
 
             @reactor
@@ -504,5 +498,6 @@ module Libuv
         def reactor_running?
             !@reactor_thread.nil?
         end
+        alias_method :running?, :reactor_running?
     end
 end
