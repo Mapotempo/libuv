@@ -167,9 +167,8 @@ module Libuv
                         ::Fiber.new {
                             begin
                                 yield @reactor
-                            rescue => e
-                                # TODO:: update default error handler
-                                puts e
+                            rescue Exception => e
+                                log(e, 'in reactor run block')
                             end
                         }.resume
                     end
@@ -189,9 +188,8 @@ module Libuv
                 schedule { ::Fiber.new {
                     begin
                         yield @reactor
-                    rescue => e
-                        # TODO:: update default error handler
-                        puts e
+                    rescue Exception => e
+                        log(e, 'in reactor run block')
                     end
                 }.resume }
             end
