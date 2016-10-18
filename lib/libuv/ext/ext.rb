@@ -22,14 +22,16 @@ module Libuv
         module_function :malloc, :free
 
 
+        def self.path_to_internal_libuv
+            @path_to_internal_libuv ||= ::File.expand_path("../../../../ext/libuv/lib/libuv.#{FFI::Platform::LIBSUFFIX}", __FILE__)
+        end
+
+
         begin
             # bias the library discovery to a path inside the gem first, then
             # to the usual system paths
-
-            path_to_internal_libuv = ::File.dirname(__FILE__) + '/../../../ext/libuv/lib'
-
             paths = [
-                path_to_internal_libuv,
+                ::File.expand_path('../', path_to_internal_libuv),
                 '/usr/local/lib',
                 '/opt/local/lib',
                 '/usr/lib64'
@@ -55,11 +57,6 @@ module Libuv
             #{LIBUV_PATHS.inspect}
             WARNING
             exit 255
-        end
-
-
-        def self.path_to_internal_libuv
-            @path_to_internal_libuv ||= ::File.expand_path("../../../../ext/libuv/lib/libuv.#{FFI::Platform::LIBSUFFIX}", __FILE__)
         end
 
 
