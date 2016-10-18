@@ -184,8 +184,10 @@ module Libuv
                 raise @throw_on_exit if @throw_on_exit
 
             elsif block_given?
-                update_time
-                yield @reactor
+                schedule {
+                    update_time
+                    yield @reactor
+                }
             end
 
             @reactor
