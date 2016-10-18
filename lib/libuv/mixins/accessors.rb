@@ -5,10 +5,8 @@ module Libuv
         def reactor
             thread = Libuv::Reactor.current
             if thread.nil?
-                default = Libuv::Reactor.default
-                unless default.reactor_running?
-                    thread = default
-                else
+                thread = Libuv::Reactor.default
+                if thread.reactor_running?
                     raise 'No reactor available on this thread'
                 end
             end
@@ -25,12 +23,17 @@ module Libuv
 
         Functions.each do |function|
             define_method function do |*args|
-                thread = Libuv::Reactor.current || Libuv::Reactor.default
+                thread = Libuv::Reactor.current
 
-                if thread.reactor_running? && thread.reactor_thread? || !thread.reactor_running? && thread == Libuv::Reactor.default
-                    reactor.send(function, *args)
+                if thread
+                    thread.send(function, *args)
                 else
-                    raise 'attempted Libuv::Reactor access on non-reactor thread'
+                    thread = Libuv::Reactor.default
+                    if thread.reactor_running?
+                        raise 'attempted Libuv::Reactor access on non-reactor thread'
+                    else
+                       thread.send(function, *args) 
+                    end
                 end
             end
         end

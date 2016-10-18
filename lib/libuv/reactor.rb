@@ -184,10 +184,12 @@ module Libuv
                 raise @throw_on_exit if @throw_on_exit
 
             elsif block_given?
-                schedule {
+                if reactor_thread?
                     update_time
                     yield @reactor
-                }
+                else
+                    raise 'reactor already running on another thread'
+                end
             end
 
             @reactor
