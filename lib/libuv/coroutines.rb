@@ -34,14 +34,14 @@ class Object
 
         # Use the promise to resume the Fiber
         promise.then(proc { |res|
-            if reactor == on_reactor
+            if Libuv::Reactor.current == on_reactor
                 f.resume res
             else
                 on_reactor.schedule { f.resume(res) }
             end
         }, proc { |err|
             wasError = true
-            if reactor == on_reactor
+            if Libuv::Reactor.current == on_reactor
                 f.resume err
             else
                 on_reactor.schedule { f.resume(err) }
