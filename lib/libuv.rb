@@ -72,6 +72,8 @@ end
 
 
 class Object
+    private
+    
     def reactor(&blk)
         Libuv.reactor &blk
     end
