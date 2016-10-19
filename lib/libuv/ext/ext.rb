@@ -129,7 +129,7 @@ module Libuv
         attach_function :tcp_nodelay, :uv_tcp_nodelay, [:uv_tcp_t, :int], :int, :blocking => true
         attach_function :tcp_keepalive, :uv_tcp_keepalive, [:uv_tcp_t, :int, :uint], :int, :blocking => true
         attach_function :tcp_simultaneous_accepts, :uv_tcp_simultaneous_accepts, [:uv_tcp_t, :int], :int, :blocking => true
-        attach_function :tcp_bind, :uv_tcp_bind, [:uv_tcp_t, :sockaddr_in], :int, :blocking => true
+        attach_function :tcp_bind, :uv_tcp_bind, [:uv_tcp_t, :sockaddr_in, :uint], :int, :blocking => true
         attach_function :tcp_getsockname, :uv_tcp_getsockname, [:uv_tcp_t, :pointer, :pointer], :int, :blocking => true
         attach_function :tcp_getpeername, :uv_tcp_getpeername, [:uv_tcp_t, :pointer, :pointer], :int, :blocking => true
         attach_function :tcp_connect, :uv_tcp_connect, [:uv_connect_t, :uv_tcp_t, :sockaddr_in, :uv_connect_cb], :int, :blocking => true
