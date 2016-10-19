@@ -98,10 +98,10 @@ module Libuv
         attach_function :strerror, :uv_strerror, [:int], :string
         attach_function :err_name, :uv_err_name, [:int], :string
 
-        attach_function :ref, :uv_ref, [:uv_handle_t], :void, :blocking => true
-        attach_function :unref, :uv_unref, [:uv_handle_t], :void, :blocking => true
-        attach_function :has_ref, :uv_has_ref, [:uv_handle_t], :int, :blocking => true
-        attach_function :is_active, :uv_is_active, [:uv_handle_t], :int, :blocking => true
+        attach_function :ref, :uv_ref, [:uv_handle_t], :void
+        attach_function :unref, :uv_unref, [:uv_handle_t], :void
+        attach_function :has_ref, :uv_has_ref, [:uv_handle_t], :int
+        attach_function :is_active, :uv_is_active, [:uv_handle_t], :int
         attach_function :walk, :uv_walk, [:uv_loop_t, :uv_walk_cb, :pointer], :void, :blocking => true
         attach_function :close, :uv_close, [:uv_handle_t, :uv_close_cb], :void, :blocking => true
         attach_function :is_closing, :uv_is_closing, [:uv_handle_t], :int, :blocking => true

@@ -58,6 +58,7 @@ module Libuv
             @pointer = pointer
             @reactor = self
             @run_count = 0
+            @ref_count = 0
 
             # Create an async call for scheduling work from other threads
             @run_queue = Queue.new
@@ -193,6 +194,22 @@ module Libuv
             end
 
             @reactor
+        end
+
+        # Prevents the reactor loop from stopping
+        def ref
+            if reactor_thread? && reactor_running?
+                @process_queue.ref if @ref_count == 0
+                @ref_count += 1
+            end
+        end
+
+        # Allows the reactor loop to stop
+        def unref
+            if reactor_thread? && reactor_running? && @ref_count > 0
+                @ref_count -= 1
+                @process_queue.unref if @ref_count == 0
+            end
         end
 
 

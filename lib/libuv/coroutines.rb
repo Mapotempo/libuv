@@ -17,9 +17,11 @@ class Object
     # @return [Object] Returns the result of a single promise or an array of results if provided multiple promises
     # @raise [Exception] if the promise is rejected
     def co(*yieldable, &block)
+        on_reactor = Libuv::Reactor.current
+        raise 'must be running on a reactor thread to use coroutines' unless on_reactor
+
         f = Fiber.current
         wasError = false
-        on_reactor = reactor
 
         # Convert the input into a promise on the current reactor
         if yieldable.length == 1
@@ -46,8 +48,10 @@ class Object
             end
         })
 
-        # Assign the result from the resume
-        result = Fiber.yield
+        # We want to prevent the reactor from stopping while we are waiting on a response
+        on_reactor.ref
+        result = Fiber.yield # Assign the result from the resume
+        on_reactor.unref
 
         # Either return the result or raise an error
         if wasError
