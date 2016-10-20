@@ -371,7 +371,7 @@ module Libuv
             end
 
             def bind
-                check_result! ::Libuv::Ext.tcp_bind(@tcp, ip_addr)
+                check_result! ::Libuv::Ext.tcp_bind(@tcp, ip_addr, 0)
             end
 
             def connect(callback)
