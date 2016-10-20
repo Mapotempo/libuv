@@ -163,6 +163,8 @@ module Libuv
                     raise 'only one reactor allowed per-thread' if REACTORS[@reactor_thread]
 
                     REACTORS[@reactor_thread] = @reactor
+                    @throw_on_exit = nil
+
                     if block_given?
                         update_time
                         ::Fiber.new {
