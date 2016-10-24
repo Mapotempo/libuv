@@ -263,7 +263,13 @@ module Libuv
         def finally(*promises)
             Q.finally(@reactor, *promises)
         end
-        
+
+        # Creates a promise that is resolved as rejected with the specified reason. This api should be
+        # used to forward rejection in a chain of promises. If you are dealing with the last promise in
+        # a promise chain, you don't need to worry about it.
+        def reject(reason)
+            Q.reject(@reactor, reason)
+        end
 
         # forces reactor time update, useful for getting more granular times
         # 
