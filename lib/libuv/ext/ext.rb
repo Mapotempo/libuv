@@ -53,7 +53,7 @@ module Libuv
                 end
                 # This ensures that externally loaded libraries like the libcouchbase gem
                 # will always use the same binary image and not load a second into memory
-                Kernel32.add_dll_dir lib_path.encode("UTF-16LE")
+                Kernel32.add_dll_dir "#{lib_path}\0".encode("UTF-16LE")
             else # UNIX
                 # TODO:: ??
             end
