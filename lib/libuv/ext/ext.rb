@@ -28,10 +28,12 @@ module Libuv
 
 
         begin
+            lib_path = ::File.expand_path('../', path_to_internal_libuv)
+
             # bias the library discovery to a path inside the gem first, then
             # to the usual system paths
             paths = [
-                ::File.expand_path('../', path_to_internal_libuv),
+                lib_path,
                 '/usr/local/lib',
                 '/opt/local/lib',
                 '/usr/lib64'
@@ -42,7 +44,16 @@ module Libuv
                 # Primarily a dev platform so that is OK
                 paths.unshift "#{ENV['HOME']}/lib"
             elsif FFI::Platform.windows?
-                # TODO:: AddDllDirectory function to point to path_to_internal_libuv
+                module Kernel32
+                    extend FFI::Library
+                    ffi_lib 'Kernel32'
+
+                    attach_function :add_dll_dir, :AddDllDirectory, 
+                        [ :buffer_in ], :pointer
+                end
+                # This ensures that externally loaded libraries like the libcouchbase gem
+                # will always use the same binary image and not load a second into memory
+                Kernel32.add_dll_dir lib_path.encode("UTF-16LE")
             else # UNIX
                 # TODO:: ??
             end
