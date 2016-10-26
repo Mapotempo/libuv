@@ -16,19 +16,24 @@ describe Libuv::Async do
 
 		@reactor.all(@server, @client, @timeout).catch do |reason|
 			@general_failure << reason.inspect
-			p "Failed with: #{reason.message}\n#{reason.backtrace.join("\n")}\n"
+			puts "Failed with: #{reason.message}\n#{reason.backtrace.join("\n")}\n"
 		end
+
+		@reactor.notifier do |error, context|
+			begin
+				puts "Log called: #{context}\n#{error.message}\n#{error.backtrace.join("\n")}\n"
+			rescue Exception
+				puts 'error in logger'
+			end
+		end
+	end
+
+	after :each do
+		@reactor.notifier
 	end
 	
 	it "Should call the async function from the thread pool stopping the counter" do
 		@reactor.run { |reactor|
-			reactor.notifier do |error, context|
-				begin
-					p "Log called: #{context}\n#{error.message}\n#{error.backtrace.join("\n")}\n"
-				rescue Exception
-					p 'error in logger'
-				end
-			end
 
 			@count = 0
 

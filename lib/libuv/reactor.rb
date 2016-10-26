@@ -8,7 +8,6 @@ module Libuv
         extend Accessors
 
 
-        REACTORS = ::Concurrent::Map.new
         CRITICAL = ::Mutex.new
 
 
@@ -47,7 +46,7 @@ module Libuv
             #
             # @return [::Libuv::Reactor | nil]
             def current
-                REACTORS[Thread.current]
+                Thread.current.thread_variable_get(:reactor)
             end
         end
         extend ClassMethods
@@ -89,7 +88,7 @@ module Libuv
 
             # Notify of errors
             @throw_on_exit = nil
-            @reactor_notify = proc { |error|
+            @reactor_notify_default = @reactor_notify = proc { |error|
                 @throw_on_exit = error
             }
         end
@@ -103,8 +102,8 @@ module Libuv
         def noop; end
 
         def stop_cb
-            REACTORS.delete(@reactor_thread)
-            @reactor_thread = nil
+            Thread.current.thread_variable_set(:reactor, nil)
+            @reactor_running = false
 
             ::Libuv::Ext.stop(@pointer)
         end
@@ -157,12 +156,12 @@ module Libuv
         # @yieldparam promise [::Libuv::Q::Promise] Yields a promise that can be used for logging unhandled
         #   exceptions on the reactor.
         def run(run_type = :UV_RUN_DEFAULT)
-            if @reactor_thread.nil?
+            if not @reactor_running
                 begin
-                    @reactor_thread = ::Thread.current
-                    raise 'only one reactor allowed per-thread' if REACTORS[@reactor_thread]
+                    @reactor_running = true
+                    raise 'only one reactor allowed per-thread' if Thread.current.thread_variable_get(:reactor)
 
-                    REACTORS[@reactor_thread] = @reactor
+                    Thread.current.thread_variable_set(:reactor, @reactor)
                     @throw_on_exit = nil
 
                     if block_given?
@@ -178,8 +177,8 @@ module Libuv
                     @run_count += 1
                     ::Libuv::Ext.run(@pointer, run_type)  # This is blocking
                 ensure
-                    REACTORS.delete(@reactor_thread)
-                    @reactor_thread = nil
+                    Thread.current.thread_variable_set(:reactor, nil)
+                    @reactor_running = false
                     @run_queue.clear
                 end
 
@@ -219,7 +218,7 @@ module Libuv
         #
         # @return [::Libuv::Q::Promise]
         def notifier(callback = nil, &blk)
-            @reactor_notify = callback || blk
+            @reactor_notify = callback || blk || @reactor_notify_default
             self
         end
 
@@ -513,19 +512,14 @@ module Libuv
         #
         # @return [Boolean]
         def reactor_thread?
-            @reactor_thread == ::Thread.current
+            self == Thread.current.thread_variable_get(:reactor)
         end
-
-        # Exposed to allow joining on the thread, when run in a multithreaded environment. Performing other actions on the thread has undefined semantics (read: a dangerous endevor).
-        #
-        # @return [Thread]
-        attr_reader :reactor_thread
 
         # Tells you whether the Libuv reactor reactor is currently running.
         #
         # @return [Boolean]
         def reactor_running?
-            !@reactor_thread.nil?
+            @reactor_running
         end
         alias_method :running?, :reactor_running?
     end

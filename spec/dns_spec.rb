@@ -9,9 +9,9 @@ describe Libuv::Dns do
 		@reactor = Libuv::Reactor.default
 		@reactor.notifier do |error, context|
 			begin
-				p "Log called: #{context}\n#{error.message}\n#{error.backtrace.join("\n")}\n"
+				puts "Log called: #{context}\n#{error.message}\n#{error.backtrace.join("\n")}\n"
 			rescue Exception
-				p 'error in logger'
+				puts 'error in logger'
 			end
 		end
 		@timeout = @reactor.timer do
@@ -22,8 +22,12 @@ describe Libuv::Dns do
 
 		@reactor.all(@server, @client, @timeout).catch do |reason|
 			@general_failure << reason.inspect
-			p "Failed with: #{reason.message}\n#{reason.backtrace.join("\n")}\n"
+			puts "Failed with: #{reason.message}\n#{reason.backtrace.join("\n")}\n"
 		end
+	end
+
+	after :each do
+		@reactor.notifier
 	end
 	
 	it "should resolve localhost using IP4", :network => true do

@@ -5,12 +5,17 @@ describe Libuv::Q do
 	
 	before :each do
 		@reactor = Libuv::Reactor.default
+		@reactor.notifier {}
 		@deferred = @reactor.defer
 		@promise = @deferred.promise
 		@log = []
 		@default_fail = proc { |reason|
 			@reactor.stop
 		}
+	end
+
+	after :each do
+		@reactor.notifier
 	end
 	
 	
