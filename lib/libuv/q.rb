@@ -371,6 +371,7 @@ module Libuv
         #   same rejection.
         def all(reactor, *promises)
             deferred = Q.defer(reactor)
+            promises = promises.flatten
             counter = promises.length
             results = []
 
@@ -406,6 +407,7 @@ module Libuv
         # @return [Promise] Returns a single promise
         def any(reactor, *promises)
             deferred = Q.defer(reactor)
+            promises = promises.flatten
             if promises.length > 0
                 promises.each_index do |index|
                     ref(reactor, promises[index]).then(proc {|result|
@@ -431,6 +433,7 @@ module Libuv
         #   each [result, wasResolved] value pair corresponding to a at the same index in the `promises` array.
         def self.finally(reactor, *promises)
             deferred = Q.defer(reactor)
+            promises = promises.flatten
             counter = promises.length
             results = []
 
