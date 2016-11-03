@@ -56,6 +56,12 @@ class Object
         # Either return the result or raise an error
         if wasError
             if result.is_a?(Exception)
+                backtrace = caller
+                if result.respond_to?(:backtrace) && result.backtrace
+                    backtrace << '---- continuation ----'
+                    backtrace.concat(result.backtrace)
+                end
+                result.set_backtrace(backtrace)
                 raise result
             else
                 e = case result
