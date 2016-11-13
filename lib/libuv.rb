@@ -62,12 +62,6 @@ module Libuv
 
     # Include all the accessors at this level
     extend Accessors
-
-    # Run the default reactor
-    at_exit do
-        reactor = Reactor.default
-        reactor.run if $!.nil? && reactor.run_count == 0
-    end
 end
 
 
