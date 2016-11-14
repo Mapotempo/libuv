@@ -80,7 +80,7 @@ module Libuv
 
             # LibUV ingnores program interrupt by default.
             # We provide normal behaviour and allow this to be overriden
-            @on_signal = proc { stop_cb }
+            @on_signal = []
             sig_callback = method(:signal_cb)
             self.signal(:INT, sig_callback).unref
             self.signal(:HUP, sig_callback).unref
@@ -109,7 +109,11 @@ module Libuv
         end
 
         def signal_cb(_)
-            @on_signal.call
+            if @on_signal.empty?
+                stop_cb
+            else
+                @on_signal.each(&:call)
+            end
         end
 
         def next_tick_cb
@@ -392,7 +396,7 @@ module Libuv
 
         # Allows user defined behaviour when sig int is received
         def on_program_interrupt(callback = nil, &block)
-            @on_signal = callback || block
+            @on_signal << (callback || block)
             self
         end
 
