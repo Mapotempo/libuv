@@ -111,6 +111,7 @@ if RUBY_PLATFORM != 'java'
 					@log << 'before sleep'
 					reactor.sleep 200
 					@log << 'after sleep'
+					@timeout.close
 				}
 
 				expect(@log).to eq(['before sleep', 'after sleep'])
