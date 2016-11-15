@@ -105,6 +105,17 @@ if RUBY_PLATFORM != 'java'
 				expect(@log).to eq(['in timer', 'after timer'])
 				expect(@general_failure).to eq([])
 			end
+
+			it "should provide a sleep function that doesn't block the reactor" do
+				@reactor.run { |reactor|
+					@log << 'before sleep'
+					reactor.sleep 200
+					@log << 'after sleep'
+				}
+
+				expect(@log).to eq(['before sleep', 'after sleep'])
+				expect(@general_failure).to eq([])
+			end
 		end
 	end
 end

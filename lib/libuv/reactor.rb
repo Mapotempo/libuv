@@ -308,6 +308,15 @@ module Libuv
             e
         end
 
+        def sleep(msecs)
+            fiber = Fiber.current
+            time = timer {
+                time.close
+                fiber.resume
+            }.start(msecs)
+            Fiber.yield
+        end
+
         # Get a new TCP instance
         # 
         # @return [::Libuv::TCP]
