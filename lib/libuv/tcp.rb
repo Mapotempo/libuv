@@ -22,12 +22,16 @@ module Libuv
         def tls?; !@tls.nil?; end
 
 
-        def initialize(reactor, acceptor = nil, progress: nil)
+        def initialize(reactor, acceptor = nil, progress: nil, flags: nil)
             @reactor = reactor
             @progress = progress
 
             tcp_ptr = ::Libuv::Ext.allocate_handle_tcp
-            error = check_result(::Libuv::Ext.tcp_init(reactor.handle, tcp_ptr))
+            error = if flags
+                check_result(::Libuv::Ext.tcp_init_ext(reactor.handle, tcp_ptr, flags))
+            else
+                check_result(::Libuv::Ext.tcp_init(reactor.handle, tcp_ptr))
+            end
 
             if acceptor && error.nil?
                 error = check_result(::Libuv::Ext.accept(acceptor, tcp_ptr))
