@@ -320,17 +320,15 @@ module Libuv
         # Get a new TCP instance
         # 
         # @return [::Libuv::TCP]
-        def tcp(callback = nil, &blk)
-            callback ||= blk
-            TCP.new(@reactor, progress: callback)
+        def tcp(callback = nil, **opts, &blk)
+            TCP.new(@reactor, progress: callback || blk, **opts)
         end
 
         # Get a new UDP instance
         #
         # @return [::Libuv::UDP]
-        def udp(callback = nil, &blk)
-            callback ||= blk
-            UDP.new(@reactor, progress: callback)
+        def udp(callback = nil, **opts, &blk)
+            UDP.new(@reactor, progress: callback || blk, **opts)
         end
 
         # Get a new TTY instance
