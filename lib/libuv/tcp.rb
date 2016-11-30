@@ -28,7 +28,7 @@ module Libuv
 
             tcp_ptr = ::Libuv::Ext.allocate_handle_tcp
             error = if flags
-                check_result(::Libuv::Ext.tcp_init_ext(reactor.handle, tcp_ptr, flags))
+                check_result(::Libuv::Ext.tcp_init_ex(reactor.handle, tcp_ptr, flags))
             else
                 check_result(::Libuv::Ext.tcp_init(reactor.handle, tcp_ptr))
             end
