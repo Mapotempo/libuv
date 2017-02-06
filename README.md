@@ -143,3 +143,38 @@ Windows users will additionally require:
 * Errors (with a catch-all fallback for anything unhandled on the event reactor)
 * Work queue (thread pool)
 * Coroutines / futures (makes use of Fibers)
+
+### Server Name Indication
+
+You can host a TLS enabled server with multiple hostnames using SNI.
+
+```ruby
+server = reactor.tcp
+server.bind('0.0.0.0', 3000, **{
+    hosts: [{
+        private_key: '/blah.key',
+        cert_chain: '/blah.crt',
+        host_name: 'somehost.com',
+    },
+    {
+        private_key: '/blah2.key',
+        cert_chain: '/blah2.crt',
+        host_name: 'somehost2.com'
+    },
+    {
+        private_key: '/blah3.key',
+        cert_chain: '/blah3.crt',
+        host_name: 'somehost3.com'
+    }]
+}) do |client|
+    client.start_tls
+    client.start_read
+end
+
+# at some point later
+server.add_host(private_key: '/blah4.key', cert_chain: '/blah4.crt', host_name: 'somehost4.com')
+server.remove_host('somehost2.com')
+```
+
+You don't have to specify any hosts at binding time.
+
