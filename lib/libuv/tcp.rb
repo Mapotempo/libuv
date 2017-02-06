@@ -23,9 +23,10 @@ module Libuv
         def tls?; !@tls.nil?; end
 
 
-        def initialize(reactor, acceptor = nil, progress: nil, flags: nil)
+        def initialize(reactor, acceptor = nil, progress: nil, flags: nil, **tls_options)
             @reactor = reactor
             @progress = progress
+            @tls_options = tls_options
 
             tcp_ptr = ::Libuv::Ext.allocate_handle_tcp
             error = if flags
@@ -56,7 +57,13 @@ module Libuv
 
             @handshake = false
             @pending_writes = []
-            @tls = ::RubyTls::SSL::Box.new(args[:server], self, args)
+            @tls_options.merge!(args)
+            @tls = ::RubyTls::SSL::Box.new(@tls_options[:server], self, @tls_options)
+            if @tls_options[:hosts]
+                @tls_options[:hosts].each do |host_opts|
+                    @tls.add_host(**host_opts)
+                end
+            end
             @tls.start
             self
         end
@@ -198,7 +205,7 @@ module Libuv
         # --------------------------------------
         #
 
-        def bind(ip, port, callback = nil, &blk)
+        def bind(ip, port, callback = nil, **tls_options, &blk)
             return self if @closed
 
             @on_accept = callback || blk
@@ -210,6 +217,8 @@ module Libuv
             begin
                 @tcp_socket = create_socket(IPAddr.new(ip), port)
                 @tcp_socket.bind
+                @tls_options.merge!(tls_options)
+                @tls_options[:server] = true
             rescue Exception => e
                 reject(e)
             end
@@ -349,7 +358,7 @@ module Libuv
         def accept(_)
             begin
                 raise RuntimeError, CLOSED_HANDLE_ERROR if @closed
-                tcp = TCP.new(reactor, handle)
+                tcp = TCP.new(reactor, handle, **@tls_options)
 
                 ::Fiber.new {
                     begin

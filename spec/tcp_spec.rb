@@ -274,7 +274,7 @@ describe Libuv::TCP do
 		it "should send a ping and return a pong", :network => true do
 			@reactor.run { |reactor|
 				@server.bind('127.0.0.1', 56789) do |client|
-					client.start_tls(server: true)
+					client.start_tls
 					client.progress do |data|
 						@log << data
 
