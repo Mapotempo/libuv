@@ -200,6 +200,24 @@ module Libuv
             end
             self
         end
+
+        def add_host(**host_opts)
+            @tls_options[:hosts] ||= []
+            @tls_options[:hosts] << host_opts
+        end
+
+        def remove_host(name)
+            if @tls_options[:hosts]
+                found = nil
+                @tls_options[:hosts].each do |host|
+                    if host[:host_name] == name
+                        found = host
+                        break
+                    end 
+                end
+                @tls_options[:hosts].delete(found) if found
+            end
+        end
         #
         # END TLS Abstraction ------------------
         # --------------------------------------
