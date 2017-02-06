@@ -17,6 +17,7 @@ module Libuv
 
         attr_reader :connected
         attr_reader :protocol
+        attr_reader :tls
 
         # Check if tls active on the socket
         def tls?; !@tls.nil?; end
