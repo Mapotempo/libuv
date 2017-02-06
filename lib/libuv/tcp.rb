@@ -58,11 +58,16 @@ module Libuv
             @handshake = false
             @pending_writes = []
             @tls_options.merge!(args)
-            @tls = ::RubyTls::SSL::Box.new(@tls_options[:server], self, @tls_options)
-            if @tls_options[:hosts]
-                @tls_options[:hosts].each do |host_opts|
+
+            hosts = @tls_options[:hosts]
+            if hosts && hosts[0]
+                opts = @tls_options.merge(hosts[0])
+                @tls = ::RubyTls::SSL::Box.new(opts[:server], self, opts)
+                hosts[1..-1].each do |host_opts|
                     @tls.add_host(**host_opts)
                 end
+            else
+                @tls = ::RubyTls::SSL::Box.new(@tls_options[:server], self, @tls_options)
             end
             @tls.start
             self
