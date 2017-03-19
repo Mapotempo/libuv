@@ -284,7 +284,7 @@ module Libuv
 
         # Get current time in milliseconds
         # 
-        # @return [Fixnum]
+        # @return [Integer]
         def now
             ::Libuv::Ext.now(@pointer)
         end

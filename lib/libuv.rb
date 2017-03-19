@@ -47,7 +47,7 @@ module Libuv
 
     # Returns the number of CPU cores on the host platform
     # 
-    # @return [Fixnum, nil] representing the number of CPU cores or nil if failed
+    # @return [Integer, nil] representing the number of CPU cores or nil if failed
     def self.cpu_count
         cpu_info = FFI::MemoryPointer.new(:pointer)
         cpu_count = FFI::MemoryPointer.new(:int)
