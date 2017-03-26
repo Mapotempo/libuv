@@ -43,7 +43,7 @@ module Libuv
 
         def self.included(base)
             base.instance_variable_set(:@callback_funcs, {})
-            base.instance_variable_set(:@callback_lookup, ::Concurrent::Map.new)
+            base.instance_variable_set(:@callback_lookup, ::Concurrent::Hash.new)
             base.instance_variable_set(:@callback_lock, ::Mutex.new)
             base.extend(ClassMethods)
         end
