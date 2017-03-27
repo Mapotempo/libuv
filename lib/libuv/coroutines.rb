@@ -57,6 +57,7 @@ class Object
         if wasError
             if result.is_a?(Exception)
                 backtrace = caller
+                backtrace.unshift
                 if result.respond_to?(:backtrace) && result.backtrace
                     backtrace << '---- continuation ----'
                     backtrace.concat(result.backtrace)
