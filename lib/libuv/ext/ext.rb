@@ -18,9 +18,15 @@ module Libuv
             attach_function :malloc, [:size_t], :pointer
             attach_function :free, [:pointer], :void
         end
-        def_delegators :LIBC, :malloc, :free
-        module_function :malloc, :free
 
+        def self.malloc(bytes)
+            ::Libuv::Ext::LIBC.malloc(bytes)
+        end
+
+        def self.free(pointer)
+            ::Libuv::Ext::LIBC.free(pointer)
+        end
+        
 
         def self.path_to_internal_libuv
             @path_to_internal_libuv ||= ::File.expand_path("../../../../ext/libuv/lib/libuv.#{FFI::Platform::LIBSUFFIX}", __FILE__)
