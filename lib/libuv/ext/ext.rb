@@ -297,12 +297,12 @@ module Libuv
         # Predetermine the handle sizes
         enum_type(:uv_handle_type).symbols.each do |handle_type|
             handle_size = Ext.handle_size(handle_type)
-            define_singleton_method(:"allocate_handle_#{handle_type}") { LIBC.malloc(handle_size) }
+            define_singleton_method(:"allocate_handle_#{handle_type}") { ::Libuv::Ext::LIBC.malloc(handle_size) }
         end
 
         enum_type(:uv_req_type).symbols.each do |request_type|
             request_size = Ext.req_size(request_type)
-            define_singleton_method(:"allocate_request_#{request_type}") { LIBC.malloc(request_size) }
+            define_singleton_method(:"allocate_request_#{request_type}") { ::Libuv::Ext::LIBC.malloc(request_size) }
         end
     end
 end
