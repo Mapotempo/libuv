@@ -217,6 +217,12 @@ module Libuv
             end
         end
 
+        # Return the number of active handles in the event loop
+        def active_handles
+            uvloop = Ext::UvLoop.new @pointer
+            uvloop[:active_handles]
+        end
+
 
         # Provides a promise notifier for receiving un-handled exceptions
         #

@@ -142,6 +142,11 @@ module Libuv
                     :st_birthtim, UvTimespec
         end
 
+        class UvLoop < FFI::Struct
+            layout  :data,           :pointer,
+                    :active_handles, :uint
+        end
+
         typedef :pointer, :sockaddr_in
         typedef :pointer, :uv_handle_t
         typedef :pointer, :uv_fs_event_t

@@ -34,6 +34,8 @@ describe Libuv::Idle do
 				@timeout.close
 				@reactor.stop
 			}.start(1000)
+
+			expect(@reactor.active_handles).to eq(4)
 		}
 
 		expect(@general_failure).to eq([])
