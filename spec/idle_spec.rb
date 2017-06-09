@@ -35,7 +35,7 @@ describe Libuv::Idle do
 				@reactor.stop
 			}.start(1000)
 
-			expect(@reactor.active_handles).to eq(4)
+			expect(@reactor.active_handles).to be >= 4
 		}
 
 		expect(@general_failure).to eq([])
