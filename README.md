@@ -178,3 +178,12 @@ server.remove_host('somehost2.com')
 
 You don't have to specify any hosts at binding time.
 
+
+## Protocols and 3rd party plugins
+
+* [HTTP](https://github.com/cotag/uv-rays - with SNI [server name indication] support)
+  * [Faraday plugin](https://github.com/cotag/uv-rays/blob/master/lib/faraday/adapter/libuv.rb)
+  * [HTTPI plugin](https://github.com/cotag/uv-rays/blob/master/lib/httpi/adapter/libuv.rb)
+  * [HTTP2](https://github.com/igrigorik/http-2)
+  * [SOAP](https://github.com/savonrb/savon) (using HTTPI plugin)
+* [SNMP](https://github.com/acaprojects/ruby-engine/blob/master/lib/protocols/snmp.rb)
