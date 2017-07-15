@@ -12,7 +12,7 @@ module Libuv
         define_callback function: :on_connect, params: [:pointer, :int]
 
 
-        TLS_ERROR = "TLS write failed".freeze
+        TLS_ERROR = "TLS write failed"
 
 
         attr_reader :connected
@@ -259,7 +259,7 @@ module Libuv
                 @callback = callback || blk
                 @coroutine = @reactor.defer if @callback.nil?
             end
-            error = check_result UV.tcp_open(handle, fd)
+            error = check_result ::Libuv::Ext.tcp_open(handle, fd)
             reject(error) if error
             co @coroutine.promise if @coroutine
 
@@ -288,6 +288,7 @@ module Libuv
             self
         end
 
+        # The name of the client (local) end of the socket
         def sockname
             return [] if @closed
             sockaddr, len = get_sockaddr_and_len
@@ -295,6 +296,7 @@ module Libuv
             get_ip_and_port(::Libuv::Ext::Sockaddr.new(sockaddr), len.get_int(0))
         end
 
+        # The IP address of the peer (remote) end of the socket
         def peername
             return [] if @closed
             sockaddr, len = get_sockaddr_and_len

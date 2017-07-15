@@ -47,9 +47,9 @@ module Libuv
             self
         end
 
-        def open(fd, binding = true, callback = nil, &blk)
+        def open(fd, binding = true)
             return if @closed
-            error = check_result UV.udp_open(handle, fd)
+            error = check_result ::Libuv::Ext.udp_open(handle, fd)
             reject(error) if error
 
             self
