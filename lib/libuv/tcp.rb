@@ -357,7 +357,7 @@ module Libuv
             ::Libuv::Ext.free(req)
             e = check_result(status)
 
-            ::Fiber.new {
+            @reactor.exec do
                 if e
                     reject(e)
                 else
@@ -377,7 +377,7 @@ module Libuv
                         @reactor.log e, 'performing TCP connection callback'
                     end
                 end
-            }.resume
+            end
         end
 
         def accept(_)
@@ -385,13 +385,13 @@ module Libuv
                 raise RuntimeError, CLOSED_HANDLE_ERROR if @closed
                 tcp = TCP.new(reactor, handle, **@tls_options)
 
-                ::Fiber.new {
+                @reactor.exec do
                     begin
                         @on_accept.call(tcp)
                     rescue Exception => e
                         @reactor.log e, 'performing TCP accept callback'
                     end
-                }.resume
+                end
             rescue Exception => e
                 @reactor.log e, 'failed to accept TCP connection'
             end

@@ -53,7 +53,7 @@ module Libuv
                 end
 
                 cleanup(req)
-                ::Fiber.new { @stat_deferred.resolve(stats) }.resume
+                @reactor.exec { @stat_deferred.resolve(stats) }
             end
             @stat_deferred = nil
         end
@@ -80,13 +80,13 @@ module Libuv
             if error
                 cleanup(req)
 
-                ::Fiber.new {
+                @reactor.exec do
                     deferrable.reject(error)
                     if @coroutine
                         @coroutine.resolve(deferrable.promise)
                         @coroutine = nil
                     end
-                }.resume
+                end
                 false
             else
                 true

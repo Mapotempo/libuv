@@ -29,9 +29,9 @@ module Libuv
                 @io_obj[:stdout] = build_stdio(:UV_IGNORE)
                 @io_obj[:stderr] = build_stdio(:UV_IGNORE)
             when :inherit
-                @io_obj[:stdin] = build_stdio(:UV_INHERIT_FD, fd: 0)
-                @io_obj[:stdout] = build_stdio(:UV_INHERIT_FD, fd: 1)
-                @io_obj[:stderr] = build_stdio(:UV_INHERIT_FD, fd: 2)
+                @io_obj[:stdin] = build_stdio(:UV_INHERIT_FD, fd: ::STDIN.fileno)
+                @io_obj[:stdout] = build_stdio(:UV_INHERIT_FD, fd: ::STDOUT.fileno)
+                @io_obj[:stderr] = build_stdio(:UV_INHERIT_FD, fd: ::STDERR.fileno)
             end
 
             # Configure arguments
@@ -86,7 +86,7 @@ module Libuv
         end
 
         def on_exit(handle, exit_status, term_signal)
-            ::Fiber.new {
+            @reactor.exec do
                 if exit_status == 0
                     @defer.resolve(term_signal)
                 else
@@ -101,9 +101,13 @@ module Libuv
                         @stdin.close
                         @stdout.close
                         @stderr.close
+
+                        close
                     end
+                else
+                    close
                 end
-            }.resume
+            end
         end
     end
 end

@@ -152,7 +152,7 @@ module Libuv
             if post_check(req, @unlink_deferred)
                 path = req[:path]
                 cleanup(req)
-                ::Fiber.new { @unlink_deferred.resolve(path) }.resume
+                @reactor.exec { @unlink_deferred.resolve(path) }
             end
             @unlink_deferred = nil
         end
@@ -161,7 +161,7 @@ module Libuv
             if post_check(req, @mkdir_deferred)
                 path = req[:path]
                 cleanup(req)
-                ::Fiber.new { @mkdir_deferred.resolve(path) }.resume
+                @reactor.exec { @mkdir_deferred.resolve(path) }
             end
             @mkdir_deferred = nil
         end
@@ -170,7 +170,7 @@ module Libuv
             if post_check(req, @rmdir_deferred)
                 path = req[:path]
                 cleanup(req)
-                ::Fiber.new { @rmdir_deferred.resolve(path) }.resume
+                @reactor.exec { @rmdir_deferred.resolve(path) }
             end
             @rmdir_deferred = nil
         end
@@ -191,7 +191,7 @@ module Libuv
                 end
 
                 cleanup(req)
-                ::Fiber.new { @readdir_deferred.resolve(files) }.resume
+                @reactor.exec { @readdir_deferred.resolve(files) }
             end
             @readdir_deferred = nil
         end
@@ -200,7 +200,7 @@ module Libuv
             if post_check(req, @rename_deferred)
                 path = req[:path]
                 cleanup(req)
-                ::Fiber.new { @rename_deferred.resolve(path) }.resume
+                @reactor.exec { @rename_deferred.resolve(path) }
             end
             @rename_deferred = nil
         end
@@ -209,7 +209,7 @@ module Libuv
             if post_check(req, @chmod_deferred)
                 path = req[:path]
                 cleanup(req)
-                ::Fiber.new { @chmod_deferred.resolve(path) }.resume
+                @reactor.exec { @chmod_deferred.resolve(path) }
             end
             @chmod_deferred = nil
         end
@@ -218,7 +218,7 @@ module Libuv
             if post_check(req, @utime_deferred)
                 path = req[:path]
                 cleanup(req)
-                ::Fiber.new { @utime_deferred.resolve(path) }.resume
+                @reactor.exec { @utime_deferred.resolve(path) }
             end
             @utime_deferred = nil
         end
@@ -227,7 +227,7 @@ module Libuv
             if post_check(req, @link_deferred)
                 path = req[:path]
                 cleanup(req)
-                ::Fiber.new { @link_deferred.resolve(path) }.resume
+                @reactor.exec { @link_deferred.resolve(path) }
             end
             @link_deferred = nil
         end
@@ -236,7 +236,7 @@ module Libuv
             if post_check(req, @symlink_deferred)
                 path = req[:path]
                 cleanup(req)
-                ::Fiber.new { @symlink_deferred.resolve(path) }.resume
+                @reactor.exec { @symlink_deferred.resolve(path) }
             end
             @symlink_deferred = nil
         end
@@ -246,7 +246,7 @@ module Libuv
                 string_ptr = req[:ptr]
                 path = string_ptr.null? ? nil : string_ptr.read_string_to_null
                 cleanup(req)
-                ::Fiber.new { @readlink_deferred.resolve(path) }.resume
+                @reactor.exec { @readlink_deferred.resolve(path) }
             end
             @readlink_deferred = nil
         end
@@ -255,7 +255,7 @@ module Libuv
             if post_check(req, @chown_deferred)
                 path = req[:path]
                 cleanup(req)
-                ::Fiber.new { @chown_deferred.resolve(path) }.resume
+                @reactor.exec { @chown_deferred.resolve(path) }
             end
             @chown_deferred = nil
         end

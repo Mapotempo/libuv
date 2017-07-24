@@ -72,7 +72,7 @@ module Libuv
 
             e = check_result(status)
 
-            ::Fiber.new { 
+            @reactor.exec do
                 if e
                     @defer.reject(e)
                 else
@@ -89,7 +89,7 @@ module Libuv
                     end
                     ::Libuv::Ext.freeaddrinfo(addrinfo)
                 end
-            }.resume
+            end
 
             # Clean up references
             cleanup_callbacks

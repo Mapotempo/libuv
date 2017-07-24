@@ -97,13 +97,13 @@ module Libuv
 
 
         def on_timer(handle)
-            ::Fiber.new {
+            @reactor.exec do
                 begin
                     @callback.call
                 rescue Exception => e
                     @reactor.log e, 'performing timer callback'
                 end
-            }.resume
+            end
         end
     end
 end

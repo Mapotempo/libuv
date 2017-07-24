@@ -48,13 +48,13 @@ module Libuv
 
 
         def on_idle(handle)
-            ::Fiber.new {
+            @reactor.exec do
                 begin
                     @callback.call
                 rescue Exception => e
                     @reactor.log e, 'performing idle callback'
                 end
-            }.resume
+            end
         end
     end
 end

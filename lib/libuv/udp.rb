@@ -268,20 +268,20 @@ module Libuv
             e = check_result(nread)
 
             if e
-                ::Fiber.new { reject(e) }.resume   # Will call close
+                @reactor.exec { reject(e) }   # Will call close
             elsif nread > 0
                 data = @receive_buff.read_string(nread)
                 unless sockaddr.null?
                     ip, port = get_ip_and_port(sockaddr)
                 end
 
-                ::Fiber.new {
+                @reactor.exec do
                     begin
                         @progress.call data, ip, port, self
                     rescue Exception => e
                         @reactor.log e, 'performing UDP data received callback'
                     end
-                }.resume
+                end
             else
                 ::Libuv::Ext.free(@receive_buff)
                 @receive_buff = nil
@@ -296,7 +296,7 @@ module Libuv
             ::Libuv::Ext.free(req)
             buffer1.free
 
-            ::Fiber.new { resolve deferred, status }.resume
+            @reactor.exec { resolve(deferred, status) }
         end
     end
 end

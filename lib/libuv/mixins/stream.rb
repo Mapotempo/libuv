@@ -201,7 +201,7 @@ module Libuv
         def on_listen(server, status)
             e = check_result(status)
 
-            ::Fiber.new {
+            @reactor.exec do
                 if e
                     reject(e)   # is this cause for closing the handle?
                 else
@@ -211,7 +211,7 @@ module Libuv
                         @reactor.log e, 'performing stream listening callback'
                     end
                 end
-            }.resume
+            end
         end
 
         def on_allocate(client, suggested_size, buffer)
@@ -226,10 +226,10 @@ module Libuv
             ::Libuv::Ext.free(req)
             buffer1.free
 
-            ::Fiber.new {
+            @reactor.exec do
                 resolve deferred, status
                 check_flush_buffer if @flush_defer
-            }.resume
+            end
         end
 
         def on_read(handle, nread, buf)
@@ -239,19 +239,19 @@ module Libuv
             if e
                 ::Libuv::Ext.free(base)
 
-                ::Fiber.new { 
+                @reactor.exec do
                     # I assume this is desirable behaviour
                     if e.is_a? ::Libuv::Error::EOF
                         close   # Close gracefully 
                     else
                         reject(e)
                     end
-                }.resume
+                end
             else
                 data = base.read_string(nread)
                 ::Libuv::Ext.free(base)
                 
-                ::Fiber.new {
+                @reactor.exec do
                     if @tls.nil?
                         begin
                             @progress.call data, self
@@ -261,7 +261,7 @@ module Libuv
                     else
                         @tls.decrypt(data)
                     end
-                }.resume
+                end
             end
         end
 
@@ -270,7 +270,7 @@ module Libuv
             ::Libuv::Ext.free(req)
             @close_error = check_result(status)
 
-            ::Fiber.new { close }.resume
+            @reactor.exec { close }
         end
     end
 end

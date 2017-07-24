@@ -48,13 +48,13 @@ module Libuv
 
 
         def on_check(handle)
-            ::Fiber.new {
+            @reactor.exec do
                 begin
                     @callback.call
                 rescue Exception => e
                     @reactor.log e, 'performing check callback'
                 end
-            }.resume
+            end
         end
     end
 end

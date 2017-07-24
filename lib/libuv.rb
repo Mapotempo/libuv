@@ -21,8 +21,9 @@ module Libuv
     require 'libuv/prepare'     # Called at the end of a reactor cycle
     require 'libuv/async'       # Provide a threadsafe way to signal the event reactor
     require 'libuv/timer'       # High resolution timer
-    require 'libuv/reactor'        # The libuv reactor or event reactor
-    require 'libuv/coroutines'
+    require 'libuv/reactor'     # The libuv reactor or event reactor
+    require 'libuv/coroutines'  # Pause program execution until a result is returned
+    require 'libuv/fiber_pool'  # Fibers on jRuby and Rubinius are threads and expensive to re-create
     # --
 
     autoload :FsChecks, 'libuv/mixins/fs_checks'   # Common code to check file system results

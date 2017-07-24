@@ -30,7 +30,7 @@ module Libuv
                 reject(e)
             else
                 # notify of a change
-                ::Fiber.new { defer.notify(filename, EVENTS[events]) }.resume
+                @reactor.exec { defer.notify(filename, EVENTS[events]) }
             end
         end
     end

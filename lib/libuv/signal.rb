@@ -54,9 +54,9 @@ module Libuv
 
 
         def on_sig(handle, signal)
-            ::Fiber.new {
+            @reactor.exec do
                 defer.notify(signal)   # notify of a call
-            }.resume
+            end
         end
     end
 end

@@ -58,7 +58,7 @@ module Libuv
             @complete = true
             ::Libuv::Ext.free(req)
 
-            ::Fiber.new {
+            @reactor.exec do
                 e = check_result(status)
                 if e
                     @defer.reject(e)
@@ -69,8 +69,8 @@ module Libuv
                         @defer.resolve(@result)
                     end
                 end
-            }.resume
-            
+            end
+
             # Clean up references
             cleanup_callbacks @instance_id
         end

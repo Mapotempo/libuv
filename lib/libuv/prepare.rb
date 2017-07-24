@@ -48,13 +48,13 @@ module Libuv
 
 
         def on_prepare(handle)
-            ::Fiber.new {
+            @reactor.exec do
                 begin
                     @callback.call
                 rescue Exception => e
                     @reactor.log e, 'performing prepare callback'
                 end
-            }.resume
+            end
         end
     end
 end

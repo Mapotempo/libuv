@@ -91,7 +91,7 @@ module Libuv
             #clear_callbacks
             cleanup_callbacks
 
-            ::Fiber.new {
+            @reactor.exec do
                 if @close_error
                     defer.reject(@close_error)
                 else
@@ -102,7 +102,7 @@ module Libuv
                     @coroutine.resolve(self)
                     @coroutine = nil
                 end
-            }.resume
+            end
         end
     end
 end

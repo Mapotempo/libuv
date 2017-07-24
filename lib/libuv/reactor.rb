@@ -58,6 +58,7 @@ module Libuv
             @reactor = self
             @run_count = 0
             @ref_count = 0
+            @fiber_pool = FiberPool.new(self)
 
             # Create an async call for scheduling work from other threads
             @run_queue = Queue.new
@@ -91,9 +92,10 @@ module Libuv
             @reactor_notify_default = @reactor_notify = proc { |error|
                 @throw_on_exit = error
             }
+            @fiber_pool.on_error &@reactor_notify
         end
 
-        attr_reader :run_count
+        attr_reader :run_count, :fiber_pool
 
 
         protected
@@ -128,7 +130,7 @@ module Libuv
             update_time
             length.times do
                 # This allows any item to pause its execution without effecting this loop
-                ::Fiber.new { process_item }.resume
+                @fiber_pool.exec { process_item }
             end
         end
 
@@ -167,17 +169,8 @@ module Libuv
 
                     Thread.current.thread_variable_set(:reactor, @reactor)
                     @throw_on_exit = nil
-
-                    if block_given?
-                        update_time
-                        ::Fiber.new {
-                            begin
-                                yield @reactor
-                            rescue Exception => e
-                                log(e, 'in reactor run block')
-                            end
-                        }.resume
-                    end
+                    update_time
+                    @fiber_pool.exec { yield @reactor } if block_given?
                     @run_count += 1
                     ::Libuv::Ext.run(@pointer, run_type)  # This is blocking
                 ensure
@@ -199,6 +192,11 @@ module Libuv
             end
 
             @reactor
+        end
+
+        # Execute the provided block of code in a fiber from the pool
+        def exec
+            @fiber_pool.exec { yield }
         end
 
         # Prevents the reactor loop from stopping

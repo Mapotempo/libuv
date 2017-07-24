@@ -165,13 +165,13 @@ module Libuv
                 @reactor.log e, 'pipe accept failed'
             end
             if pipe
-                ::Fiber.new {
+                @reactor.exec do
                     begin
                         @on_accept.call(pipe)
                     rescue Exception => e
                         @reactor.log e, 'performing pipe accept callback'
                     end
-                }.resume
+                end
             end
         end
 
@@ -180,7 +180,7 @@ module Libuv
             ::Libuv::Ext.free(req)
             e = check_result(status)
 
-            ::Fiber.new {
+            @reactor.exec do
                 if e
                     reject(e)
                 else
@@ -190,7 +190,7 @@ module Libuv
                         @reactor.log e, 'performing pipe connected callback'
                     end
                 end
-            }.resume
+            end
         end
 
         def write2_complete(req, status)
@@ -199,9 +199,9 @@ module Libuv
 
             ::Libuv::Ext.free(req)
             
-            ::Fiber.new {
+            @reactor.exec do
                 resolve promise, status
-            }.resume
+            end
         end
 
         def windows_path(name)

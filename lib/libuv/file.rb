@@ -232,7 +232,7 @@ module Libuv
                 @fileno = req[:result]
                 cleanup(req)
                 @closed = false
-                ::Fiber.new { @defer.notify(self) }.resume
+                @reactor.exec { @defer.notify(self) }
 
                 if @coroutine
                     @coroutine.resolve(nil)
@@ -244,7 +244,7 @@ module Libuv
         def on_close(req)
             if post_check(req, @defer)
                 cleanup(req)
-                ::Fiber.new { @defer.resolve(nil) }.resume
+                @reactor.exec { @defer.resolve(nil) }
             end
         end
 
@@ -253,7 +253,7 @@ module Libuv
             if post_check(req, deferred)
                 data = buffer1.read_string(req[:result])
                 cleanup(req)
-                ::Fiber.new { deferred.resolve(data) }.resume
+                @reactor.exec { deferred.resolve(data) }
             end
         end
 
@@ -261,7 +261,7 @@ module Libuv
             deferred, buffer1 = @request_refs.delete req.to_ptr.address
             if post_check(req, deferred)
                 cleanup(req)
-                ::Fiber.new { deferred.resolve(nil) }.resume
+                @reactor.exec { deferred.resolve(nil) }
             end
         end
 
@@ -269,7 +269,7 @@ module Libuv
             deferred = @request_refs.delete req.to_ptr.address
             if post_check(req, deferred)
                 cleanup(req)
-                ::Fiber.new { deferred.resolve(nil) }.resume
+                @reactor.exec { deferred.resolve(nil) }
             end
         end
 
@@ -277,7 +277,7 @@ module Libuv
             deferred = @request_refs.delete req.to_ptr.address
             if post_check(req, deferred)
                 cleanup(req)
-                ::Fiber.new { deferred.resolve(nil) }.resume
+                @reactor.exec { deferred.resolve(nil) }
             end
         end
 
@@ -285,7 +285,7 @@ module Libuv
             deferred = @request_refs.delete req.to_ptr.address
             if post_check(req, deferred)
                 cleanup(req)
-                ::Fiber.new { deferred.resolve(nil) }.resume
+                @reactor.exec { deferred.resolve(nil) }
             end
         end
 
@@ -293,7 +293,7 @@ module Libuv
             deferred = @request_refs.delete req.to_ptr.address
             if post_check(req, deferred)
                 cleanup(req)
-                ::Fiber.new { deferred.resolve(nil) }.resume
+                @reactor.exec { deferred.resolve(nil) }
             end
         end
 
@@ -301,7 +301,7 @@ module Libuv
             deferred = @request_refs.delete req.to_ptr.address
             if post_check(req, deferred)
                 cleanup(req)
-                ::Fiber.new { deferred.resolve(nil) }.resume
+                @reactor.exec { deferred.resolve(nil) }
             end
         end
 
@@ -309,7 +309,7 @@ module Libuv
             deferred = @request_refs.delete req.to_ptr.address
             if post_check(req, deferred)
                 cleanup(req)
-                ::Fiber.new { deferred.resolve(nil) }.resume
+                @reactor.exec { deferred.resolve(nil) }
             end
         end
     end
