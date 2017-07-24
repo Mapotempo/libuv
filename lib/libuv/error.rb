@@ -78,5 +78,10 @@ module Libuv
         class ENXIO < Error; end
         class EMLINK < Error; end
         class EHOSTDOWN < Error; end
+
+        # Non-zero exit code
+        class ProcessExitCode < Error
+            attr_accessor :exit_status, :term_signal
+        end
     end
 end

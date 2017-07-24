@@ -32,6 +32,7 @@ module Libuv
     autoload :Filesystem, 'libuv/filesystem'  # Async directory manipulation
     autoload :FSEvent,    'libuv/fs_event'    # Notifies of changes to files and folders as they occur
     autoload :Signal,     'libuv/signal'      # Used to handle OS signals
+    autoload :Spawn,      'libuv/spawn'       # Executes a child process
     autoload :Check,      'libuv/check'       # Called before processing events on the reactor
     autoload :File,       'libuv/file'        # Async file reading and writing
     autoload :Idle,       'libuv/idle'        # Called when there are no events to process

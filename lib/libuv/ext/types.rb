@@ -147,6 +147,33 @@ module Libuv
                     :active_handles, :uint
         end
 
+        enum :uv_stdio_flags, [
+            :UV_IGNORE, 0,
+            :UV_CREATE_PIPE, 1,
+            :UV_INHERIT_FD, 2,
+            :UV_INHERIT_STREAM, 4,
+            :UV_READABLE_PIPE, 0x10,
+            :CREATE_READABLE_PIPE, 0x11,
+            :UV_WRITABLE_PIPE, 0x20,
+            :CREATE_WRITABLE_PIPE, 0x21
+        ]
+
+        class StdioData < FFI::Union
+            layout  :pipe_handle, :pointer,
+                    :fd,          :int
+        end
+
+        class UvStdioContainer < FFI::Struct
+            layout :flags, :uv_stdio_flags,
+                   :data,  StdioData.by_value
+        end
+
+        class StdioObjs < FFI::Struct
+            layout :stdin,  UvStdioContainer.by_value,
+                   :stdout, UvStdioContainer.by_value,
+                   :stderr, UvStdioContainer.by_value
+        end
+
         typedef :pointer, :sockaddr_in
         typedef :pointer, :uv_handle_t
         typedef :pointer, :uv_fs_event_t
@@ -205,7 +232,7 @@ module Libuv
         callback :uv_check_cb,       [:uv_check_t],                                      :void
         callback :uv_idle_cb,        [:uv_idle_t],                                       :void
         callback :uv_getaddrinfo_cb, [:uv_getaddrinfo_t, :status, UvAddrinfo.by_ref],    :void
-        callback :uv_exit_cb,        [:uv_process_t, :int, :int],                        :void
+        callback :uv_exit_cb,        [:uv_process_t, :int64, :int],                      :void
         callback :uv_walk_cb,        [:uv_handle_t, :pointer],                           :void
         callback :uv_work_cb,        [:uv_work_t],                                       :void
         callback :uv_after_work_cb,  [:uv_work_t, :int],                                 :void
@@ -214,5 +241,18 @@ module Libuv
         callback :uv_udp_send_cb,    [:uv_udp_send_t, :int],                             :void
         callback :uv_udp_recv_cb,    [:uv_udp_t, :ssize_t, :uv_buf_t, Sockaddr.by_ref, :uint],  :void
         callback :uv_cb,             [],                                                 :void
+
+        class UvProcessOptions < FFI::Struct
+            layout  :exit_cb,     :uv_exit_cb,
+                    :file,        :pointer,
+                    :args,        :pointer, # arg[0] == file
+                    :env,         :pointer, # environment array of strings
+                    :cwd,         :pointer,  # working dir
+                    :flags,       :uint,
+                    :stdio_count, :int,
+                    :stdio,       StdioObjs.by_ref,
+                    :uid,         :uint64,
+                    :gid,         :uint64
+        end
     end
 end

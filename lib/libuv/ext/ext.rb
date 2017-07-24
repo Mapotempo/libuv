@@ -209,7 +209,7 @@ module Libuv
         attach_function :getaddrinfo, :uv_getaddrinfo, [:uv_loop_t, :uv_getaddrinfo_t, :uv_getaddrinfo_cb, :string, :string, UvAddrinfo.by_ref], :int
         attach_function :freeaddrinfo, :uv_freeaddrinfo, [UvAddrinfo.by_ref], :void
 
-        attach_function :spawn, :uv_spawn, [:uv_loop_t, :uv_process_t, :uv_options_t], :int, :blocking => true
+        attach_function :spawn, :uv_spawn, [:uv_loop_t, :uv_process_t, UvProcessOptions.by_ref], :int, :blocking => true
         attach_function :process_kill, :uv_process_kill, [:uv_process_t, :int], :int, :blocking => true
         attach_function :kill, :uv_kill, [:int, :int], :int, :blocking => true
         attach_function :queue_work, :uv_queue_work, [:uv_loop_t, :uv_work_t, :uv_work_cb, :uv_after_work_cb], :int, :blocking => true
