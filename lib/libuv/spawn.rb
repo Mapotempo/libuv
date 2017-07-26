@@ -36,14 +36,14 @@ module Libuv
 
             # Configure arguments
             @cmd = FFI::MemoryPointer.from_string(cmd)
-            @args = args.map { |arg| FFI::MemoryPointer.from_string(arg) }
+            @args = Array(args).map { |arg| FFI::MemoryPointer.from_string(arg) }
             @args.unshift(@cmd)
             @args_ptr = FFI::MemoryPointer.new(:pointer, @args.length + 1)
             @args_ptr.write_array_of_pointer(@args)
 
             # Configure environment
             if env
-                @env = env.map { |e| FFI::MemoryPointer.from_string(e) }
+                @env = Array(env).map { |e| FFI::MemoryPointer.from_string(e) }
                 @env_ptr = FFI::MemoryPointer.new(:pointer, @env.length + 1)
                 @env_ptr.write_array_of_pointer(@env)
             end

@@ -468,6 +468,10 @@ module Libuv
             Filesystem.new(@reactor)
         end
 
+        def spawn(cmd, **args)
+            Spawn.new(@reactor, cmd, **args)
+        end
+
         # Schedule some work to be processed on the event reactor as soon as possible (thread safe)
         #
         # @param callback [Proc] the callback to be called on the reactor thread
