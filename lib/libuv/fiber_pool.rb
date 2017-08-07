@@ -8,8 +8,7 @@ module Libuv; end
 class Libuv::FiberPool
     def initialize(thread)
         @reactor = thread
-        @pool = []
-        @count = 0
+        reset
     end
 
     def exec
@@ -42,6 +41,11 @@ class Libuv::FiberPool
 
     def size
         @count
+    end
+
+    def reset
+        @pool = []
+        @count = 0
     end
 
 

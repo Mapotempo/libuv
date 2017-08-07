@@ -170,6 +170,7 @@ module Libuv
                     Thread.current.thread_variable_set(:reactor, @reactor)
                     @throw_on_exit = nil
                     update_time
+                    @fiber_pool.reset
                     @fiber_pool.exec { yield @reactor } if block_given?
                     @run_count += 1
                     ::Libuv::Ext.run(@pointer, run_type)  # This is blocking
