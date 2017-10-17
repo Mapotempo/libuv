@@ -1,10 +1,10 @@
 language: ruby
 rvm:
-  - ruby-2.3.3
+  - ruby-2.3.4
   - ruby-2.4.1
   - ruby-head
   - rubinius-3.76
-  - jruby-9.1.8.0
+  - jruby-9.1.10.0
   - jruby-head
 branches:
   only:
