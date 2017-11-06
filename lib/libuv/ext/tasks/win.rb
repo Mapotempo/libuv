@@ -6,7 +6,7 @@ file "ext/libuv/Release/libuv.#{FFI::Platform::LIBSUFFIX}" do
 
     Dir.chdir("ext/libuv") do |path|
         system 'git', 'clone', 'https://chromium.googlesource.com/external/gyp', 'build/gyp'
-        system 'vcbuild.bat', 'shared', 'release', target_arch
+        system 'vcbuild.bat', 'vs2017', 'shared', 'release', target_arch
     end
 end
 
