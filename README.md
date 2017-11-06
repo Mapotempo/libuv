@@ -116,8 +116,13 @@ or
 
 Windows users will additionally require:
 
-- A copy of Visual Studio 2010 or later. [Visual Studio Express](http://www.microsoft.com/visualstudio/eng/products/visual-studio-express-products) works fine.
-- A copy of [OpenSSL](http://slproweb.com/products/Win32OpenSSL.html) matching the installed ruby (x86 / x64)
+- A copy of Visual Studio 2017. [Visual Studio Build Tools](https://www.visualstudio.com/downloads/#build-tools-for-visual-studio-2017) works fine.
+  - Windows 10 SDK
+  - C++/CLI Support
+  - C++ tools for CMake
+- A copy of [OpenSSL](http://slproweb.com/products/Win32OpenSSL.html) x64 - ~30MB installs
+  - ruby 2.4+ x64 with MSYS2 is preferred
+- Add the env var `set GYP_MSVS_VERSION=2017`
 - If using jRuby then [GCC](http://win-builds.org/stable/) is also required
   - Setup the paths as described on the gcc page
   - Add required environmental variable `set LIBRARY_PATH=X:\win-builds-64\lib;X:\win-builds-64\x86_64-w64-mingw32\lib`
