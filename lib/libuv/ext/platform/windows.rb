@@ -13,8 +13,10 @@ module Libuv
             ffi_lib('Ws2_32.dll').first  # this is for ntohs
             attach_function :ntohs, [:ushort], :ushort, :blocking => true
         end
-        def_delegators :WS2, :ntohs
-        module_function :ntohs
+
+        def self.ntohs(ushort)
+            ::Libuv::Ext::WS2.ntohs(ushort)
+        end
 
         # win32 has a different uv_buf_t layout to everything else.
         class UvBuf < FFI::Struct
