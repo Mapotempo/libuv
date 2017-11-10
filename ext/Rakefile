@@ -1,18 +1,28 @@
+
+require 'fileutils'
+
 if ENV.has_key?('USE_GLOBAL_LIBUV')
-	exit(0)
+    exit(0)
 else
-	require 'rubygems'
-	require 'ffi'
-	require 'rake/clean'
-	require '../lib/libuv/ext/tasks'
+    require 'rubygems'
+    require 'ffi'
+    require 'rake/clean'
+    require '../lib/libuv/ext/tasks'
 
-	Dir.chdir File.expand_path("../", __FILE__)
-	Dir.chdir '..'
+    Dir.chdir File.expand_path("../", __FILE__)
+    Dir.chdir '..'
 
-	task :default => :libuv
+    task :default => :libuv
 
-	desc "Compile libuv from submodule"
-	task :libuv => ["ext/libuv/lib/libuv.#{FFI::Platform::LIBSUFFIX}"]
+    if FFI::Platform.windows?
+        task :libuv do
+            FileUtils.mkdir('ext/libuv/lib')
+            FileUtils.cp 'ext/libuv.dll', 'ext/libuv/lib/libuv.dll'
+        end
+    else
+        desc "Compile libuv from submodule"
+        task :libuv => ["ext/libuv/lib/libuv.#{FFI::Platform::LIBSUFFIX}"]
 
-	CLOBBER.include("ext/libuv/lib/libuv.#{FFI::Platform::LIBSUFFIX}")
+        CLOBBER.include("ext/libuv/lib/libuv.#{FFI::Platform::LIBSUFFIX}")
+    end
 end

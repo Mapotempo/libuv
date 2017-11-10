@@ -110,11 +110,11 @@ or
 
 ### Prerequisites
 
-* The installation also requires [python 2.x](http://www.python.org/getit/) to be installed and available on the PATH
+* The installation on BSD/Linux requires [python 2.x](http://www.python.org/getit/) to be installed and available on the PATH
 * setting the environmental variable `USE_GLOBAL_LIBUV` will prevent compiling the packaged version.
   * if you have a compatible `libuv.(so | dylib | dll)` on the PATH already
 
-Windows users will additionally require:
+On Windows the GEM ships with a pre-compiled binary. If you would like to build yourself:
 
 - A copy of Visual Studio 2017. [Visual Studio Build Tools](https://www.visualstudio.com/downloads/#build-tools-for-visual-studio-2017) works fine.
   - Windows 10 SDK
@@ -126,6 +126,7 @@ Windows users will additionally require:
 - If using jRuby then [GCC](http://win-builds.org/stable/) is also required
   - Setup the paths as described on the gcc page
   - Add required environmental variable `set LIBRARY_PATH=X:\win-builds-64\lib;X:\win-builds-64\x86_64-w64-mingw32\lib`
+- `rake compile`
 
 
 
