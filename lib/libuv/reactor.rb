@@ -475,31 +475,22 @@ module Libuv
 
         # Schedule some work to be processed on the event reactor as soon as possible (thread safe)
         #
-        # @param callback [Proc] the callback to be called on the reactor thread
-        # @raise [ArgumentError] if block is not given
-        def schedule(callback = nil, &block)
-            callback ||= block
-            assert_block(callback)
-
+        # @yield the callback to be called on the reactor thread
+        def schedule
             if reactor_thread?
-                callback.call
+                yield
             else
-                @run_queue << callback
+                @run_queue << Proc.new
                 @process_queue.call
             end
-
             self
         end
 
         # Queue some work to be processed in the next iteration of the event reactor (thread safe)
         #
         # @param callback [Proc] the callback to be called on the reactor thread
-        # @raise [ArgumentError] if block is not given
-        def next_tick(callback = nil, &block)
-            callback ||= block
-            assert_block(callback)
-
-            @run_queue << callback
+        def next_tick(&block)
+            @run_queue << block
             if reactor_thread?
                 # Create a next tick timer
                 if not @next_tick_scheduled
