@@ -9,9 +9,8 @@ module Libuv
 
         # @param reactor [::Libuv::Reactor] reactor this timer will be associated
         # @param callback [Proc] callback to be called when the timer is triggered
-        def initialize(reactor, callback = nil, &blk)
+        def initialize(reactor)
             @reactor = reactor
-            @callback = callback || blk
             
             timer_ptr = ::Libuv::Ext.allocate_handle_timer
             error = check_result(::Libuv::Ext.timer_init(reactor.handle, timer_ptr))
@@ -86,9 +85,8 @@ module Libuv
         # Used to update the callback to be triggered by the timer
         #
         # @param callback [Proc] the callback to be called by the timer
-        def progress(callback = nil, &blk)
-            @callback = callback || blk
-
+        def progress(&callback)
+            @callback = callback
             self
         end
 

@@ -22,9 +22,9 @@ module Libuv
             super(pipe_ptr, error)
         end
 
-        def bind(name, callback = nil, &blk)
+        def bind(name, &callback)
             return if @closed
-            @on_accept = callback || blk
+            @on_accept = callback
             @on_listen = method(:accept)
 
             assert_type(String, name, "name must be a String")
@@ -36,8 +36,7 @@ module Libuv
             self
         end
 
-        def open(fileno, callback = nil, &blk)
-            @callback = callback || blk
+        def open(fileno)
             assert_type(Integer, fileno, 'fileno must be an integer file descriptor')
 
             begin
@@ -45,24 +44,25 @@ module Libuv
                 check_result! ::Libuv::Ext.pipe_open(handle, fileno)
 
                 # Emulate on_connect behavior
-                begin
-                    @callback.call(self) if @callback
-                rescue Exception => e
-                    @reactor.log e, 'performing pipe connect callback'
-                    raise e unless @callback
+                if block_given?
+                    begin
+                        yield(self)
+                    rescue Exception => e
+                        @reactor.log e, 'performing pipe connect callback'
+                    end
                 end
             rescue Exception => e
                 reject(e)
-                raise e unless @callback
+                raise e unless block_given?
             end
 
             self
         end
 
-        def connect(name, callback = nil, &blk)
+        def connect(name)
             return if @closed
-            @callback = callback || blk
             assert_type(String, name, "name must be a String")
+
             begin
                 name = windows_path name if FFI::Platform.windows?
                 req = ::Libuv::Ext.allocate_request_connect
@@ -71,9 +71,11 @@ module Libuv
                 reject(e)
             end
 
-            if @callback.nil?
+            if block_given?
+                @callback = Proc.new
+            else
                 @coroutine = @reactor.defer
-                co @coroutine.promise
+                @coroutine.promise.value
             end
 
             self
@@ -111,7 +113,7 @@ module Libuv
             
             if wait
                 return deferred.promise if wait == :promise
-                co deferred.promise
+                deferred.promise.value
             end
 
             self

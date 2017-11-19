@@ -312,9 +312,9 @@ describe Libuv::Q do
 			
 			it "should allow registration of an errback without a success callback and reject" do
 				@reactor.run {
-					@promise.catch(proc {|reason|
+					@promise.catch { |reason|
 						@log << reason
-					})
+					}
 
 					@deferred.reject(:foo)
 				}
@@ -325,9 +325,9 @@ describe Libuv::Q do
 			
 			it "should allow registration of an errback without a success callback and resolve" do
 				@reactor.run {
-					@promise.catch(proc {|reason|
+					@promise.catch { |reason|
 						@log << reason
-					})
+					}
 
 					@deferred.resolve(:foo)
 				}
@@ -447,22 +447,22 @@ describe Libuv::Q do
 					end
 
 
-					@promise.progress(proc { |result|
+					@promise.progress { |result|
 						@log << result
 						:bar
-					}).progress(proc { |result|
+					}.progress { |result|
 						@log << result
 						result
-					}).progress(proc {|result|
+					}.progress { |result|
 						@log << result
 						result
-					}).progress(proc {|result|
+					}.progress { |result|
 						@log << result
 						:done
-					}).progress(proc { |result|
+					}.progress { |result|
 						@log << result
 						result
-					})
+					}
 
 					
 					@deferred.notify(:foo)
@@ -479,23 +479,23 @@ describe Libuv::Q do
 					end
 
 
-					@promise.progress(proc { |result|
+					@promise.progress { |result|
 						@log << result
 						:bar
-					}).progress(proc { |result|
+					}.progress { |result|
 						@log << result
 						raise 'err'
 						result
-					}).progress(proc {|result|
+					}.progress {|result|
 						@log << result
 						result
-					}).progress(proc {|result|
+					}.progress {|result|
 						@log << result
 						:done
-					}).progress(proc { |result|
+					}.progress { |result|
 						@log << result
 						result
-					})
+					}
 
 					
 					@deferred.notify(:foo)
@@ -509,9 +509,9 @@ describe Libuv::Q do
 				@reactor.run {
 					@deferred.reject(:foo)
 					
-					@promise.catch(proc {|reason|
+					@promise.catch { |reason|
 						@log << reason
-					})
+					}
 					
 					@reactor.next_tick do
 						@reactor.stop
@@ -543,10 +543,10 @@ describe Libuv::Q do
 
 				it "should fulfill with the original value" do
 					@reactor.run {
-						@promise.finally(proc {
+						@promise.finally {
 							@log << :finally
 							:finally
-						}).then do |result|
+						}.then do |result|
 							@log << result
 						end
 						
@@ -559,25 +559,25 @@ describe Libuv::Q do
 
 				it "should fulfill with the original value (larger test)" do
 					@reactor.run {
-						@promise.then(proc { |result|
+						@promise.then { |result|
 							@log << result
 							result
-						}).finally(proc {
+						}.finally {
 							@log << :finally
 							:finally
-						}).then(proc { |result|
+						}.then { |result|
 							@log << result
 							:change
-						}).then(proc { |result|
+						}.then { |result|
 							@log << result
 							result
-						}).finally(proc {
+						}.finally {
 							@log << :finally
 							:finally
-						}).then(proc { |result|
+						}.then { |result|
 							@log << result
 							result
-						})
+						}
 						
 
 						@deferred.resolve(:foo)
@@ -589,10 +589,10 @@ describe Libuv::Q do
 				describe "when the callback throws an exception" do
 					it "should reject with this new exception" do
 						@reactor.run {
-							@promise.finally(proc {
+							@promise.finally {
 								@log << :finally
 								raise 'error'
-							}).catch do |reason|
+							}.catch do |reason|
 								@log.push reason.is_a?(Exception)
 							end
 							
@@ -608,10 +608,10 @@ describe Libuv::Q do
 						@reactor.run {
 							deferred2 = @reactor.defer
 
-							@promise.finally(proc {
+							@promise.finally {
 								@log << :finally
 								deferred2.promise
-							}).then do |result|
+							}.then do |result|
 								@log << result
 							end
 							
@@ -637,10 +637,10 @@ describe Libuv::Q do
 						@reactor.run {
 							deferred2 = @reactor.defer
 
-							@promise.finally(proc {
+							@promise.finally {
 								@log << :finally
 								deferred2.promise
-							}).catch do |result|
+							}.catch do |result|
 								@log << result
 							end
 							

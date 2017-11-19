@@ -8,9 +8,8 @@ module Libuv
 
 
         # @param reactor [::Libuv::Reactor] reactor this async callback will be associated
-        def initialize(reactor, callback = nil, &blk)
+        def initialize(reactor)
             @reactor = reactor
-            @callback = callback || blk
 
             async_ptr = ::Libuv::Ext.allocate_handle_async
             on_async = callback(:on_async, async_ptr.address)
@@ -30,8 +29,8 @@ module Libuv
         # Used to update the callback that will be triggered when async is called
         #
         # @param callback [Proc] the callback to be called on reactor prepare
-        def progress(callback = nil, &blk)
-            @callback = callback || blk
+        def progress(&callback)
+            @callback = callback
             self
         end
 

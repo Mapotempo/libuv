@@ -70,7 +70,11 @@ end
 class Object
     private
     
-    def reactor(&blk)
-        Libuv.reactor &blk
+    def reactor
+        if block_given?
+            Libuv.reactor { |thread| yield(thread) }
+        else
+            Libuv.reactor
+        end
     end
 end

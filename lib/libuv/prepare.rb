@@ -9,9 +9,8 @@ module Libuv
 
         # @param reactor [::Libuv::Reactor] reactor this prepare handle will be associated
         # @param callback [Proc] callback to be called on reactor preparation
-        def initialize(reactor, callback = nil, &blk)
+        def initialize(reactor)
             @reactor = reactor
-            @callback = callback || blk
 
             prepare_ptr = ::Libuv::Ext.allocate_handle_prepare
             error = check_result(::Libuv::Ext.prepare_init(reactor.handle, prepare_ptr))
@@ -38,8 +37,8 @@ module Libuv
         # Used to update the callback that will be triggered on reactor prepare
         #
         # @param callback [Proc] the callback to be called on reactor prepare
-        def progress(callback = nil, &blk)
-            @callback = callback || blk
+        def progress(&callback)
+            @callback = callback
             self
         end
 

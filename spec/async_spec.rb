@@ -54,9 +54,9 @@ describe Libuv::Async do
 				callback.close
 			end
 
-			@reactor.work(proc {
+			@reactor.work {
 				callback.call
-			}).catch do |err|
+			}.catch do |err|
 				@general_failure << err
 			end
 		}

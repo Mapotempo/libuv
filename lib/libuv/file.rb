@@ -29,7 +29,7 @@ module Libuv
         attr_reader :fileno, :closed
 
 
-        def initialize(thread, path, flags = 0, mode: 0, wait: true, &blk)
+        def initialize(thread, path, flags = 0, mode: 0)
             super(thread, thread.defer)
 
             @fileno = -1
@@ -41,10 +41,10 @@ module Libuv
             pre_check @defer, request, ::Libuv::Ext.fs_open(@reactor, request, @path, @flags, @mode, callback(:on_open, request.address))
 
             if block_given?
-                self.progress blk
-            elsif wait
+                self.progress &Proc.new
+            else
                 @coroutine = @reactor.defer
-                co @coroutine.promise
+                @coroutine.promise.value
             end
         end
 
@@ -67,7 +67,7 @@ module Libuv
             @request_refs[request.address] = [deferred, buffer1]
 
             promise = pre_check(deferred, request, ::Libuv::Ext.fs_read(@reactor.handle, request, @fileno, buffer, 1, offset, callback(:on_read, request.address)))
-            wait ? co(promise) : promise
+            wait ? promise.value : promise
         end
 
         def write(data, offset = 0, wait: true)
@@ -123,7 +123,7 @@ module Libuv
             @request_refs[request.address] = deferred
 
             promise = pre_check deferred, request, ::Libuv::Ext.fs_futime(@reactor.handle, request, @fileno, atime, mtime, callback(:on_utime, request.address))
-            wait ? co(promise) : promise
+            wait ? promise.value : promise
         end
 
         def chmod(mode, wait: true)

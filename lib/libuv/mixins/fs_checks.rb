@@ -22,7 +22,7 @@ module Libuv
             pre_check @stat_deferred, request, ::Libuv::Ext.fs_fstat(@reactor.handle, request, @fileno, callback(:on_stat, request.address))
             promise = @stat_deferred.promise
 
-            wait ? co(promise) : promise
+            wait ? promise.value : promise
         end
 
 
@@ -31,7 +31,7 @@ module Libuv
 
         def respond(wait, promise)
             if wait
-                co(promise)
+                promise.value
                 self
             else
                 promise

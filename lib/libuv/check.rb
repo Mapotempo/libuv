@@ -9,9 +9,8 @@ module Libuv
 
         # @param reactor [::Libuv::Reactor] reactor this check will be associated
         # @param callback [Proc] callback to be called on reactor check
-        def initialize(reactor, callback = nil, &blk)
+        def initialize(reactor)
             @reactor = reactor
-            @callback = callback || blk
 
             check_ptr = ::Libuv::Ext.allocate_handle_check
             error = check_result(::Libuv::Ext.check_init(reactor.handle, check_ptr))
@@ -38,8 +37,8 @@ module Libuv
         # Used to update the callback that will be triggered on reactor check
         #
         # @param callback [Proc] the callback to be called on reactor check
-        def progress(callback = nil, &blk)
-            @callback = callback || blk
+        def progress(&callback)
+            @callback = callback
             self
         end
 

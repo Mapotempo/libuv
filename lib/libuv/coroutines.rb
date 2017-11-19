@@ -6,17 +6,14 @@ class CoroutineRejection < RuntimeError
     attr_accessor :value
 end
 
-class Object
-    private
-
-
+module Libuv
     # Takes a Promise response and turns it into a co-routine
     # for code execution without using callbacks
     #
     # @param *promises [::Libuv::Q::Promise] a number of promises that will be combined into a single promise
     # @return [Object] Returns the result of a single promise or an array of results if provided multiple promises
     # @raise [Exception] if the promise is rejected
-    def co(*yieldable, &block)
+    def co(*yieldable)
         on_reactor = Libuv::Reactor.current
         raise 'must be running on a reactor thread to use coroutines' unless on_reactor
 
@@ -27,7 +24,7 @@ class Object
         if yieldable.length == 1
             promise = yieldable[0]
             # Passed independently as this is often overwritten for performance
-            promise.progress(block) if block_given?
+            promise.progress &Proc.new if block_given?
         else
             promise = on_reactor.all(*yieldable)
         end
@@ -77,4 +74,6 @@ class Object
         end
         result
     end
+
+    module_function :co
 end

@@ -9,9 +9,8 @@ module Libuv
 
         # @param reactor [::Libuv::Reactor] reactor this idle handler will be associated
         # @param callback [Proc] callback to be called when the reactor is idle
-        def initialize(reactor, callback = nil, &blk)
+        def initialize(reactor)
             @reactor = reactor
-            @callback = callback || blk
 
             idle_ptr = ::Libuv::Ext.allocate_handle_idle
             error = check_result(::Libuv::Ext.idle_init(reactor.handle, idle_ptr))
@@ -38,8 +37,8 @@ module Libuv
         # Used to update the callback that will be triggered on idle
         #
         # @param callback [Proc] the callback to be called on idle trigger
-        def progress(callback = nil, &blk)
-            @callback = callback || blk
+        def progress(&callback)
+            @callback = callback
             self
         end
 

@@ -15,7 +15,7 @@ module Libuv
 
         # @param thread [::Libuv::Reactor] thread this work request will be associated
         # @param work [Proc] callback to be called in the thread pool
-        def initialize(thread, work)
+        def initialize(thread, &work)
             super(thread, thread.defer)
 
             @work = work

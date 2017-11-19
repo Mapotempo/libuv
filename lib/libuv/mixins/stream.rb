@@ -104,7 +104,7 @@ module Libuv
 
             if wait
                 return deferred.promise if wait == :promise
-                co deferred.promise
+                deferred.promise.value
             end
 
             self
@@ -122,8 +122,8 @@ module Libuv
             ::Libuv::Ext.is_writable(handle) > 0
         end
 
-        def progress(callback = nil, &blk)
-            @progress = callback || blk
+        def progress(&blk)
+            @progress = blk
             self
         end
 
@@ -147,7 +147,7 @@ module Libuv
                 end
             end
 
-            co @read_defer.promise
+            @read_defer.promise.value
         end
         alias_method :read_nonblock, :read
 
@@ -158,7 +158,7 @@ module Libuv
 
             @flush_defer = @reactor.defer
             check_flush_buffer
-            co @flush_defer.promise
+            @flush_defer.promise.value
         end
 
 

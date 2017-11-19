@@ -31,10 +31,10 @@ if RUBY_PLATFORM != 'java'
 			it "should wait for work to complete and return the result" do
 				@reactor.run { |reactor|
 
-					@log << co(@reactor.work(proc {
+					@log << @reactor.work {
 						sleep 1
 						'work done'
-					}))
+					}.value
 					@log << 'after work'
 
 					@timeout.close
@@ -47,9 +47,9 @@ if RUBY_PLATFORM != 'java'
 			it "should raise an error if the promise is rejected" do
 				@reactor.run { |reactor|
 					begin
-						@log << co(@reactor.work(proc {
+						@log << @reactor.work {
 							raise 'rejected'
-						}))
+						}.value
 						@log << 'after work'
 					rescue => e
 						@log << e.message
@@ -64,18 +64,18 @@ if RUBY_PLATFORM != 'java'
 
 			it "should return the results of multiple promises" do
 				@reactor.run { |reactor|
-					job1 = @reactor.work(proc {
+					job1 = @reactor.work {
 						sleep 1
 						'job1'
-					})
+					}
 
-					job2 = @reactor.work(proc {
+					job2 = @reactor.work {
 						sleep 1
 						'job2'
-					})
+					}
 
 					# Job1 and Job2 are executed in parallel
-					result1, result2 = co(job1, job2)
+					result1, result2 = ::Libuv.co(job1, job2)
 
 					@log << result1
 					@log << result2
@@ -88,12 +88,11 @@ if RUBY_PLATFORM != 'java'
 				expect(@log).to eq(['job1', 'job2', 'after work'])
 			end
 
-
 			it "should provide a callback option for progress events" do
 				@reactor.run { |reactor|
 					timer = @reactor.timer
 					timer.start(0)
-					co(timer) do
+					::Libuv.co(timer) do
 						@log << 'in timer'
 						timer.close  # close will resolve the promise
 					end

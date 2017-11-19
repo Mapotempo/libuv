@@ -167,7 +167,7 @@ module Libuv
 
             if wait
                 return deferred.promise if wait == :promise
-                co deferred.promise
+                deferred.promise.value
             end
 
             self
@@ -217,8 +217,8 @@ module Libuv
             self
         end
 
-        def progress(callback = nil, &blk)
-            @progress = callback || blk
+        def progress(&callback)
+            @progress = callback
             self
         end
 

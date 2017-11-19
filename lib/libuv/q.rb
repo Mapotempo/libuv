@@ -13,36 +13,24 @@ module Libuv
             # Allows a backtrace to be included in any errors
             attr_accessor :trace
 
-            # Used by finally method
-            MAKE_PROMISE = proc { |value, resolved, reactor|
-                result = Q.defer(reactor)
-                if (resolved)
-                    result.resolve(value)
-                else
-                    result.reject(value)
-                end
-                result.promise
-            }.freeze
-
-
             #
             # regardless of when the promise was or will be resolved / rejected, calls
             # the error callback asynchronously if the promise is rejected.
             #
             # @param [Proc, &blk] callbacks error, error_block
             # @return [Promise] Returns an unresolved promise for chaining
-            def catch(callback = nil, &blk)
-                self.then(nil, callback || blk)
+            def catch(&blk)
+                self.then(nil, blk)
             end
 
 
-            def progress(callback = nil, &blk)
-                self.then(nil, nil, callback || blk)
+            def progress(&blk)
+                self.then(nil, nil, blk)
             end
 
             # A future that provides the value or raises an error if a rejection occurs
             def value
-                co self
+                ::Libuv.co(self)
             end
 
             #
@@ -52,26 +40,24 @@ module Libuv
             #
             # @param [Proc, &blk] callbacks finally, finally_block
             # @return [Promise] Returns an unresolved promise for chaining
-            def finally(callback = nil, &blk)
-                callback ||= blk
-
-                handleCallback = lambda {|value, isResolved|
+            def finally
+                handleCallback = lambda { |value, isResolved|
                     callbackOutput = nil
                     begin
-                        callbackOutput = callback.call
+                        callbackOutput = yield
                     rescue Exception => e
                         @reactor.log e, 'performing promise finally callback', @trace
-                        return MAKE_PROMISE.call(e, false, @reactor)
+                        return make_promise(e, false, @reactor)
                     end
 
                     if callbackOutput.is_a?(Promise)
                         return callbackOutput.then(proc {
-                                MAKE_PROMISE.call(value, isResolved, @reactor)
+                                make_promise(value, isResolved, @reactor)
                             }, proc { |err|
-                                MAKE_PROMISE.call(err, false, @reactor)
+                                make_promise(err, false, @reactor)
                             })
                     else
-                        return MAKE_PROMISE.call(value, isResolved, @reactor)
+                        return make_promise(value, isResolved, @reactor)
                     end
                 }
 
@@ -80,6 +66,18 @@ module Libuv
                 }, proc{|err|
                     handleCallback.call(err, false)
                 })
+            end
+
+            protected
+
+            def make_promise(value, resolved, reactor)
+                result = Q.defer(reactor)
+                if (resolved)
+                    result.resolve(value)
+                else
+                    result.reject(value)
+                end
+                result.promise
             end
         end
         
@@ -94,7 +92,7 @@ module Libuv
             def initialize(reactor, defer)
                 raise ArgumentError unless defer.is_a?(Deferred)
                 super()
-                
+
                 @reactor = reactor
                 @defer = defer
             end
@@ -106,14 +104,13 @@ module Libuv
             #
             # @param [Proc, Proc, Proc, &blk] callbacks error, success, progress, success_block
             # @return [Promise] Returns an unresolved promise for chaining
-            def then(callback = nil, errback = nil, progback = nil, &blk)
+            def then(callback = nil, errback = nil, progback = nil)
                 result = Q.defer(@reactor)
-                
-                callback ||= blk
+                callback = Proc.new if block_given?
                 
                 wrappedCallback = proc { |val|
                     begin
-                        result.resolve(callback.nil? ? val : callback.call(val))
+                        result.resolve(callback ? callback.call(val) : val)
                     rescue Exception => e
                         result.reject(e)
                         @reactor.log e, 'performing promise resolution callback', @trace
@@ -122,7 +119,7 @@ module Libuv
                 
                 wrappedErrback = proc { |reason|
                     begin
-                        result.resolve(errback.nil? ? Q.reject(@reactor, reason) : errback.call(reason))
+                        result.resolve(errback ? errback.call(reason) : Q.reject(@reactor, reason))
                     rescue Exception => e
                         result.reject(e)
                         @reactor.log e, 'performing promise rejection callback', @trace
@@ -131,7 +128,7 @@ module Libuv
 
                 wrappedProgback = proc { |*progress|
                     begin
-                        result.notify(progback.nil? ? progress : progback.call(*progress))
+                        result.notify(progback ? progback.call(*progress) : progress)
                     rescue Exception => e
                         @reactor.log e, 'performing promise progress callback', @trace
                     end
@@ -150,7 +147,7 @@ module Libuv
                         pending_array << [wrappedCallback, wrappedErrback, wrappedProgback]
                     end
                 end
-                
+
                 result.promise
             end
 
@@ -185,22 +182,21 @@ module Libuv
                 @response = response
             end
 
-            def then(callback = nil, errback = nil, progback = nil, &blk)
+            def then(callback = nil, errback = nil, progback = nil)
                 result = Q.defer(@reactor)
-
-                callback ||= blk
+                callback = Proc.new if block_given?
 
                 @reactor.next_tick {
                     if @error
                         begin
-                            result.resolve(errback.nil? ? Q.reject(@reactor, @response) : errback.call(@response))
+                            result.resolve(errback ? errback.call(@response) : Q.reject(@reactor, @response))
                         rescue Exception => e
                             result.reject(e)
                             @reactor.log e, 'performing promise rejection callback', @trace
                         end
                     else
                         begin
-                            result.resolve(callback.nil? ? @response : callback.call(@response))
+                            result.resolve(callback ? callback.call(@response) : @response)
                         rescue Exception => e
                             result.reject(e)
                             @reactor.log e, 'performing promise resolution callback', @trace
@@ -296,7 +292,7 @@ module Libuv
             end
 
             def value
-                co self.promise
+                ::Libuv.co(self.promise)
             end
 
             # Overwrite to prevent inspecting errors hanging the VM

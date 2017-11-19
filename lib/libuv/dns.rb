@@ -52,7 +52,7 @@ module Libuv
                 @defer.reject(error)
             end
 
-            co(@defer.promise) if wait
+            @defer.promise.value if wait
         end
 
         # Indicates if the lookup has completed yet or not.

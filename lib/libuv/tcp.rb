@@ -93,8 +93,8 @@ module Libuv
         end
 
         # Provide a callback once the TLS handshake has completed
-        def on_handshake(callback = nil, &blk)
-            @on_handshake = callback || blk
+        def on_handshake(&blk)
+            @on_handshake = blk
             self
         end
 
@@ -168,8 +168,8 @@ module Libuv
         end
 
         # Verify peers will be called for each cert in the chain
-        def verify_peer(callback = nil, &blk)
-            @on_verify = callback || blk
+        def verify_peer(&blk)
+            @on_verify = blk
             self
         end
 
@@ -187,7 +187,7 @@ module Libuv
 
                 if wait
                     return deferred.promise if wait == :promise
-                    co deferred.promise
+                    deferred.promise.value
                 end
 
                 self
@@ -228,10 +228,10 @@ module Libuv
         # --------------------------------------
         #
 
-        def bind(ip, port, callback = nil, **tls_options, &blk)
+        def bind(ip, port, **tls_options, &blk)
             return self if @closed
 
-            @on_accept = callback || blk
+            @on_accept = blk
             @on_listen = method(:accept)
 
             assert_type(String, ip, IP_ARGUMENT_ERROR)
@@ -249,27 +249,27 @@ module Libuv
             self
         end
 
-        def open(fd, binding = true, callback = nil, &blk)
+        def open(fd, binding = true)
             return self if @closed
 
             if binding
                 @on_listen = method(:accept)
-                @on_accept = callback || blk
+                @on_accept = Proc.new
+            elsif block_given?
+                @callback = Proc.new
             else
-                @callback = callback || blk
-                @coroutine = @reactor.defer if @callback.nil?
+                @coroutine = @reactor.defer
             end
             error = check_result ::Libuv::Ext.tcp_open(handle, fd)
             reject(error) if error
-            co @coroutine.promise if @coroutine
+            @coroutine.promise.value if @coroutine
 
             self
         end
 
-        def connect(ip, port, callback = nil, &blk)
+        def connect(ip, port)
             return self if @closed
 
-            @callback = callback || blk
             assert_type(String, ip, IP_ARGUMENT_ERROR)
             assert_type(Integer, port, PORT_ARGUMENT_ERROR)
             
@@ -280,9 +280,11 @@ module Libuv
                 reject(e)
             end
 
-            if @callback.nil?
+            if block_given?
+                @callback = Proc.new
+            else
                 @coroutine = @reactor.defer
-                co @coroutine.promise
+                @coroutine.promise.value
             end
 
             self

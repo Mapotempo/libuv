@@ -62,20 +62,20 @@ module Libuv
 
             # Create an async call for scheduling work from other threads
             @run_queue = Queue.new
-            @process_queue = @reactor.async method(:process_queue_cb)
+            @process_queue = @reactor.async &method(:process_queue_cb)
             @process_queue.unref
 
             # Create a next tick timer
-            @next_tick = @reactor.timer method(:next_tick_cb)
+            @next_tick = @reactor.timer &method(:next_tick_cb)
             @next_tick.unref
 
             # Create an async call for ending the reactor
-            @stop_reactor = @reactor.async method(:stop_cb)
+            @stop_reactor = @reactor.async &method(:stop_cb)
             @stop_reactor.unref
 
             # Libuv can prevent the application shutting down once the main thread has ended
             # The addition of a prepare function prevents this from happening.
-            @reactor_prep = Libuv::Prepare.new(@reactor, method(:noop))
+            @reactor_prep = prepare {}
             @reactor_prep.unref
             @reactor_prep.start
 
@@ -83,9 +83,9 @@ module Libuv
             # We provide normal behaviour and allow this to be overriden
             @on_signal = []
             sig_callback = method(:signal_cb)
-            self.signal(:INT, sig_callback).unref
-            self.signal(:HUP, sig_callback).unref
-            self.signal(:TERM, sig_callback).unref
+            self.signal(:INT, &sig_callback).unref
+            self.signal(:HUP, &sig_callback).unref
+            self.signal(:TERM, &sig_callback).unref
 
             # Notify of errors
             @throw_on_exit = nil
@@ -100,8 +100,6 @@ module Libuv
 
         protected
 
-
-        def noop; end
 
         def stop_cb
             Thread.current.thread_variable_set(:reactor, nil)
@@ -226,8 +224,12 @@ module Libuv
         # Provides a promise notifier for receiving un-handled exceptions
         #
         # @return [::Libuv::Q::Promise]
-        def notifier(callback = nil, &blk)
-            @reactor_notify = callback || blk || @reactor_notify_default
+        def notifier
+            @reactor_notify = if block_given?
+                Proc.new
+            else
+                @reactor_notify_default
+            end
             self
         end
 
@@ -325,15 +327,15 @@ module Libuv
         # Get a new TCP instance
         # 
         # @return [::Libuv::TCP]
-        def tcp(callback = nil, **opts, &blk)
-            TCP.new(@reactor, progress: callback || blk, **opts)
+        def tcp(**opts, &callback)
+            TCP.new(@reactor, progress: callback, **opts)
         end
 
         # Get a new UDP instance
         #
         # @return [::Libuv::UDP]
-        def udp(callback = nil, **opts, &blk)
-            UDP.new(@reactor, progress: callback || blk, **opts)
+        def udp(**opts, &callback)
+            UDP.new(@reactor, progress: callback, **opts)
         end
 
         # Get a new TTY instance
@@ -359,56 +361,62 @@ module Libuv
         # 
         # @param callback [Proc] the callback to be called on timer trigger
         # @return [::Libuv::Timer]
-        def timer(callback = nil, &blk)
-            Timer.new(@reactor, callback || blk)
+        def timer
+            handle = Timer.new(@reactor)
+            handle.progress &Proc.new if block_given?
+            handle
         end
 
         # Get a new Prepare handle
         # 
         # @return [::Libuv::Prepare]
-        def prepare(callback = nil, &blk)
-            Prepare.new(@reactor, callback || blk)
+        def prepare
+            handle = Prepare.new(@reactor)
+            handle.progress &Proc.new if block_given?
+            handle
         end
 
         # Get a new Check handle
         # 
         # @return [::Libuv::Check]
-        def check(callback = nil, &blk)
-            Check.new(@reactor, callback || blk)
+        def check
+            handle = Check.new(@reactor)
+            handle.progress &Proc.new if block_given?
+            handle
         end
 
         # Get a new Idle handle
         # 
         # @param callback [Proc] the callback to be called on idle trigger
         # @return [::Libuv::Idle]
-        def idle(callback = nil, &block)
-            Idle.new(@reactor, callback || block)
+        def idle
+            handle = Idle.new(@reactor)
+            handle.progress &Proc.new if block_given?
+            handle
         end
 
         # Get a new Async handle
         # 
         # @return [::Libuv::Async]
-        def async(callback = nil, &block)
-            callback ||= block
+        def async
             handle = Async.new(@reactor)
-            handle.progress callback if callback
+            handle.progress &Proc.new if block_given?
             handle
         end
 
         # Get a new signal handler
         # 
         # @return [::Libuv::Signal]
-        def signal(signum = nil, callback = nil, &block)
-            callback ||= block
+        def signal(signum = nil)
             handle = Signal.new(@reactor)
-            handle.progress callback if callback
+            handle.progress &Proc.new if block_given?
             handle.start(signum) if signum
             handle
         end
 
         # Allows user defined behaviour when sig int is received
-        def on_program_interrupt(callback = nil, &block)
-            @on_signal << (callback || block)
+        def on_program_interrupt(&callback)
+            @on_signal << callback
             self
         end
 
@@ -417,10 +425,9 @@ module Libuv
         # @param callback [Proc] the callback to be called in the thread pool
         # @return [::Libuv::Work]
         # @raise [ArgumentError] if block is not given
-        def work(callback = nil, &block)
-            callback ||= block
+        def work(&callback)
             assert_block(callback)
-            Work.new(@reactor, callback)    # Work is a promise object
+            Work.new(@reactor, &callback)
         end
 
         # Lookup a hostname
@@ -429,13 +436,13 @@ module Libuv
         # @param port [Integer, String] the service being connected too
         # @param callback [Proc] the callback to be called on success
         # @return [::Libuv::Dns]
-        def lookup(hostname, hint = :IPv4, port = 9, wait: true, &block)
+        def lookup(hostname, hint = :IPv4, port = 9, wait: true)
             dns = Dns.new(@reactor, hostname, port, hint, wait: wait)    # Work is a promise object
-            if block_given? || !wait
-                dns.then block
-                dns
-            else
+            if wait
                 dns.results
+            else
+                dns.then &Proc.new if block_given?
+                dns
             end
         end
 
