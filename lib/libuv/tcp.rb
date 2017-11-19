@@ -199,7 +199,7 @@ module Libuv
         alias_method :do_shutdown, :shutdown
         def shutdown
             if @pending_writes && @pending_writes.length > 0
-                @pending_writes[-1][0].finally { do_shutdown }
+                @pending_writes[-1][0].promise.finally { do_shutdown }
             else
                 do_shutdown
             end
