@@ -148,10 +148,12 @@ module Libuv
         end
 
         def send_file(stream, using: :raw, chunk_size: 4096, wait: true)
-            @transmit_failure ||= method(:transmit_failure)
-            @transmit_data ||= method(:transmit_data)
-            @start_transmit ||= method(:start_transmit)
-            @next_chunk ||= method(:next_chunk)
+            @transmit_failure ||= proc { |reason| @sending_file.reject(reason) }
+            @start_transmit ||= proc { |stats|
+                @file_stream_total = stats[:st_size]
+                next_chunk
+            }
+            @transmit_data ||= proc { |data| transmit_data(data) }
 
             @sending_file = @reactor.defer
             @file_stream = stream
@@ -162,7 +164,7 @@ module Libuv
             stat(wait: false).then @start_transmit, @transmit_failure
             
             promise = @sending_file.promise
-            promise.finally &method(:clean_up_send)
+            promise.finally { clean_up_send }
             respond wait, promise
         end
 
@@ -172,11 +174,6 @@ module Libuv
 
         ##
         # File transmit functions -------------
-        def start_transmit(stats)
-            @file_stream_total = stats[:st_size]
-            next_chunk
-        end
-
         def transmit_data(data)
             @file_chunk_count += 1
             if @file_stream_type == :http
@@ -186,11 +183,11 @@ module Libuv
                 resp << CRLF
                 data = resp
             end
-            @file_stream.write(data, wait: :promise).then @next_chunk, @transmit_failure
+            @file_stream.write(data, wait: :promise).then(proc { next_chunk }, @transmit_failure)
             nil
         end
 
-        def next_chunk(*args)
+        def next_chunk
             next_size = @file_chunk_size
             next_offset = @file_chunk_size * @file_chunk_count
             
@@ -209,10 +206,6 @@ module Libuv
                 read(next_size, next_offset, wait: false).then(@transmit_data, @transmit_failure)
             end
             nil
-        end
-
-        def transmit_failure(reason)
-            @sending_file.reject(reason)
         end
 
         def clean_up_send

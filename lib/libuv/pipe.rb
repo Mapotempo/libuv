@@ -25,7 +25,7 @@ module Libuv
         def bind(name, &callback)
             return if @closed
             @on_accept = callback
-            @on_listen = method(:accept)
+            @on_listen = proc { accept }
 
             assert_type(String, name, "name must be a String")
             name = windows_path name if FFI::Platform.windows?
@@ -158,7 +158,7 @@ module Libuv
         private
         
 
-        def accept(_)
+        def accept
             pipe = nil
             begin
                 raise RuntimeError, CLOSED_HANDLE_ERROR if @closed

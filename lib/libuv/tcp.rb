@@ -199,7 +199,7 @@ module Libuv
         alias_method :do_shutdown, :shutdown
         def shutdown
             if @pending_writes && @pending_writes.length > 0
-                @pending_writes[-1][0].finally method(:do_shutdown)
+                @pending_writes[-1][0].finally { do_shutdown }
             else
                 do_shutdown
             end
@@ -232,7 +232,7 @@ module Libuv
             return self if @closed
 
             @on_accept = blk
-            @on_listen = method(:accept)
+            @on_listen = proc { accept }
 
             assert_type(String, ip, IP_ARGUMENT_ERROR)
             assert_type(Integer, port, PORT_ARGUMENT_ERROR)
@@ -253,7 +253,7 @@ module Libuv
             return self if @closed
 
             if binding
-                @on_listen = method(:accept)
+                @on_listen = proc { accept }
                 @on_accept = Proc.new
             elsif block_given?
                 @callback = Proc.new
@@ -382,7 +382,7 @@ module Libuv
             end
         end
 
-        def accept(_)
+        def accept
             begin
                 raise RuntimeError, CLOSED_HANDLE_ERROR if @closed
                 tcp = TCP.new(reactor, handle, **@tls_options)

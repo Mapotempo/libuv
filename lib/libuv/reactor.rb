@@ -62,15 +62,15 @@ module Libuv
 
             # Create an async call for scheduling work from other threads
             @run_queue = Queue.new
-            @process_queue = @reactor.async &method(:process_queue_cb)
+            @process_queue = @reactor.async { process_queue_cb }
             @process_queue.unref
 
             # Create a next tick timer
-            @next_tick = @reactor.timer &method(:next_tick_cb)
+            @next_tick = @reactor.timer { next_tick_cb }
             @next_tick.unref
 
             # Create an async call for ending the reactor
-            @stop_reactor = @reactor.async &method(:stop_cb)
+            @stop_reactor = @reactor.async { stop_cb }
             @stop_reactor.unref
 
             # Libuv can prevent the application shutting down once the main thread has ended
@@ -82,7 +82,7 @@ module Libuv
             # LibUV ingnores program interrupt by default.
             # We provide normal behaviour and allow this to be overriden
             @on_signal = []
-            sig_callback = method(:signal_cb)
+            sig_callback = proc { signal_cb }
             self.signal(:INT, &sig_callback).unref
             self.signal(:HUP, &sig_callback).unref
             self.signal(:TERM, &sig_callback).unref
@@ -108,7 +108,7 @@ module Libuv
             ::Libuv::Ext.stop(@pointer)
         end
 
-        def signal_cb(_)
+        def signal_cb
             if @on_signal.empty?
                 stop_cb
             else
