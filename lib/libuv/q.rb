@@ -406,17 +406,17 @@ module Libuv
             promises = promises.flatten
             if promises.length > 0
                 promises.each_index do |index|
-                    ref(reactor, promises[index]).then(proc {|result|
-                        deferred.resolve(true)
-                        result
-                    }, proc {|reason|
-                        deferred.reject(false)
+                    ref(reactor, promises[index]).then(proc { |result|
+                        deferred.resolve(result)
+                    }, proc { |reason|
+                        deferred.reject(reason)
                         Q.reject(@reactor, reason)    # Don't modify result
                     })
                 end
             else
                 deferred.resolve(true)
             end
+            deferred.promise
         end
 
 
