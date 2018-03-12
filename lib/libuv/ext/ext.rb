@@ -16,8 +16,15 @@ module Libuv
             attach_function :malloc, [:size_t], :pointer, :blocking => true
             attach_function :free, [:pointer], :void, :blocking => true
         end
-        def_delegators :LIBC, :malloc, :free
-        module_function :malloc, :free
+        
+
+        def self.malloc(size)
+            LIBC.malloc(size)
+        end
+
+        def self.free(data)
+            LIBC.free(data)
+        end
 
 
         begin
