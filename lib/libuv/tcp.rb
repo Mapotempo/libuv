@@ -347,7 +347,7 @@ module Libuv
             end
 
             def tcp_bind
-                ::Libuv::Ext.tcp_bind(@tcp, @sockaddr)
+                ::Libuv::Ext.tcp_bind(@tcp, @sockaddr, 0)
             end
         end
 
