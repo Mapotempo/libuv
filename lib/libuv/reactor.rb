@@ -9,6 +9,7 @@ module Libuv
 
 
         CRITICAL = ::Mutex.new
+        THREAD_POOL = ::Concurrent::FixedThreadPool.new(8)
 
 
         module ClassMethods
@@ -425,9 +426,19 @@ module Libuv
         # @param callback [Proc] the callback to be called in the thread pool
         # @return [::Libuv::Work]
         # @raise [ArgumentError] if block is not given
-        def work(&callback)
-            assert_block(callback)
-            Work.new(@reactor, &callback)
+        def work
+            ref
+            d = defer
+            THREAD_POOL.post do
+                begin
+                    d.resolve(yield)
+                rescue Exception => e
+                    d.reject(e)
+                end
+            end
+            promise = d.promise
+            promise.finally { unref }
+            promise
         end
 
         # Lookup a hostname
