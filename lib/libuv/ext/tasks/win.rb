@@ -1,5 +1,15 @@
 # frozen_string_literal: true
 
+file 'ext/libuv/build/gyp' => 'ext/libuv/build' do
+    result = true
+    if not File.directory?('ext/libuv/build/gyp')
+        result = system "git", "clone", "https://chromium.googlesource.com/external/gyp", "ext/libuv/build/gyp"
+    end
+    raise 'unable to download gyp' unless result
+end
+
+CLEAN.include('ext/libuv/build/gyp')
+
 file "ext/libuv/Release/libuv.#{FFI::Platform::LIBSUFFIX}" do
     target_arch = 'ia32'
     target_arch = 'x64' if FFI::Platform.x64?

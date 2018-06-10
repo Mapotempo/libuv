@@ -3,7 +3,6 @@ rvm:
   - ruby-2.3.5
   - ruby-2.4.2
   - ruby-head
-  - rubinius-3.86
   - rubinius
   - jruby-9.1.13.0
   - jruby-head

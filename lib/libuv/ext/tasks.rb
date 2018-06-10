@@ -14,16 +14,6 @@ file 'ext/libuv/build' do
     system "git", "submodule", "update", "--init"
 end
 
-file 'ext/libuv/build/gyp' => 'ext/libuv/build' do
-    result = true
-    if not File.directory?('ext/libuv/build/gyp')
-        result = system "git", "clone", "https://chromium.googlesource.com/external/gyp", "ext/libuv/build/gyp"
-    end
-    raise 'unable to download gyp' unless result
-end
-
-CLEAN.include('ext/libuv/build/gyp')
-
 if FFI::Platform.windows?
     require File.join File.expand_path("../", __FILE__), 'tasks/win'
 elsif FFI::Platform.mac?
