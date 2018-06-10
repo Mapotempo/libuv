@@ -28,6 +28,7 @@ file "ext/libuv/out/Release/lib.target/libuv.#{FFI::Platform::LIBSUFFIX}" => 'ex
 end
 
 file "ext/libuv/lib/libuv.#{FFI::Platform::LIBSUFFIX}" => "ext/libuv/out/Release/lib.target/libuv.#{FFI::Platform::LIBSUFFIX}" do
+    FileUtils.mkdir('ext/libuv/lib') unless File.directory?('ext/libuv/lib')
     begin
         FileUtils.cp("ext/libuv/out/Release/lib.target/libuv.#{FFI::Platform::LIBSUFFIX}", "ext/libuv/lib/libuv.#{FFI::Platform::LIBSUFFIX}")
     rescue => e
