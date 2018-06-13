@@ -40,7 +40,7 @@ module Libuv
             # 
             # @return [::Libuv::Reactor]
             def create(pointer)
-                allocate.tap { |i| i.send(:initialize, FFI::AutoPointer.new(pointer, ::Libuv::Ext.method(:loop_delete))) }
+                allocate.tap { |i| i.send(:initialize, pointer) }
             end
 
             # Checks for the existence of a reactor on the current thread
