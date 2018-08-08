@@ -8,13 +8,20 @@ module Libuv
         extend Accessors
 
 
+        LIBUV_MIN_POOL = ENV['LIBUV_MIN_POOL'] || 8
+        LIBUV_MAX_POOL = ENV['LIBUV_MAX_POOL'] || 40
+        LIBUV_MAX_QUEUE = ENV['LIBUV_MAX_QUEUE'] || 50000
+        THREAD_POOL = ::Concurrent::ThreadPoolExecutor.new(
+            min_threads: LIBUV_MIN_POOL,
+            max_threads: LIBUV_MAX_POOL,
+            max_queue: LIBUV_MAX_QUEUE
+        )
         CRITICAL = ::Mutex.new
-        THREAD_POOL = ::Concurrent::FixedThreadPool.new(8)
 
 
         module ClassMethods
             # Get default reactor
-            # 
+            #
             # @return [::Libuv::Reactor]
             def default
                 return @default unless @default.nil?
@@ -24,7 +31,7 @@ module Libuv
             end
 
             # Create new Libuv reactor
-            # 
+            #
             # @return [::Libuv::Reactor]
             def new(&blk)
                 thread = create(::Libuv::Ext.loop_new)
@@ -37,7 +44,7 @@ module Libuv
             end
 
             # Build a Ruby Libuv reactor from an existing reactor pointer
-            # 
+            #
             # @return [::Libuv::Reactor]
             def create(pointer)
                 allocate.tap { |i| i.send(:initialize, pointer) }
@@ -234,7 +241,7 @@ module Libuv
             self
         end
 
-        # Creates a deferred result object for where the result of an operation may only be returned 
+        # Creates a deferred result object for where the result of an operation may only be returned
         # at some point in the future or is being processed on a different thread (thread safe)
         #
         # @return [::Libuv::Q::Deferred]
@@ -283,7 +290,7 @@ module Libuv
         end
 
         # forces reactor time update, useful for getting more granular times
-        # 
+        #
         # @return nil
         def update_time
             ::Libuv::Ext.update_time(@pointer)
@@ -291,7 +298,7 @@ module Libuv
         end
 
         # Get current time in milliseconds
-        # 
+        #
         # @return [Integer]
         def now
             ::Libuv::Ext.now(@pointer)
@@ -326,7 +333,7 @@ module Libuv
         end
 
         # Get a new TCP instance
-        # 
+        #
         # @return [::Libuv::TCP]
         def tcp(**opts, &callback)
             TCP.new(@reactor, progress: callback, **opts)
@@ -340,7 +347,7 @@ module Libuv
         end
 
         # Get a new TTY instance
-        # 
+        #
         # @param fileno [Integer] Integer file descriptor of a tty device
         # @param readable [true, false] Boolean indicating if TTY is readable
         # @return [::Libuv::TTY]
@@ -351,7 +358,7 @@ module Libuv
         end
 
         # Get a new Pipe instance
-        # 
+        #
         # @param ipc [true, false] indicate if a handle will be used for ipc, useful for sharing tcp socket between processes
         # @return [::Libuv::Pipe]
         def pipe(ipc = false)
@@ -359,7 +366,7 @@ module Libuv
         end
 
         # Get a new timer instance
-        # 
+        #
         # @param callback [Proc] the callback to be called on timer trigger
         # @return [::Libuv::Timer]
         def timer
@@ -369,7 +376,7 @@ module Libuv
         end
 
         # Get a new Prepare handle
-        # 
+        #
         # @return [::Libuv::Prepare]
         def prepare
             handle = Prepare.new(@reactor)
@@ -378,7 +385,7 @@ module Libuv
         end
 
         # Get a new Check handle
-        # 
+        #
         # @return [::Libuv::Check]
         def check
             handle = Check.new(@reactor)
@@ -387,7 +394,7 @@ module Libuv
         end
 
         # Get a new Idle handle
-        # 
+        #
         # @param callback [Proc] the callback to be called on idle trigger
         # @return [::Libuv::Idle]
         def idle
@@ -397,7 +404,7 @@ module Libuv
         end
 
         # Get a new Async handle
-        # 
+        #
         # @return [::Libuv::Async]
         def async
             handle = Async.new(@reactor)
@@ -406,7 +413,7 @@ module Libuv
         end
 
         # Get a new signal handler
-        # 
+        #
         # @return [::Libuv::Signal]
         def signal(signum = nil)
             handle = Signal.new(@reactor)
@@ -458,7 +465,7 @@ module Libuv
         end
 
         # Get a new FSEvent instance
-        # 
+        #
         # @param path [String] the path to the file or folder for watching
         # @return [::Libuv::FSEvent]
         # @raise [ArgumentError] if path is not a string
