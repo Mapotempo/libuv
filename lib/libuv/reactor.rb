@@ -110,6 +110,7 @@ module Libuv
 
 
         def stop_cb
+            return unless @reactor_running
             Thread.current.thread_variable_set(:reactor, nil)
             @reactor_running = false
 
@@ -541,6 +542,7 @@ module Libuv
 
         # Closes handles opened by the reactor class and completes the current reactor iteration (thread safe)
         def stop
+            return unless @reactor_running
             @stop_reactor.call
         end
 

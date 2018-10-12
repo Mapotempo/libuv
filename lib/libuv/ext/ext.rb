@@ -26,7 +26,7 @@ module Libuv
         def self.free(pointer)
             ::Libuv::Ext::LIBC.free(pointer)
         end
-        
+
 
         def self.path_to_internal_libuv
             @path_to_internal_libuv ||= ::File.expand_path("../../../../ext/libuv/lib/libuv.#{FFI::Platform::LIBSUFFIX}", __FILE__)
@@ -49,22 +49,25 @@ module Libuv
                 # Using home/user/lib is the best we can do on OSX
                 # Primarily a dev platform so that is OK
                 paths.unshift "#{ENV['HOME']}/lib"
-            elsif FFI::Platform.windows?
-                module Kernel32
-                    extend FFI::Library
-                    ffi_lib 'Kernel32'
+                LIBUV_PATHS = paths.map{|path| "#{path}/libuv.1.#{FFI::Platform::LIBSUFFIX}"}
+            else
+                LIBUV_PATHS = paths.map{|path| "#{path}/libuv.#{FFI::Platform::LIBSUFFIX}"}
+                if FFI::Platform.windows?
+                    module Kernel32
+                        extend FFI::Library
+                        ffi_lib 'Kernel32'
 
-                    attach_function :add_dll_dir, :AddDllDirectory, 
-                        [ :buffer_in ], :pointer
+                        attach_function :add_dll_dir, :AddDllDirectory,
+                            [ :buffer_in ], :pointer
+                    end
+                    # This ensures that externally loaded libraries like the libcouchbase gem
+                    # will always use the same binary image and not load a second into memory
+                    Kernel32.add_dll_dir "#{lib_path}\0".encode("UTF-16LE")
+                else # UNIX
+                    # TODO:: ??
                 end
-                # This ensures that externally loaded libraries like the libcouchbase gem
-                # will always use the same binary image and not load a second into memory
-                Kernel32.add_dll_dir "#{lib_path}\0".encode("UTF-16LE")
-            else # UNIX
-                # TODO:: ??
             end
 
-            LIBUV_PATHS = paths.map{|path| "#{path}/libuv.#{FFI::Platform::LIBSUFFIX}"}
             libuv = ffi_lib(LIBUV_PATHS + %w{libuv}).first
         rescue LoadError
             warn <<-WARNING

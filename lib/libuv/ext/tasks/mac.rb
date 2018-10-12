@@ -18,7 +18,7 @@ file "ext/libuv/lib/libuv.#{FFI::Platform::LIBSUFFIX}" => "ext/libuv/.libs/libuv
     FileUtils.cp("ext/libuv/.libs/libuv.1.#{FFI::Platform::LIBSUFFIX}", "ext/libuv/lib/libuv.#{FFI::Platform::LIBSUFFIX}")
 
     # Primrary load location - falls back to above if not available
-    FileUtils.cp("ext/libuv/.libs/libuv.1.#{FFI::Platform::LIBSUFFIX}", "#{user_lib}/libuv.#{FFI::Platform::LIBSUFFIX}")
+    FileUtils.cp("ext/libuv/.libs/libuv.1.#{FFI::Platform::LIBSUFFIX}", "#{user_lib}/libuv.1.#{FFI::Platform::LIBSUFFIX}")
 end
 
 CLOBBER.include("ext/libuv/.libs/libuv.1.#{FFI::Platform::LIBSUFFIX}")
