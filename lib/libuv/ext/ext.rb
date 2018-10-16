@@ -105,6 +105,10 @@ module Libuv
         attach_function :version_string, :uv_version_string, [], :string
         attach_function :loop_alive, :uv_loop_alive, [:uv_loop_t], :int
 
+        attach_function :loop_size, :uv_loop_size, [], :size_t, :blocking => false
+        attach_function :loop_init, :uv_loop_init, [:uv_loop_t], :int, :blocking => false
+        attach_function :loop_close, :uv_loop_close, [:uv_loop_t], :int, :blocking => false
+
         attach_function :loop_new, :uv_loop_new, [], :uv_loop_t, :blocking => true
         attach_function :loop_delete, :uv_loop_delete, [:uv_loop_t], :void, :blocking => true
         attach_function :default_loop, :uv_default_loop, [], :uv_loop_t, :blocking => true

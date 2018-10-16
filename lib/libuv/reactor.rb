@@ -34,7 +34,10 @@ module Libuv
             #
             # @return [::Libuv::Reactor]
             def new(&blk)
-                thread = create(::Libuv::Ext.loop_new)
+                memory = ::Libuv::Ext::LIBC.malloc(::Libuv::Ext.loop_size)
+                ::Libuv::Ext.loop_init(memory)
+
+                thread = create(memory)
                 if block_given?
                     ::Thread.new do
                         thread.run &blk
