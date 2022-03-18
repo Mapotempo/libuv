@@ -4,11 +4,6 @@ require 'socket'    # Addrinfo
 
 module Libuv
     module Ext
-        # Needs to be defined so we can self reference
-        class UvAddrinfo < FFI::Struct
-            layout  :flags, :int
-        end
-
         # Defined in platform code
         #require 'libuv/ext/platform/linux.rb' if FFI::Platform.linux?
         require 'libuv/ext/platform/unix.rb' if FFI::Platform.unix?

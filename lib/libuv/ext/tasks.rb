@@ -8,6 +8,10 @@ module FFI::Platform
     def self.x64?
         ARCH == "x86_64"
     end
+
+    def self.arm64?
+        ARCH == "aarch64"
+    end
 end
 
 file 'ext/libuv/build' do

@@ -13,6 +13,7 @@ CLEAN.include('ext/libuv/build/gyp')
 file 'ext/libuv/out' => 'ext/libuv/build/gyp' do
     target_arch = 'ia32'if FFI::Platform.ia32?
     target_arch = 'x64' if FFI::Platform.x64?
+    target_arch = 'arm64' if FFI::Platform.arm64?
 
     abort "Don't know how to build on #{FFI::Platform::ARCH} (yet)" unless target_arch
 
