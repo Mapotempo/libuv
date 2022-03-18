@@ -1,3 +1,6 @@
 [submodule "ext/libuv"]
 	path = ext/libuv
 	url = https://github.com/libuv/libuv.git
+[submodule "ext/gyp"]
+	path = ext/gyp
+	url = https://chromium.googlesource.com/external/gyp
