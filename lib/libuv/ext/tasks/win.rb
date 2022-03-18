@@ -1,9 +1,10 @@
 # frozen_string_literal: true
 
 file 'ext/libuv/build/gyp' => 'ext/libuv/build' do
+    FileUtils.mkdir('ext/libuv/build') unless File.directory?('ext/libuv/build')
     result = true
     if not File.directory?('ext/libuv/build/gyp')
-        result = system "git", "clone", "https://chromium.googlesource.com/external/gyp", "ext/libuv/build/gyp"
+        result = system "ln", "-rs", "ext/gyp", "ext/libuv/build/gyp"
     end
     raise 'unable to download gyp' unless result
 end
