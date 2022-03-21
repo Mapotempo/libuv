@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 require 'ipaddr'
-require 'ruby-tls'
+require File.expand_path('../../../ext/ruby-tls/lib/ruby-tls', __FILE__) 
 
 
 module Libuv
