@@ -1,5 +1,5 @@
 # frozen_string_literal: true
 
 module MTLibuv
-    VERSION = '4.1.01'
+    VERSION = '4.1.02'
 end
