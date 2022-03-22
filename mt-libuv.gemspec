@@ -33,30 +33,30 @@ Gem::Specification.new do |gem|
     end 
 
     # Add the submodule to the gem
-    relative_path = File.expand_path("../", __FILE__) + '/'
-    `git submodule --quiet foreach pwd`.split($\).each do |submodule_path|
+    # relative_path = File.expand_path("../", __FILE__) + '/'
+    # `git submodule --quiet foreach pwd`.split($\).each do |submodule_path|
 
-        if (ENV['OS'] == 'Windows_NT') && submodule_path[0] == '/'
-            # Detect if cygwin path is being used by git
-            submodule_path = submodule_path[1..-1]
-            submodule_path.insert(1, ':')
-        end
+    #     if (ENV['OS'] == 'Windows_NT') && submodule_path[0] == '/'
+    #         # Detect if cygwin path is being used by git
+    #         submodule_path = submodule_path[1..-1]
+    #         submodule_path.insert(1, ':')
+    #     end
 
-        # for each submodule, change working directory to that submodule
-        Dir.chdir(submodule_path) do
-            # Make the submodule path relative
-            submodule_path = submodule_path.gsub(/#{relative_path}/i, '')
+    #     # for each submodule, change working directory to that submodule
+    #     Dir.chdir(submodule_path) do
+    #         # Make the submodule path relative
+    #         submodule_path = submodule_path.gsub(/#{relative_path}/i, '')
        
-            # issue git ls-files in submodule's directory
-            submodule_files = `git ls-files`.split($\)
+    #         # issue git ls-files in submodule's directory
+    #         submodule_files = `git ls-files`.split($\)
        
-            # prepend the submodule path to create relative file paths
-            submodule_files_paths = submodule_files.map do |filename|
-                File.join(submodule_path, filename)
-            end
+    #         # prepend the submodule path to create relative file paths
+    #         submodule_files_paths = submodule_files.map do |filename|
+    #             File.join(submodule_path, filename)
+    #         end
        
-            # add relative paths to gem.files
-            gem.files += submodule_files_paths
-        end
-    end
+    #         # add relative paths to gem.files
+    #         gem.files += submodule_files_paths
+    #     end
+    # end
 end
