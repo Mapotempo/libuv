@@ -1,13 +1,13 @@
-require 'libuv'
+require 'mt-libuv'
 require 'thread'
 
 
-describe Libuv::Filesystem do
+describe MTLibuv::Filesystem do
 	before :each do
 		@log = []
 		@general_failure = []
 
-		@reactor = Libuv::Reactor.default
+		@reactor = MTLibuv::Reactor.default
 		@filesystem = @reactor.filesystem
 		@timeout = @reactor.timer do
 			@reactor.stop

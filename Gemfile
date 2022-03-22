@@ -6,5 +6,4 @@ end
 source "https://rubygems.org"
 gemspec
 
-gem "ruby-tls", github: 'Mapotempo/ruby-tls'
 gem "rubysl", :platform => :rbx

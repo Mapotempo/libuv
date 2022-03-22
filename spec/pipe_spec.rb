@@ -1,12 +1,12 @@
-require 'libuv'
+require 'mt-libuv'
 
 
-describe Libuv::Pipe do
+describe MTLibuv::Pipe do
 	before :each do
 		@log = []
 		@general_failure = []
 
-		@reactor = Libuv::Reactor.new
+		@reactor = MTLibuv::Reactor.new
 		@server = @reactor.pipe
 		@client = @reactor.pipe
 		@timeout = @reactor.timer do

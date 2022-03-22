@@ -1,9 +1,9 @@
-require 'libuv'
+require 'mt-libuv'
 
 
-describe ::Libuv do	
+describe ::MTLibuv do	
 	it "Should return the number of CPU cores on the platform" do
-		count = Libuv.cpu_count
+		count = MTLibuv.cpu_count
 
 		expect(count != nil && count > 0).to eq(true)
 	end

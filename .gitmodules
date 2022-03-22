@@ -4,6 +4,3 @@
 [submodule "ext/gyp"]
 	path = ext/gyp
 	url = https://chromium.googlesource.com/external/gyp
-[submodule "ext/ruby-tls"]
-	path = ext/ruby-tls
-	url = https://github.com/Mapotempo/ruby-tls.git

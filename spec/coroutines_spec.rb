@@ -1,8 +1,8 @@
-require 'libuv'
+require 'mt-libuv'
 
 # No support for Fibers in jRuby
 if RUBY_PLATFORM != 'java'
-	require 'libuv/coroutines' # adds support for coroutines
+	require 'mt-libuv/coroutines' # adds support for coroutines
 
 
 	describe Object do
@@ -10,7 +10,7 @@ if RUBY_PLATFORM != 'java'
 			@log = []
 			@general_failure = []
 
-			@reactor = Libuv::Reactor.default
+			@reactor = MTLibuv::Reactor.default
 			@reactor.notifier do |error, context|
 				begin
 					@general_failure << "Log called: #{context}\n#{error.message}\n#{error.backtrace.join("\n") if error.backtrace}\n"
@@ -75,7 +75,7 @@ if RUBY_PLATFORM != 'java'
 					}
 
 					# Job1 and Job2 are executed in parallel
-					result1, result2 = ::Libuv.co(job1, job2)
+					result1, result2 = ::MTLibuv.co(job1, job2)
 
 					@log << result1
 					@log << result2
@@ -92,7 +92,7 @@ if RUBY_PLATFORM != 'java'
 				@reactor.run { |reactor|
 					timer = @reactor.timer
 					timer.start(0)
-					::Libuv.co(timer) do
+					::MTLibuv.co(timer) do
 						@log << 'in timer'
 						timer.close  # close will resolve the promise
 					end

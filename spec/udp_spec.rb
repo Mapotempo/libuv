@@ -1,13 +1,13 @@
-require 'libuv'
+require 'mt-libuv'
 require 'thread'
 
 
-describe Libuv::UDP do
+describe MTLibuv::UDP do
 	before :each do
 		@log = []
 		@general_failure = []
 
-		@reactor = Libuv::Reactor.new
+		@reactor = MTLibuv::Reactor.new
 		@server = @reactor.udp
 		@client = @reactor.udp
 		@timeout = @reactor.timer do

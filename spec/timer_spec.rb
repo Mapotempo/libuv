@@ -1,9 +1,9 @@
-require 'libuv'
+require 'mt-libuv'
 
-describe Libuv::Timer do
+describe MTLibuv::Timer do
 	describe 'setting properties' do
 		it "should allow repeat to be set" do
-      @reactor = Libuv::Reactor.new
+      @reactor = MTLibuv::Reactor.new
 			@reactor.run { |logger|
         @timer = @reactor.timer
         @timer.repeat = 5

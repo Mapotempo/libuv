@@ -1,6 +1,6 @@
-require 'libuv'
+require 'mt-libuv'
 
-describe Libuv::Accessors do
+describe MTLibuv::Accessors do
     describe 'basic usage' do
         it 'should work seamlessly with the default thread' do
             count = 0
@@ -21,7 +21,7 @@ describe Libuv::Accessors do
             mutex.synchronize {
 
                 # This will run on a new thread
-                Libuv::Reactor.new do |reactor|
+                MTLibuv::Reactor.new do |reactor|
                     reactor.timer {
                         count += 1
 

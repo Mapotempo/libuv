@@ -1,7 +1,7 @@
-require 'libuv'
+require 'mt-libuv'
 
 
-describe Libuv::Listener do
+describe MTLibuv::Listener do
 	it "should ensure there are no remaining object references in callbacks", network: true do
 		require 'objspace'
 
@@ -9,10 +9,10 @@ describe Libuv::Listener do
 
 		# These are created by loop objects and are never cleaned up
 		# This is OK as the loops are expected to execute for the life of the application
-		except = [::Libuv::Async, ::Libuv::Timer, ::Libuv::Prepare, ::Libuv::Signal]
+		except = [::MTLibuv::Async, ::MTLibuv::Timer, ::MTLibuv::Prepare, ::MTLibuv::Signal]
 
 		ObjectSpace.each_object(Class) do |cls|
-			next unless cls.ancestors.include? ::Libuv::Handle
+			next unless cls.ancestors.include? ::MTLibuv::Handle
 			next if checked.include? cls
 			checked << cls
 

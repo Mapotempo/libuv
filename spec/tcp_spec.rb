@@ -1,13 +1,13 @@
-require 'libuv'
+require 'mt-libuv'
 require 'thread'
 
 
-describe Libuv::TCP do
+describe MTLibuv::TCP do
 	before :each do
 		@log = []
 		@general_failure = []
 
-		@reactor = Libuv::Reactor.new
+		@reactor = MTLibuv::Reactor.new
 		@server = @reactor.tcp
 		@client = @reactor.tcp
 		@timeout = @reactor.timer do
@@ -229,7 +229,7 @@ describe Libuv::TCP do
 
 
 			Thread.new do
-				@reactor2 = Libuv::Reactor.new
+				@reactor2 = MTLibuv::Reactor.new
 				@reactor2.notifier do |error, context|
 					begin
 						@general_failure << "Log called: #{context}\n#{error.message}\n#{error.backtrace.join("\n") if error.backtrace}\n"

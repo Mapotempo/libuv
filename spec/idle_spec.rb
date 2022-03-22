@@ -1,12 +1,12 @@
-require 'libuv'
+require 'mt-libuv'
 
 
-describe Libuv::Idle do
+describe MTLibuv::Idle do
 	before :each do
 		@log = []
 		@general_failure = []
 
-		@reactor = Libuv::Reactor.default
+		@reactor = MTLibuv::Reactor.default
 		@reactor.notifier do |error, context|
 			begin
 				@general_failure << "Log called: #{context}\n#{error.message}\n#{error.backtrace.join("\n") if error.backtrace}\n"

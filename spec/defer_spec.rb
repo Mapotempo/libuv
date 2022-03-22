@@ -1,10 +1,10 @@
-require 'libuv'
+require 'mt-libuv'
 
 
-describe Libuv::Q do
+describe MTLibuv::Q do
     
     before :each do
-        @reactor = Libuv::Reactor.default
+        @reactor = MTLibuv::Reactor.default
         @reactor.notifier {}
         @deferred = @reactor.defer
         @promise = @deferred.promise
@@ -235,7 +235,7 @@ describe Libuv::Q do
                 deferred2 = @reactor.defer
 
                 @promise.progress do |update|
-                    @log << update.is_a?(::Libuv::Q::Promise)
+                    @log << update.is_a?(::MTLibuv::Q::Promise)
                 end
                 @deferred.notify(deferred2.promise)
             }
@@ -280,7 +280,7 @@ describe Libuv::Q do
     end
     
     
-    describe Libuv::Q::Promise do
+    describe MTLibuv::Q::Promise do
 
         describe 'then' do
             
@@ -348,7 +348,7 @@ describe Libuv::Q do
                     end
                     @promise.then nil, @default_fail do |result|
                         @log << result
-                        Libuv::Q.reject(@reactor, 'some reason')
+                        MTLibuv::Q.reject(@reactor, 'some reason')
                     end
                     @promise.then nil, @default_fail do |result|
                         @log << result
@@ -374,7 +374,7 @@ describe Libuv::Q do
                     end
                     @promise.progress do |result|
                         @log << result
-                        Libuv::Q.reject(@reactor, 'some reason')
+                        MTLibuv::Q.reject(@reactor, 'some reason')
                     end
                     @promise.progress do |result|
                         @log << result
@@ -401,7 +401,7 @@ describe Libuv::Q do
                     })
                     @promise.then(@default_fail, proc {|result|
                         @log << result
-                        Libuv::Q.reject(@reactor, 'some reason')
+                        MTLibuv::Q.reject(@reactor, 'some reason')
                     })
                     @promise.then(@default_fail, proc {|result|
                         @log << result
@@ -772,7 +772,7 @@ describe Libuv::Q do
         
         it "should package a string into a rejected promise" do
             @reactor.run {
-                rejectedPromise = Libuv::Q.reject(@reactor, 'not gonna happen')
+                rejectedPromise = MTLibuv::Q.reject(@reactor, 'not gonna happen')
                 
                 @promise.then(@default_fail, proc {|reason|
                     @log << reason
@@ -787,7 +787,7 @@ describe Libuv::Q do
         
         it "should return a promise that forwards callbacks if the callbacks are missing" do
             @reactor.run {
-                rejectedPromise = Libuv::Q.reject(@reactor, 'not gonna happen')
+                rejectedPromise = MTLibuv::Q.reject(@reactor, 'not gonna happen')
                 
                 @promise.then(@default_fail, proc {|reason|
                     @log << reason
@@ -807,7 +807,7 @@ describe Libuv::Q do
         
         it "should resolve all of nothing" do
             @reactor.run {
-                Libuv::Q.all(@reactor).then nil, @default_fail do |result|
+                MTLibuv::Q.all(@reactor).then nil, @default_fail do |result|
                     @log << result
                 end
             }
@@ -820,7 +820,7 @@ describe Libuv::Q do
                 deferred1 = @reactor.defer
                 deferred2 = @reactor.defer
                 
-                Libuv::Q.all(@reactor, @promise, deferred1.promise, deferred2.promise).then nil, @default_fail do |result|
+                MTLibuv::Q.all(@reactor, @promise, deferred1.promise, deferred2.promise).then nil, @default_fail do |result|
                     @log = result
                 end
                 
@@ -838,7 +838,7 @@ describe Libuv::Q do
                 deferred1 = @reactor.defer
                 deferred2 = @reactor.defer
                 
-                Libuv::Q.all(@reactor, @promise, deferred1.promise, deferred2.promise).then(@default_fail, proc {|reason|
+                MTLibuv::Q.all(@reactor, @promise, deferred1.promise, deferred2.promise).then(@default_fail, proc {|reason|
                     @log << reason
                 })
                 
@@ -855,7 +855,7 @@ describe Libuv::Q do
         
         it "should resolve any of nothing" do
             @reactor.run {
-                Libuv::Q.any(@reactor).then nil, @default_fail do |result|
+                MTLibuv::Q.any(@reactor).then nil, @default_fail do |result|
                     @log = result
                 end
             }
@@ -868,7 +868,7 @@ describe Libuv::Q do
                 deferred1 = @reactor.defer
                 deferred2 = @reactor.defer
                 
-                Libuv::Q.any(@reactor, @promise, deferred1.promise, deferred2.promise).then nil, @default_fail do |result|
+                MTLibuv::Q.any(@reactor, @promise, deferred1.promise, deferred2.promise).then nil, @default_fail do |result|
                     @log = result
                 end
                 
@@ -888,7 +888,7 @@ describe Libuv::Q do
                 deferred1 = @reactor.defer
                 deferred2 = @reactor.defer
                 
-                Libuv::Q.any(@reactor, @promise, deferred1.promise, deferred2.promise).then(@default_fail, proc { |result|
+                MTLibuv::Q.any(@reactor, @promise, deferred1.promise, deferred2.promise).then(@default_fail, proc { |result|
                     @log = result
                 })
                 

@@ -1,12 +1,12 @@
-require 'libuv'
+require 'mt-libuv'
 
 
-describe Libuv::Dns do
+describe MTLibuv::Dns do
 	before :each do
 		@log = []
 		@general_failure = []
 
-		@reactor = Libuv::Reactor.default
+		@reactor = MTLibuv::Reactor.default
 		@reactor.notifier do |error, context|
 			begin
 				puts "Log called: #{context}\n#{error.message}\n#{error.backtrace.join("\n")}\n"
@@ -105,6 +105,6 @@ describe Libuv::Dns do
 		}
 
 		expect(@general_failure).to eq([])
-		expect(@result).to eq(['127.0.0.1', Libuv::Error::EAI_NONAME])
+		expect(@result).to eq(['127.0.0.1', MTLibuv::Error::EAI_NONAME])
 	end
 end

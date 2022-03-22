@@ -1,12 +1,12 @@
-require 'libuv'
+require 'mt-libuv'
 
 
-describe Libuv::Async do
+describe MTLibuv::Async do
 	before :each do
 		@log = []
 		@general_failure = []
 
-		@reactor = Libuv::Reactor.default
+		@reactor = MTLibuv::Reactor.default
 		@call = @reactor.pipe
 		@timeout = @reactor.timer do
 			@reactor.stop
