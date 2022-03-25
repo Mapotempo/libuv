@@ -14,7 +14,7 @@ For convenience the thread local or default reactor can be accessed via the `rea
 You can pass a block to be executed on the reactor and the reactor will run until there is nothing left to do.
 
 ```ruby
-  require 'libuv'
+  require 'mt-libuv'
 
   reactor do |reactor|
     reactor.timer {
@@ -28,7 +28,7 @@ You can pass a block to be executed on the reactor and the reactor will run unti
 Promises are used to simplify code flow.
 
 ```ruby
-  require 'libuv'
+  require 'mt-libuv'
 
   reactor do |reactor|
     reactor.tcp { |data, socket|
@@ -51,7 +51,7 @@ Promises are used to simplify code flow.
 Continuations are used if callbacks are not defined
 
 ```ruby
-  require 'libuv'
+  require 'mt-libuv'
 
   reactor do |reactor|
     begin
@@ -71,7 +71,7 @@ Continuations are used if callbacks are not defined
 Any promise can be converted into a continuation
 
 ```ruby
-  require 'libuv'
+  require 'mt-libuv'
 
   reactor do |reactor|
     # Perform work on the thread pool with promises

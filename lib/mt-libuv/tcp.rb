@@ -62,12 +62,12 @@ module MTLibuv
             hosts = @tls_options[:hosts]
             if hosts && hosts[0]
                 opts = @tls_options.merge(hosts[0])
-                @tls = ::RubyTls::SSL::Box.new(opts[:server], self, opts)
+                @tls = ::MTRubyTls::SSL::Box.new(opts[:server], self, opts)
                 hosts[1..-1].each do |host_opts|
                     @tls.add_host(**host_opts)
                 end
             else
-                @tls = ::RubyTls::SSL::Box.new(@tls_options[:server], self, @tls_options)
+                @tls = ::MTRubyTls::SSL::Box.new(@tls_options[:server], self, @tls_options)
             end
             @tls.start
             self
