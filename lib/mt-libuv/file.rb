@@ -29,7 +29,7 @@ module MTLibuv
         attr_reader :fileno, :closed
 
 
-        def initialize(thread, path, flags = 0, mode: 0)
+        def initialize(thread, path, flags = 0, mode: 0, &block)
             super(thread, thread.defer)
 
             @fileno = -1
@@ -41,7 +41,7 @@ module MTLibuv
             pre_check @defer, request, ::MTLibuv::Ext.fs_open(@reactor, request, @path, @flags, @mode, callback(:on_open, request.address))
 
             if block_given?
-                self.progress &Proc.new
+                self.progress &block
             else
                 @coroutine = @reactor.defer
                 @coroutine.promise.value

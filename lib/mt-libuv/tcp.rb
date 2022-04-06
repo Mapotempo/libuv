@@ -252,11 +252,11 @@ module MTLibuv
         def open(fd, binding = true)
             return self if @closed
 
-            if binding
+            if binding(&block)
                 @on_listen = proc { accept }
-                @on_accept = Proc.new
+                @on_accept = block
             elsif block_given?
-                @callback = Proc.new
+                @callback = block
             else
                 @coroutine = @reactor.defer
             end
@@ -267,7 +267,7 @@ module MTLibuv
             self
         end
 
-        def connect(ip, port)
+        def connect(ip, port, &block)
             return self if @closed
 
             assert_type(String, ip, IP_ARGUMENT_ERROR)
@@ -281,7 +281,7 @@ module MTLibuv
             end
 
             if block_given?
-                @callback = Proc.new
+                @callback = block
             else
                 @coroutine = @reactor.defer
                 @coroutine.promise.value

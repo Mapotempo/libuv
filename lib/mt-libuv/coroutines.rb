@@ -13,7 +13,7 @@ module MTLibuv
     # @param *promises [::MTLibuv::Q::Promise] a number of promises that will be combined into a single promise
     # @return [Object] Returns the result of a single promise or an array of results if provided multiple promises
     # @raise [Exception] if the promise is rejected
-    def co(*yieldable)
+    def co(*yieldable, &block)
         on_reactor = MTLibuv::Reactor.current
         raise 'must be running on a reactor thread to use coroutines' unless on_reactor
 
@@ -24,7 +24,7 @@ module MTLibuv
         if yieldable.length == 1
             promise = yieldable[0]
             # Passed independently as this is often overwritten for performance
-            promise.progress &Proc.new if block_given?
+            promise.progress &block if block_given?
         else
             promise = on_reactor.all(*yieldable)
         end

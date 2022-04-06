@@ -236,9 +236,9 @@ module MTLibuv
         # Provides a promise notifier for receiving un-handled exceptions
         #
         # @return [::MTLibuv::Q::Promise]
-        def notifier
+        def notifier(&block)
             @reactor_notify = if block_given?
-                Proc.new
+                block
             else
                 @reactor_notify_default
             end
@@ -373,27 +373,27 @@ module MTLibuv
         #
         # @param callback [Proc] the callback to be called on timer trigger
         # @return [::MTLibuv::Timer]
-        def timer
+        def timer(&block)
             handle = Timer.new(@reactor)
-            handle.progress &Proc.new if block_given?
+            handle.progress &block if block_given?
             handle
         end
 
         # Get a new Prepare handle
         #
         # @return [::MTLibuv::Prepare]
-        def prepare
+        def prepare(&block)
             handle = Prepare.new(@reactor)
-            handle.progress &Proc.new if block_given?
+            handle.progress &block if block_given?
             handle
         end
 
         # Get a new Check handle
         #
         # @return [::MTLibuv::Check]
-        def check
+        def check(&block)
             handle = Check.new(@reactor)
-            handle.progress &Proc.new if block_given?
+            handle.progress &block if block_given?
             handle
         end
 
@@ -401,27 +401,27 @@ module MTLibuv
         #
         # @param callback [Proc] the callback to be called on idle trigger
         # @return [::MTLibuv::Idle]
-        def idle
+        def idle(&block)
             handle = Idle.new(@reactor)
-            handle.progress &Proc.new if block_given?
+            handle.progress &block if block_given?
             handle
         end
 
         # Get a new Async handle
         #
         # @return [::MTLibuv::Async]
-        def async
+        def async(&block)
             handle = Async.new(@reactor)
-            handle.progress &Proc.new if block_given?
+            handle.progress &block if block_given?
             handle
         end
 
         # Get a new signal handler
         #
         # @return [::MTLibuv::Signal]
-        def signal(signum = nil)
+        def signal(signum = nil, &block)
             handle = Signal.new(@reactor)
-            handle.progress &Proc.new if block_given?
+            handle.progress &block if block_given?
             handle.start(signum) if signum
             handle
         end
@@ -458,12 +458,12 @@ module MTLibuv
         # @param port [Integer, String] the service being connected too
         # @param callback [Proc] the callback to be called on success
         # @return [::MTLibuv::Dns]
-        def lookup(hostname, hint = :IPv4, port = 9, wait: true)
+        def lookup(hostname, hint = :IPv4, port = 9, wait: true, &block)
             dns = Dns.new(@reactor, hostname, port, hint, wait: wait)    # Work is a promise object
             if wait
                 dns.results
             else
-                dns.then &Proc.new if block_given?
+                dns.then &block if block_given?
                 dns
             end
         end
@@ -505,11 +505,11 @@ module MTLibuv
         # Schedule some work to be processed on the event reactor as soon as possible (thread safe)
         #
         # @yield the callback to be called on the reactor thread
-        def schedule
+        def schedule(&block)
             if reactor_thread?
                 yield
             else
-                @run_queue << Proc.new
+                @run_queue << block
                 @process_queue.call
             end
             self

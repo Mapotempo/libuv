@@ -59,7 +59,7 @@ module MTLibuv
             self
         end
 
-        def connect(name)
+        def connect(name, &block)
             return if @closed
             assert_type(String, name, "name must be a String")
 
@@ -72,7 +72,7 @@ module MTLibuv
             end
 
             if block_given?
-                @callback = Proc.new
+                @callback = block
             else
                 @coroutine = @reactor.defer
                 @coroutine.promise.value

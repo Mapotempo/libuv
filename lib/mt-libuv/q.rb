@@ -104,9 +104,9 @@ module MTLibuv
             #
             # @param [Proc, Proc, Proc, &blk] callbacks error, success, progress, success_block
             # @return [Promise] Returns an unresolved promise for chaining
-            def then(callback = nil, errback = nil, progback = nil)
+            def then(callback = nil, errback = nil, progback = nil, &block)
                 result = Q.defer(@reactor)
-                callback = Proc.new if block_given?
+                callback = block if block_given?
                 
                 wrappedCallback = proc { |val|
                     begin
@@ -182,9 +182,9 @@ module MTLibuv
                 @response = response
             end
 
-            def then(callback = nil, errback = nil, progback = nil)
+            def then(callback = nil, errback = nil, progback = nil, &block)
                 result = Q.defer(@reactor)
-                callback = Proc.new if block_given?
+                callback = block if block_given?
 
                 @reactor.next_tick {
                     if @error
